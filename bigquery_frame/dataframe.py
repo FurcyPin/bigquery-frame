@@ -5,7 +5,7 @@ from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.bigquery_client import HasBigQueryClient
-from bigquery_frame.print_utils import print_results
+from bigquery_frame.printing import print_results
 
 
 def indent(str, nb) -> str:
