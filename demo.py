@@ -1,5 +1,6 @@
 import google
 from bigquery_frame import BigQueryBuilder, DataFrame
+from bigquery_frame.transfo_utils import sort_columns
 
 PROJECT_NAME = "bigquery-frame"
 client = google.cloud.bigquery.Client(PROJECT_NAME)
@@ -22,4 +23,7 @@ df6 = df5.withColumn("my_struct", "(SELECT AS STRUCT 1 as a, 2 as b)")
 # print(df5.compile())
 print(df5.schema)
 df5.show()
+
+df5.show()
+sort_columns(df5).show()
 

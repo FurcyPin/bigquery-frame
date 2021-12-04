@@ -13,7 +13,11 @@ def indent(str, nb) -> str:
 
 
 def strip_margin(text):
-    return re.sub('\n[ \t]*\|', '\n', text)
+    s = re.sub('\n[ \t]*\|', '\n', text)
+    if s.startswith("\n"):
+        return s[1:]
+    else:
+        return s
 
 
 class BigQueryBuilder(HasBigQueryClient):
@@ -97,10 +101,10 @@ class DataFrame:
     def __repr__(self):
         return f"""({self.query}) as {self._alias}"""
 
-    def __apply_query(self, query: str) -> 'DataFrame':
+    def _apply_query(self, query: str) -> 'DataFrame':
         return DataFrame(query, None, self.bigquery, _deps=self._deps + [(self._alias, self)])
 
-    def _refresh_schema(self):
+    def _compute_schema(self):
         df = self.limit(0)
         return df.bigquery._execute_query(df.compile()).schema
 
@@ -120,13 +124,16 @@ class DataFrame:
     def schema(self) -> List[SchemaField]:
         """Returns the schema of this :class:`DataFrame` as a list of :class:`google.cloud.bigquery.SchemaField`."""
         if self._schema is None:
-            self._schema = self._refresh_schema()
+            self._schema = self._compute_schema()
         return self._schema
 
     def compile(self) -> str:
         """Returns the sql query that will be executed to materialize this :class:`DataFrame`"""
         ctes = self.bigquery._compile_views() + self._compile_deps()
-        return "WITH " + "\n, ".join(ctes) + "\n" + self.query
+        if len(ctes) > 0:
+            return "WITH " + "\n, ".join(ctes) + "\n" + self.query
+        else:
+            return self.query
 
     def alias(self, alias) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with an alias set."""
@@ -158,12 +165,12 @@ class DataFrame:
             |{indent(col_str, 2)}
             |FROM {self._alias}
             |""")
-        return self.__apply_query(query)
+        return self._apply_query(query)
 
     def limit(self, num: int) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
         query = f"""SELECT * FROM {self._alias} LIMIT {num}"""
-        return self.__apply_query(query)
+        return self._apply_query(query)
 
     def withColumn(self, col_name: str, col_expr: str, replace: bool = False) -> 'DataFrame':
         """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.
@@ -199,7 +206,7 @@ class DataFrame:
                 |  {col_expr} AS {col_name}
                 |FROM {self._alias}
                 |""")
-        return self.__apply_query(query)
+        return self._apply_query(query)
 
     def collect_iterator(self) -> RowIterator:
         """Returns all the records as :class:`RowIterator`."""
@@ -224,3 +231,9 @@ class DataFrame:
         """
         res = self.limit(n).collect_iterator()
         print_results(res, format_args)
+
+    @property
+    def columns(self) -> List[str]:
+        """Returns all column names as a list."""
+        return [field.name for field in self.schema]
+
