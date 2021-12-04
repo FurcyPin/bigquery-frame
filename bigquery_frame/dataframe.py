@@ -1,9 +1,11 @@
 import re
 from typing import List, Tuple, Optional
 
-from google.cloud.bigquery import SchemaField, Client
+from google.cloud.bigquery import SchemaField, Client, Row
+from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.bigquery_client import HasBigQueryClient
+from bigquery_frame.print_utils import print_results
 
 
 def indent(str, nb) -> str:
@@ -199,3 +201,26 @@ class DataFrame:
                 |""")
         return self.__apply_query(query)
 
+    def collect_iterator(self) -> RowIterator:
+        """Returns all the records as :class:`RowIterator`."""
+        return self.bigquery._execute_query(self.compile())
+
+    def collect(self) -> List[Row]:
+        """Returns all the records as list of :class:`Row`."""
+        return list(self.bigquery._execute_query(self.compile()))
+
+    def show(self, n: int = 20, format_args=None):
+        """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
+        <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
+
+        Formatting options may be used using `format_args`.
+
+        Example: df.show(format_args={"tablefmt": 'fancy_grid'})
+
+        :param n: Number of rows to show.
+        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
+
+        :return:
+        """
+        res = self.limit(n).collect_iterator()
+        print_results(res, format_args)

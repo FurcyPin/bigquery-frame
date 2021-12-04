@@ -1,7 +1,5 @@
-from typing import Union
-
 from google.cloud.bigquery.client import Client
-from google.cloud.bigquery.table import RowIterator, _EmptyRowIterator
+from google.cloud.bigquery.table import RowIterator
 
 
 class HasBigQueryClient:
@@ -18,7 +16,7 @@ class HasBigQueryClient:
     """
 
     def __init__(self, client: Client):
-        self.client = client
+        self.__client = client
 
-    def _execute_query(self, query: str) -> Union[RowIterator, _EmptyRowIterator]:
-        return self.client.query(query).result()
+    def _execute_query(self, query: str) -> RowIterator:
+        return self.__client.query(query).result()
