@@ -1,11 +1,8 @@
-import google
-from bigquery_frame import BigQueryBuilder, DataFrame
-from bigquery_frame.transfo_utils import sort_columns
+from bigquery_frame import BigQueryBuilder
+from bigquery_frame.auth import get_bq_client
+from bigquery_frame.transformations import sort_columns
 
-PROJECT_NAME = "bigquery-frame"
-client = google.cloud.bigquery.Client(PROJECT_NAME)
-
-bigquery = BigQueryBuilder(client)
+bigquery = BigQueryBuilder(get_bq_client())
 
 
 df = bigquery.sql("""

@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
-from bigquery_frame.bigquery_client import HasBigQueryClient
+from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
 
 
@@ -42,18 +42,6 @@ class BigQueryBuilder(HasBigQueryClient):
     def _registerDataFrameAsTable(self, df: 'DataFrame', alias: str) -> None:
         self._check_alias(alias, [])
         self._views.append((alias, df))
-
-    def _generate_prefix_old(self, deps: List[Tuple[str, 'DataFrame']]) -> str:
-        ctes = self._views + deps
-        if len(ctes) == 0:
-            return ""
-        string_ctes = [
-            strip_margin(f"""{alias} AS (
-            |{indent(cte.query, 2)}
-            |)""")
-            for (alias, cte) in ctes
-        ]
-        return "WITH " + "\n, ".join(string_ctes)
 
     def _compile_views(self) -> List[str]:
         return [

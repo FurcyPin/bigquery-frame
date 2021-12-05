@@ -1,12 +1,8 @@
-import google
-
 from bigquery_frame import BigQueryBuilder
+from bigquery_frame.auth import get_bq_client
 from bigquery_frame.transformations import unpivot, pivot
 
-PROJECT_NAME = "bigquery-frame"
-client = google.cloud.bigquery.Client(PROJECT_NAME)
-
-bigquery = BigQueryBuilder(client)
+bigquery = BigQueryBuilder(get_bq_client())
 
 # The data in this example has been inspired by:
 # https://sparkbyexamples.com/spark/how-to-pivot-table-and-unpivot-a-spark-dataframe/
@@ -40,7 +36,7 @@ df.show()
 # +------+---------+--------+-------+--------+
 
 unpivotted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='Amount')
-unpivotted.show()
+unpivotted.show(100)
 # +------+---------+---------+--------+
 # | year | product | country | Amount |
 # +------+---------+---------+--------+
@@ -64,6 +60,10 @@ unpivotted.show()
 # | 2019 |  Beans  | Mexico  |  2000  |
 # | 2019 | Banana  | Canada  |        |
 # | 2019 | Banana  |  China  |  1400  |
+# | 2019 | Banana  | Mexico  |  400   |
+# | 2019 | Carrots | Canada  |        |
+# | 2019 | Carrots |  China  |  200   |
+# | 2019 | Carrots | Mexico  |        |
 # +------+---------+---------+--------+
 
 repivotted = pivot(unpivotted, group_columns=["year", "product"], pivot_column="country", agg_fun="sum", agg_col="amount")
