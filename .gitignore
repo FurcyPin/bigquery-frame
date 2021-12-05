@@ -5,4 +5,8 @@ venv/
 # PyCharm stuff
 .idea/
 
+gcp-credentials.json
 
+# Unit Testing
+.coverage
+htmlcov/

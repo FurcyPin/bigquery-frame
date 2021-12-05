@@ -1,2 +1,8 @@
+# Big Query
 google-cloud-bigquery==2.30.1
+
+# Printing
 tabulate==0.8.9
+
+# Unit Tests
+coverage==6.2
