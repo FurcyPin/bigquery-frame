@@ -20,6 +20,13 @@ def strip_margin(text):
         return s
 
 
+def cols_to_str(cols, indentation: int = None) -> str:
+    if indentation is not None:
+        return indent(",\n".join(cols), indentation)
+    else:
+        return ", ".join(cols)
+
+
 class BigQueryBuilder(HasBigQueryClient):
     DEFAULT_ALIAS_NAME = "_default_alias_{num}"
 
@@ -159,6 +166,28 @@ class DataFrame:
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
         query = f"""SELECT * FROM {self._alias} LIMIT {num}"""
         return self._apply_query(query)
+
+    def sort(self, *cols: str):
+        """Returns a new :class:`DataFrame` sorted by the specified column(s)."""
+        query = strip_margin(f"""
+        |SELECT * 
+        |FROM {self._alias} 
+        |ORDER BY {cols_to_str(cols)}
+        |""")
+        return self._apply_query(query)
+
+    orderBy = sort
+
+    def filter(self, expr: str):
+        """Filters rows using the given condition."""
+        query = strip_margin(f"""
+        |SELECT * 
+        |FROM {self._alias} 
+        |WHERE {expr}
+        |""")
+        return self._apply_query(query)
+
+    where = filter
 
     def withColumn(self, col_name: str, col_expr: str, replace: bool = False) -> 'DataFrame':
         """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.

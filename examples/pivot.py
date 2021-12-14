@@ -35,7 +35,7 @@ df.show()
 # | 2019 | Carrots |        |  200  |        |
 # +------+---------+--------+-------+--------+
 
-unpivotted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='Amount')
+unpivotted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='Amount', implem_version=1)
 unpivotted.show(100)
 # +------+---------+---------+--------+
 # | year | product | country | Amount |
@@ -66,7 +66,7 @@ unpivotted.show(100)
 # | 2019 | Carrots | Mexico  |        |
 # +------+---------+---------+--------+
 
-repivotted = pivot(unpivotted, group_columns=["year", "product"], pivot_column="country", agg_fun="sum", agg_col="amount")
+repivotted = pivot(unpivotted, pivot_column="country", agg_fun="sum", agg_col="amount", implem_version=1)
 repivotted.show()
 # +------+---------+--------+-------+--------+
 # | year | product | Canada | China | Mexico |
@@ -82,3 +82,4 @@ repivotted.show()
 # +------+---------+--------+-------+--------+
 
 assert(df.collect() == repivotted.collect())
+

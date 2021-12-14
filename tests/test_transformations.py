@@ -55,14 +55,52 @@ class TestTransformations(unittest.TestCase):
 
     bigquery = BigQueryBuilder(get_bq_client())
 
-    def test_pivot(self):
+    def test_pivot_v1(self):
         df = self.bigquery.sql(unpivoted_df_query)
-        pivoted = pivot(df, group_columns=["year", "product"], pivot_column="country", agg_fun="sum", agg_col="amount")
+        pivoted = pivot(df, pivot_column="country", agg_fun="sum", agg_col="amount", implem_version=1)
         expected = self.bigquery.sql(pivoted_df_query)
         self.assertEqual(expected.collect(), pivoted.collect())
 
-    def test_unpivot(self):
+    def test_pivot_v1_case_sensitive(self):
+        df = self.bigquery.sql(unpivoted_df_query)
+        pivoted = pivot(df, pivot_column="COUNTRY", agg_fun="SUM", agg_col="AMOUNT", implem_version=1)
+        expected = self.bigquery.sql(pivoted_df_query)
+        self.assertEqual(expected.collect(), pivoted.collect())
+
+    def test_pivot_v2(self):
+        df = self.bigquery.sql(unpivoted_df_query)
+        pivoted = pivot(df, pivot_column="country", agg_fun="sum", agg_col="amount", implem_version=2)
+        expected = self.bigquery.sql(pivoted_df_query)
+        self.assertEqual(expected.collect(), pivoted.collect())
+
+    def test_pivot_v2_case_sensitive(self):
+        df = self.bigquery.sql(unpivoted_df_query)
+        pivoted = pivot(df, pivot_column="COUNTRY", agg_fun="SUM", agg_col="AMOUNT", implem_version=2)
+        expected = self.bigquery.sql(pivoted_df_query)
+        self.assertEqual(expected.collect(), pivoted.collect())
+
+    def test_unpivot_v1(self):
         df = self.bigquery.sql(pivoted_df_query)
-        unpivoted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount')
+        unpivoted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount', implem_version=1)
         expected = self.bigquery.sql(unpivoted_df_query)
         self.assertEqual(expected.collect(), unpivoted.collect())
+
+    def test_unpivot_v2(self):
+        df = self.bigquery.sql(pivoted_df_query)
+        unpivoted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount', implem_version=2)
+        unpivoted = unpivoted.select('year', 'product', 'country', 'amount')
+        expected = self.bigquery.sql(unpivoted_df_query)
+        self.assertEqual(expected.sort("year", "product", "country").collect(), unpivoted.sort("year", "product", "country").collect())
+
+    def test_unpivot_v1_exclude_nulls(self):
+        df = self.bigquery.sql(pivoted_df_query)
+        unpivoted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount', exclude_nulls=True, implem_version=1)
+        expected = self.bigquery.sql(unpivoted_df_query).where('amount IS NOT NULL')
+        self.assertEqual(expected.collect(), unpivoted.collect())
+
+    def test_unpivot_v2_exclude_nulls(self):
+        df = self.bigquery.sql(pivoted_df_query)
+        unpivoted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount', exclude_nulls=True, implem_version=2)
+        unpivoted = unpivoted.select('year', 'product', 'country', 'amount')
+        expected = self.bigquery.sql(unpivoted_df_query).where('amount IS NOT NULL')
+        self.assertEqual(expected.sort("year", "product", "country").collect(), unpivoted.sort("year", "product", "country").collect())

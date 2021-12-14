@@ -20,7 +20,18 @@ df6 = df5.withColumn("my_struct", "(SELECT AS STRUCT 1 as a, 2 as b)")
 # print(df5.compile())
 print(df5.schema)
 df5.show()
+# +----+-----------+---------------------+----------+
+# | id |   name    |        types        | nb_types |
+# +----+-----------+---------------------+----------+
+# | 1  | bulbasaur | ['Grass', 'Poison'] |    2     |
+# | 2  |  ivysaur  | ['Grass', 'Poison'] |    2     |
+# +----+-----------+---------------------+----------+
 
-df5.show()
-sort_columns(df5).show()
+df5.sort("id DESC").show()
+# +----+-----------+---------------------+----------+
+# | id |   name    |        types        | nb_types |
+# +----+-----------+---------------------+----------+
+# | 2  |  ivysaur  | ['Grass', 'Poison'] |    2     |
+# | 1  | bulbasaur | ['Grass', 'Poison'] |    2     |
+# +----+-----------+---------------------+----------+
 
