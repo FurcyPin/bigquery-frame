@@ -158,8 +158,7 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT 
             |{indent(col_str, 2)}
-            |FROM {self._alias}
-            |""")
+            |FROM {self._alias}""")
         return self._apply_query(query)
 
     def limit(self, num: int) -> 'DataFrame':
@@ -172,8 +171,7 @@ class DataFrame:
         query = strip_margin(f"""
         |SELECT * 
         |FROM {self._alias} 
-        |ORDER BY {cols_to_str(cols)}
-        |""")
+        |ORDER BY {cols_to_str(cols)}""")
         return self._apply_query(query)
 
     orderBy = sort
@@ -183,8 +181,7 @@ class DataFrame:
         query = strip_margin(f"""
         |SELECT * 
         |FROM {self._alias} 
-        |WHERE {expr}
-        |""")
+        |WHERE {expr}""")
         return self._apply_query(query)
 
     where = filter
@@ -214,15 +211,13 @@ class DataFrame:
                 |  * REPLACE (
                 |    {col_expr} AS {col_name}
                 |  )
-                |FROM {self._alias}
-                |""")
+                |FROM {self._alias}""")
         else:
             query = strip_margin(
                 f"""SELECT 
                 |  *,
                 |  {col_expr} AS {col_name}
-                |FROM {self._alias}
-                |""")
+                |FROM {self._alias}""")
         return self._apply_query(query)
 
     def collect_iterator(self) -> RowIterator:
