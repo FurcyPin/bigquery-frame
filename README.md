@@ -4,11 +4,13 @@
 
 This project is a POC that aims to showcase the wonders
 that could be done if BigQuery provided a DataFrame API in 
-Python similar to the one already available with PySpark.
+Python similar to the one already available with PySpark
+or Snowpark (for which the Python API will come out soon).
 
 I tried to reproduce the most commonly used methods of the Spark DataFrame object. 
 I aimed at making something as close as possible as PySpark, and tried to keep exactly
 the same naming and docstrings as PySpark's DataFrames.
+ 
 
 For instance, this is a working example of PySpark code :
 ```python
@@ -169,14 +171,21 @@ Also, it would be cool to expand this to other SQL engines than BigQuery
 
 ## Why did I make this ?
 
-I hope that it will motivate the teams working on BigQuery (or Snowflake, 
-or Redshift, or Azure Synapse) to propose a real python DataFrame API on top
-of their massively parallel SQL engines. But not something ugly like this POC,
+I hope that it will motivate the teams working on BigQuery (or Redshift, 
+or Azure Synapse) to propose a real python DataFrame API on top of their 
+massively parallel SQL engines. But not something ugly like this POC,
 that generates SQL strings, more something like Spark Catalyst, which directly
 generates logical plans out of the DataFrame API without passing through the 
 "SQL string" step.
 
-I believe such project would open the gate to hundreds of very cool applications.
+After starting this POC, I realized Snowflake already understood this and 
+developed Snowpark, a Java/Scala (and soon Python) API to run complex workflows
+on Snowflake, and [Snowpark's DataFrame API](https://docs.snowflake.com/en/developer-guide/snowpark/reference/scala/com/snowflake/snowpark/DataFrame.html)
+which was clearly borrowed from [Spark's DataFrame (= DataSet[Row]) API](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/Dataset.html)
+(we recognize several key method names: cache, createOrReplaceTempView, 
+where/filter, collect, toLocalIterator). 
+
+I believe such project could open the gate to hundreds of very cool applications.
 For instance, did you know that, in its early versions at least, Dataiku Shaker 
 was just a GUI that chained transformations on Pandas DataFrame, and later 
 Spark DataFrame ? 
@@ -187,6 +196,6 @@ platforms, like [Malloy](https://github.com/looker-open-source/malloy), could
 all use the same DataFrame abstraction. Adding support for a new SQL platform
 would immediately allow all the project based on it to support this new platform.
 
-**I would be very interested if someone could make a similar POC with Snowflake, 
+**I would be very interested if someone could make a similar POC with, 
 RedShift, Postgres, Azure Synapse, or any other SQL engines 
-(aside from Spark-SQL, of course :-p).**
+(aside from Spark-SQL and Snowpark, of course :-p).**
