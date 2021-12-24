@@ -5,8 +5,13 @@ venv/
 # PyCharm stuff
 .idea/
 
+# GCP credentials
 gcp-credentials.json
 
 # Unit Testing
 .coverage
 htmlcov/
+
+# Python Poetry
+poetry.lock
+dist/

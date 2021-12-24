@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
 
-source venv/bin/activate
-
 export GCP_CREDENTIALS_PATH="gcp-credentials.json"
-coverage run --include "bigquery_frame/*" -m unittest
+poetry run coverage run --include "bigquery_frame/*" -m unittest -v
 
-coverage html
+poetry run coverage html

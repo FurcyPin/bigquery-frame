@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "bigquery-frame"
+version = "0.1.0"
+description = "A DataFrame API for Google BigQuery"
+authors = ["FurcyPin"]
+license = "Apache-2.0"
+keywords = ["BigQuery", "DataFrame"]
+readme = "README.md"
+homepage = "https://github.com/FurcyPin/bigquery-frame"
+repository = "https://github.com/FurcyPin/bigquery-frame"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+google-cloud-bigquery = "2.31.0"
+tabulate = "0.8.9"
+
+[tool.poetry.dev-dependencies]
+coverage = "6.2"
+
+[build-system]
+requires = ["poetry-core==1.1.0"]
+build-backend = "poetry.core.masonry.api"
