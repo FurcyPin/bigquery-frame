@@ -5,7 +5,7 @@ import google
 from google.cloud.bigquery import Client
 from google.oauth2 import service_account
 
-import conf
+from bigquery_frame import conf
 
 
 def _get_bq_client_from_credentials() -> Optional[Client]:

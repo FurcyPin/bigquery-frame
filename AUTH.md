@@ -49,18 +49,20 @@ You can revoke the credentials at any time by running:
 gcloud auth application-default revoke
 ```
 
-### Step 3. Configure this project
+### Step 3. Pass the name of your GCP project to bigquery-frame
 
-#### Option A. Set the name of your project directly in `conf.py`
+#### Option A. Update bigquery-frame's configuration directly in your client code
 
-Update this line in the file `conf.py`
 ```python
-GCP_PROJECT = "Name of your BigQuery project"
+import bigquery_frame
+
+bigquery_frame.conf.GCP_PROJECT = "Name of your BigQuery project"
 ```
 
 #### _OR_
 
 #### Option B. Set it as a variable in your environment
+
 ```shell
 export GCP_PROJECT="Name of your BigQuery project"
 ```
@@ -104,19 +106,20 @@ computer.
 _(If you have forked this repo and stored the credentials inside, 
 be careful not to commit it accidentally, use `.gitignore`)_ 
 
-### Step 3. Configure this project to point to this file
+### Step 3. Pass the path to this file to bigquery-frame
 
+#### Option A. Update bigquery-frame's configuration directly in your client code
 
-#### Option A. Set the path to the credentials file directly in `conf.py`
-
-Update this line in the file `conf.py`
 ```python
-GCP_CREDENTIALS_PATH = "Path to your service account credentials json file"
+import bigquery_frame
+
+bigquery_frame.conf.GCP_CREDENTIALS_PATH = "Path to your service account credentials json file"
 ```
 
 #### _OR_
 
 #### Option B. Set it as a variable in your environment
+
 ```shell
 export GCP_CREDENTIALS_PATH="Path to your service account credentials json file"
 ```
