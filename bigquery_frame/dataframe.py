@@ -111,9 +111,15 @@ class DataFrame:
             for (alias, cte) in self._deps
         ]
 
+    def _compile_with_ctes(self, ctes: List[str]) -> str:
+        if len(ctes) > 0:
+            return "WITH " + "\n, ".join(ctes) + "\n" + self.query
+        else:
+            return self.query
+
     def _compile_with_deps(self) -> str:
         ctes = self._compile_deps()
-        return "WITH " + "\n, ".join(ctes) + "\n" + self.query
+        return self._compile_with_ctes(ctes)
 
     @property
     def schema(self) -> List[SchemaField]:
@@ -125,10 +131,7 @@ class DataFrame:
     def compile(self) -> str:
         """Returns the sql query that will be executed to materialize this :class:`DataFrame`"""
         ctes = self.bigquery._compile_views() + self._compile_deps()
-        if len(ctes) > 0:
-            return "WITH " + "\n, ".join(ctes) + "\n" + self.query
-        else:
-            return self.query
+        return self._compile_with_ctes(ctes)
 
     def alias(self, alias) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with an alias set."""
