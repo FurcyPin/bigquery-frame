@@ -25,6 +25,15 @@ class TestDataFrame(unittest.TestCase):
 
         self.assertEqual(df2.schema, expected)
 
+    def test_createOrReplaceTempView_with_reserved_keyword_alias(self):
+        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("all")
+        df = self.bigquery.table("all")
+
+        expected = [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None)]
+
+        self.assertEqual(df.schema, expected)
+
     def test_2(self):
         df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
         df2 = df.select("id", "name", "types")

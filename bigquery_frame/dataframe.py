@@ -20,6 +20,10 @@ def strip_margin(text):
         return s
 
 
+def quote(str) -> str:
+    return "`" + str + "`"
+
+
 def cols_to_str(cols, indentation: int = None) -> str:
     if indentation is not None:
         return indent(",\n".join(cols), indentation)
@@ -38,7 +42,7 @@ class BigQueryBuilder(HasBigQueryClient):
     def table(self, full_table_name: str) -> 'DataFrame':
         """Returns the specified table as a :class:`DataFrame`.
         """
-        query = f"""SELECT * FROM `{full_table_name}`"""
+        query = f"""SELECT * FROM {quote(full_table_name)}"""
         return DataFrame(query, alias=None, bigquery=self)
 
     def sql(self, sql_query) -> 'DataFrame':
@@ -52,7 +56,7 @@ class BigQueryBuilder(HasBigQueryClient):
 
     def _compile_views(self) -> List[str]:
         return [
-            strip_margin(f"""{alias} AS (
+            strip_margin(f"""{quote(alias)} AS (
             |{indent(df._compile_with_deps(), 2)}
             |)""")
             for alias, df in self._views
@@ -105,7 +109,7 @@ class DataFrame:
 
     def _compile_deps(self) -> List[str]:
         return [
-            strip_margin(f"""{alias} AS (
+            strip_margin(f"""{quote(alias)} AS (
             |{indent(cte.query, 2)}
             |)""")
             for (alias, cte) in self._deps
