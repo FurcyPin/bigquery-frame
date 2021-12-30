@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional
 from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
+from bigquery_frame.auth import get_bq_client
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
 
@@ -30,6 +31,14 @@ def cols_to_str(cols, indentation: int = None) -> str:
     else:
         return ", ".join(cols)
 
+def is_repeated(schema_field: SchemaField):
+    return schema_field.mode == "REPEATED"
+
+def is_struct(schema_field: SchemaField):
+    return schema_field.field_type == "RECORD"
+
+def is_nullable(schema_field: SchemaField):
+    return schema_field.mode == "NULLABLE"
 
 class BigQueryBuilder(HasBigQueryClient):
     DEFAULT_ALIAS_NAME = "_default_alias_{num}"
@@ -250,6 +259,45 @@ class DataFrame:
         """
         res = self.limit(n).collect_iterator()
         print_results(res, format_args)
+
+    def treeString(self) -> str:
+        """Generates a string representing the schema in tree format"""
+
+        def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
+            res = [f"{prefix}{schema_field.name}: {schema_field.field_type} ({schema_field.mode})"]
+            if is_struct(schema_field):
+                res += str_gen_schema(schema_field.fields, "|    " + prefix)
+            return res
+
+        def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
+            return [
+                str
+                for schema_field in schema
+                for str in str_gen_schema_field(schema_field, prefix)
+            ]
+
+        res = ["root"] + str_gen_schema(self.schema, "|-- ")
+
+        return "\n".join(res) + "\n"
+
+    def printSchema(self) -> None:
+        """Prints out the schema in tree format.
+
+        Examples:
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+        >>> df.printSchema()
+        root
+        |-- id: INTEGER (NULLABLE)
+        |-- s: RECORD (NULLABLE)
+        |    |-- a: INTEGER (NULLABLE)
+        |    |-- b: RECORD (REPEATED)
+        |    |    |-- c: INTEGER (NULLABLE)
+        <BLANKLINE>
+
+        """
+        print(self.treeString())
 
     @property
     def columns(self) -> List[str]:
