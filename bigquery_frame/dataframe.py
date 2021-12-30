@@ -266,7 +266,7 @@ class DataFrame:
         def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
             res = [f"{prefix}{schema_field.name}: {schema_field.field_type} ({schema_field.mode})"]
             if is_struct(schema_field):
-                res += str_gen_schema(schema_field.fields, "|    " + prefix)
+                res += str_gen_schema(schema_field.fields, " |   " + prefix)
             return res
 
         def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
@@ -276,7 +276,7 @@ class DataFrame:
                 for str in str_gen_schema_field(schema_field, prefix)
             ]
 
-        res = ["root"] + str_gen_schema(self.schema, "|-- ")
+        res = ["root"] + str_gen_schema(self.schema, " |-- ")
 
         return "\n".join(res) + "\n"
 
@@ -289,11 +289,11 @@ class DataFrame:
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.printSchema()
         root
-        |-- id: INTEGER (NULLABLE)
-        |-- s: RECORD (NULLABLE)
-        |    |-- a: INTEGER (NULLABLE)
-        |    |-- b: RECORD (REPEATED)
-        |    |    |-- c: INTEGER (NULLABLE)
+         |-- id: INTEGER (NULLABLE)
+         |-- s: RECORD (NULLABLE)
+         |    |-- a: INTEGER (NULLABLE)
+         |    |-- b: RECORD (REPEATED)
+         |    |    |-- c: INTEGER (NULLABLE)
         <BLANKLINE>
 
         """
