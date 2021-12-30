@@ -64,3 +64,9 @@ class TestDataFrame(unittest.TestCase):
         ]
 
         self.assertEqual(df5.schema, expected)
+
+    def test_count(self):
+        df = self.bigquery.sql("""SELECT 1 as id UNION ALL SELECT 2 as id""")
+        expected = 2
+        self.assertEqual(df.count(), expected)
+

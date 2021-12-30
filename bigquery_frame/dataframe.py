@@ -224,19 +224,15 @@ class DataFrame:
         :return:
         """
         if replace:
-            query = strip_margin(
-                f"""SELECT 
-                |  * REPLACE (
-                |    {col_expr} AS {col_name}
-                |  )
-                |FROM {self._alias}""")
+            query = f"SELECT * REPLACE ({col_expr} AS {col_name}) FROM {self._alias}"
         else:
-            query = strip_margin(
-                f"""SELECT 
-                |  *,
-                |  {col_expr} AS {col_name}
-                |FROM {self._alias}""")
+            query = f"SELECT *, {col_expr} AS {col_name} FROM {self._alias}"
         return self._apply_query(query)
+
+    def count(self):
+        """Returns the number of rows in this :class:`DataFrame`."""
+        query = f"SELECT COUNT(1) FROM {self._alias}"
+        return self._apply_query(query).collect()[0][0]
 
     def collect_iterator(self) -> RowIterator:
         """Returns all the records as :class:`RowIterator`."""
