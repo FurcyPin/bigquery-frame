@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
@@ -168,8 +168,10 @@ class DataFrame:
         """
         self.bigquery._registerDataFrameAsTable(self, alias)
 
-    def select(self, *columns: str) -> 'DataFrame':
+    def select(self, *columns: Union[List[str], str]) -> 'DataFrame':
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
+        if len(columns) == 1 and isinstance(columns[0], list):
+            columns = columns[0]
         col_str = ',\n'.join(columns)
         query = strip_margin(
             f"""SELECT 

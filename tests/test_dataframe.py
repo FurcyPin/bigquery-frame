@@ -34,6 +34,20 @@ class TestDataFrame(unittest.TestCase):
 
         self.assertEqual(df.schema, expected)
 
+    def test_select(self):
+        """Select should work with either multiple args or a single argument which is a list"""
+        df = self.bigquery.sql("""SELECT 1 as c1, 2 as c2""").select("c1", "c2").select(["c1", "c2"])
+
+        expected = [
+            SchemaField('c1', 'INTEGER', 'NULLABLE', None, (), None),
+            SchemaField('c2', 'INTEGER', 'NULLABLE', None, (), None),
+        ]
+
+        self.assertEqual(df.schema, expected)
+
+        with self.assertRaises(TypeError):
+            df.select(["c1"], ["c2"])
+
     def test_2(self):
         df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
         df2 = df.select("id", "name", "types")
