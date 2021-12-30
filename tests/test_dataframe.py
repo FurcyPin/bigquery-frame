@@ -70,3 +70,7 @@ class TestDataFrame(unittest.TestCase):
         expected = 2
         self.assertEqual(df.count(), expected)
 
+    def test_take(self):
+        df = self.bigquery.sql("""SELECT id FROM UNNEST(GENERATE_ARRAY(1, 10, 1)) as id""")
+        expected = 5
+        self.assertEqual(len(df.take(5)), expected)

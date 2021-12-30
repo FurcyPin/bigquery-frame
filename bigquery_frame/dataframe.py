@@ -242,6 +242,10 @@ class DataFrame:
         """Returns all the records as list of :class:`Row`."""
         return list(self.bigquery._execute_query(self.compile()))
 
+    def take(self, num):
+        """Returns the first ``num`` rows as a :class:`list` of :class:`Row`."""
+        return self.limit(num).collect()
+
     def show(self, n: int = 20, format_args=None):
         """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
         <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
