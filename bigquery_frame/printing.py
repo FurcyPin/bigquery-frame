@@ -5,7 +5,8 @@ from tabulate import tabulate
 def print_results(it: RowIterator, format_args: dict = None):
     if format_args is None:
         format_args = {
-            "tablefmt": 'pretty'
+            "tablefmt": "pretty",
+            "missingval": "null"
         }
     headers = {field.name: field.name for field in it.schema}
     rows = list(it)
