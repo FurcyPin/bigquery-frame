@@ -31,14 +31,32 @@ def cols_to_str(cols, indentation: int = None) -> str:
     else:
         return ", ".join(cols)
 
+
 def is_repeated(schema_field: SchemaField):
     return schema_field.mode == "REPEATED"
+
 
 def is_struct(schema_field: SchemaField):
     return schema_field.field_type == "RECORD"
 
+
 def is_nullable(schema_field: SchemaField):
     return schema_field.mode == "NULLABLE"
+
+
+def _dedup_key_value_list(l: List[Tuple[object, object]]):
+    """Deduplicate a list of key, values by their keys.
+    Unlike `list(set(l))`, this does preserve ordering.
+
+    Example:
+    >>> _dedup_key_value_list([('a', 1), ('b', 2), ('a', 3)])
+    [('a', 3), ('b', 2)]
+
+    :param l:
+    :return:
+    """
+    return list({k: v for k, v in l}.items())
+
 
 class BigQueryBuilder(HasBigQueryClient):
     DEFAULT_ALIAS_NAME = "_default_alias_{num}"
@@ -109,8 +127,11 @@ class DataFrame:
     def __repr__(self):
         return f"""({self.query}) as {self._alias}"""
 
-    def _apply_query(self, query: str) -> 'DataFrame':
-        return DataFrame(query, None, self.bigquery, _deps=self._deps + [(self._alias, self)])
+    def _apply_query(self, query: str, deps: List[Tuple[str, 'DataFrame']] = None) -> 'DataFrame':
+        if deps is None:
+            deps = self._deps + [(self._alias, self)]
+        deps = _dedup_key_value_list(deps)
+        return DataFrame(query, None, self.bigquery, _deps=deps)
 
     def _compute_schema(self):
         df = self.limit(0)
@@ -166,7 +187,7 @@ class DataFrame:
         :param name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
         :return: Nothing
         """
-        self.bigquery._registerDataFrameAsTable(self, alias)
+        self.bigquery._registerDataFrameAsTable(self, name)
 
     def select(self, *columns: Union[List[str], str]) -> 'DataFrame':
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
@@ -178,6 +199,107 @@ class DataFrame:
             |{indent(col_str, 2)}
             |FROM {self._alias}""")
         return self._apply_query(query)
+
+    def union(self, other: 'DataFrame') -> 'DataFrame':
+        """Return a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
+
+        This is equivalent to `UNION ALL` in SQL. To do a SQL-style `UNION DISTINCT`
+        (that does deduplication of elements), use this function followed by :func:`distinct`.
+
+        Also as standard in SQL, this function resolves columns by position (not by name).
+        To get column resolution by name, use the function `unionByName` instead.
+
+        :param other:
+        :return: a new :class:`DataFrame`
+        """
+        query = f"""SELECT * FROM {self._alias} UNION ALL SELECT * FROM {other._alias}"""
+        return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
+
+    unionAll = union
+
+    def unionByName(self, other: 'DataFrame', allowMissingColumns: bool = False) -> 'DataFrame':
+        """Returns a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
+
+        This is different from both `UNION ALL` and `UNION DISTINCT` in SQL. To do a SQL-style set
+        union (that does deduplication of elements), use this function followed by :func:`distinct`.
+
+        .. versionadded:: 2.3.0
+
+        Examples
+        --------
+        The difference between this function and :func:`union` is that this function
+        resolves columns by name (not by position):
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
+        >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col0''')
+        >>> df1.union(df2).show()
+        +------+------+------+
+        | col0 | col1 | col2 |
+        +------+------+------+
+        |  1   |  2   |  3   |
+        |  4   |  5   |  6   |
+        +------+------+------+
+        >>> df1.unionByName(df2).show()
+        +------+------+------+
+        | col0 | col1 | col2 |
+        +------+------+------+
+        |  1   |  2   |  3   |
+        |  6   |  4   |  5   |
+        +------+------+------+
+
+        When the parameter `allowMissingColumns` is ``True``, the set of column names
+        in this and other :class:`DataFrame` can differ; missing columns will be filled with null.
+        Further, the missing columns of this :class:`DataFrame` will be added at the end
+        in the schema of the union result:
+
+        >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
+        >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col3''')
+        >>> df1.unionByName(df2, allowMissingColumns=True).show()
+        +------+------+------+------+
+        | col0 | col1 | col2 | col3 |
+        +------+------+------+------+
+        |  1   |  2   |  3   | null |
+        | null |  4   |  5   |  6   |
+        +------+------+------+------+
+
+        :param other: Another DataFrame
+        :param allowMissingColumns: If False, the columns that are not in both DataFrames are dropped, if True,
+          they are added to the other DataFrame as null values.
+        :return: a new :class:`DataFrame`
+        """
+        self_cols = self.columns
+        other_cols = other.columns
+        self_cols_set = set(self.columns)
+        other_cols_set = set(other.columns)
+
+        self_only_cols = [col for col in self_cols if col not in other_cols_set]
+        common_cols = [col for col in self_cols if col in other_cols_set]
+        other_only_cols = [col for col in other_cols if col not in self_cols_set]
+
+        if (len(self_only_cols) > 0 or len(other_only_cols) > 0) and not allowMissingColumns:
+            raise ValueError(f"UnionByName: dataFrames must have the same columns, "
+                             f"unless allowMissingColumns is set to True.\n"
+                             f"Columns in first DataFrame: [{cols_to_str(self.columns)}]\n"
+                             f"Columns in second DataFrame: [{cols_to_str(other.columns)}]")
+
+        def optional_comma(l: list):
+            return ',' if len(l) > 0 else ''
+
+        query = strip_margin(f"""
+        |SELECT 
+        |  {cols_to_str(self_only_cols, 2)}{optional_comma(self_only_cols)}
+        |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
+        |  {cols_to_str([f"NULL as {col}" for col in other_only_cols], 2)}
+        |FROM {self._alias} 
+        |UNION ALL 
+        |SELECT 
+        |  {cols_to_str([f"NULL as {col}" for col in self_only_cols], 2)}{optional_comma(self_only_cols)}
+        |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
+        |  {cols_to_str(other_only_cols, 2)}
+        |FROM {other._alias}
+        |""")
+        return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
 
     def limit(self, num: int) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
