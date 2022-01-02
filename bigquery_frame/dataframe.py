@@ -44,6 +44,61 @@ def is_nullable(schema_field: SchemaField):
     return schema_field.mode == "NULLABLE"
 
 
+def schema_to_simple_string(schema: List[SchemaField]):
+    """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
+    The field names are kept, with a '.' separator for struct fields.
+    If `explode` option is set, arrays are exploded with a '!' separator.
+
+    Example:
+
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
+    >>> print(df.schema)
+    [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, (), None)), None)]
+    >>> schema_to_simple_string(df.schema)
+    'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
+
+    :param schema:
+    :return:
+    """
+    def schema_field_to_simple_string(schema_field: SchemaField):
+        if is_struct(schema_field):
+            if is_repeated(schema_field):
+                return f"ARRAY<STRUCT<{schema_to_simple_string(schema_field.fields)}>>"
+            else:
+                return f"STRUCT<{schema_to_simple_string(schema_field.fields)}>"
+        else:
+            if is_repeated(schema_field):
+                return f"ARRAY<{schema_field.field_type}>"
+            else:
+                return schema_field.field_type
+
+    cols = [f"{field.name}:{schema_field_to_simple_string(field)}" for field in schema]
+    cols_to_string = ",".join(cols)
+    return f"{cols_to_string}"
+
+
+def schema_to_tree_string(schema: List[SchemaField]) -> str:
+    """Generates a string representing the schema in tree format"""
+
+    def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
+        res = [f"{prefix}{schema_field.name}: {schema_field.field_type} ({schema_field.mode})"]
+        if is_struct(schema_field):
+            res += str_gen_schema(schema_field.fields, " |   " + prefix)
+        return res
+
+    def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
+        return [
+            str
+            for schema_field in schema
+            for str in str_gen_schema_field(schema_field, prefix)
+        ]
+
+    res = ["root"] + str_gen_schema(schema, " |-- ")
+
+    return "\n".join(res) + "\n"
+
+
 def _dedup_key_value_list(l: List[Tuple[object, object]]):
     """Deduplicate a list of key, values by their keys.
     Unlike `list(set(l))`, this does preserve ordering.
@@ -420,25 +475,9 @@ class DataFrame:
         res = self.limit(n).collect_iterator()
         print_results(res, format_args)
 
-    def treeString(self) -> str:
+    def treeString(self):
         """Generates a string representing the schema in tree format"""
-
-        def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
-            res = [f"{prefix}{schema_field.name}: {schema_field.field_type} ({schema_field.mode})"]
-            if is_struct(schema_field):
-                res += str_gen_schema(schema_field.fields, " |   " + prefix)
-            return res
-
-        def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
-            return [
-                str
-                for schema_field in schema
-                for str in str_gen_schema_field(schema_field, prefix)
-            ]
-
-        res = ["root"] + str_gen_schema(self.schema, " |-- ")
-
-        return "\n".join(res) + "\n"
+        return schema_to_tree_string(self.schema)
 
     def printSchema(self) -> None:
         """Prints out the schema in tree format.
