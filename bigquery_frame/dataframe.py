@@ -197,6 +197,16 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT 
             |{indent(col_str, 2)}
+
+    def drop(self, *cols: str) -> 'DataFrame':
+        """Returns a new :class:`DataFrame` that drops the specified column.
+        This is a no-op if schema doesn't contain the given column name(s).
+        """
+        schema_cols = set(self.columns)
+        cols = [col for col in cols if col in schema_cols]
+        query = strip_margin(
+            f"""SELECT 
+            |  * EXCEPT ({cols_to_str(cols)})
             |FROM {self._alias}""")
         return self._apply_query(query)
 

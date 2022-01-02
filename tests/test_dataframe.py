@@ -83,3 +83,15 @@ class TestDataFrame(unittest.TestCase):
         df4 = df2.union(df3)
 
         self.assertEqual(10, df4.count())
+
+    def test_drop(self):
+        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df2 = df.drop("other_col", "col_that_does_not_exists")
+
+        expected = [
+            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
+            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
+            SchemaField('types', 'STRING', 'REPEATED', None, (), None)
+        ]
+
+        self.assertEqual(df2.schema, expected)
