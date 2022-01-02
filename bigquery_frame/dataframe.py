@@ -154,7 +154,7 @@ class DataFrame:
     def persist(self, alias) -> 'DataFrame':
         pass
 
-    def createOrReplaceTempView(self, alias: str) -> None:
+    def createOrReplaceTempView(self, name: str) -> None:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
         Limitations compared to Spark
@@ -163,8 +163,8 @@ class DataFrame:
           In this project, temporary views are implemented as CTEs in the final compiled query.
           As such, BigQuery does not allow to define two CTEs with the same name.
 
-        :param alias:
-        :return:
+        :param name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
+        :return: Nothing
         """
         self.bigquery._registerDataFrameAsTable(self, alias)
 
@@ -185,7 +185,11 @@ class DataFrame:
         return self._apply_query(query)
 
     def sort(self, *cols: str):
-        """Returns a new :class:`DataFrame` sorted by the specified column(s)."""
+        """Returns a new :class:`DataFrame` sorted by the specified column(s).
+
+        :param cols:
+        :return:
+        """
         query = strip_margin(f"""
         |SELECT * 
         |FROM {self._alias} 
@@ -194,7 +198,7 @@ class DataFrame:
 
     orderBy = sort
 
-    def filter(self, expr: str):
+    def filter(self, expr: str) -> 'DataFrame':
         """Filters rows using the given condition."""
         query = strip_margin(f"""
         |SELECT * 
@@ -218,10 +222,10 @@ class DataFrame:
 
         TODO: This project is just a POC. Future versions may bring improvements to these features but this will require more on-the-fly schema inspections.
 
-        :param col_name:
-        :param col_expr:
-        :param replace:
-        :return:
+        :param col_name: Name of the new column
+        :param col_expr: Expression defining the new column
+        :param replace: Set to true when replacing an already existing column
+        :return: a new :class:`DataFrame`
         """
         if replace:
             query = f"SELECT * REPLACE ({col_expr} AS {col_name}) FROM {self._alias}"
@@ -229,7 +233,7 @@ class DataFrame:
             query = f"SELECT *, {col_expr} AS {col_name} FROM {self._alias}"
         return self._apply_query(query)
 
-    def count(self):
+    def count(self) -> int:
         """Returns the number of rows in this :class:`DataFrame`."""
         query = f"SELECT COUNT(1) FROM {self._alias}"
         return self._apply_query(query).collect()[0][0]
@@ -246,11 +250,11 @@ class DataFrame:
         """Returns the first ``num`` rows as a :class:`list` of :class:`Row`."""
         return self.limit(num).collect()
 
-    def show(self, n: int = 20, format_args=None):
+    def show(self, n: int = 20, format_args=None) -> None:
         """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
         <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
 
-        Formatting options may be used using `format_args`.
+        Formating options may be set using `format_args`.
 
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
@@ -269,8 +273,7 @@ class DataFrame:
 
         :param n: Number of rows to show.
         :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
-
-        :return:
+        :return: Nothing
         """
         res = self.limit(n).collect_iterator()
         print_results(res, format_args)
