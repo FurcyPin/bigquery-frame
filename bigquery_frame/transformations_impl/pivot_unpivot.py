@@ -22,39 +22,39 @@ def pivot(df: DataFrame,
     +------+---------+---------+--------+
     | year | product | country | amount |
     +------+---------+---------+--------+
-    | 2018 | Orange  | Canada  |        |
+    | 2018 | Orange  | Canada  |  null  |
     | 2018 | Orange  |  China  |  4000  |
-    | 2018 | Orange  | Mexico  |        |
-    | 2018 |  Beans  | Canada  |        |
+    | 2018 | Orange  | Mexico  |  null  |
+    | 2018 |  Beans  | Canada  |  null  |
     | 2018 |  Beans  |  China  |  1500  |
     | 2018 |  Beans  | Mexico  |  2000  |
     | 2018 | Banana  | Canada  |  2000  |
     | 2018 | Banana  |  China  |  400   |
-    | 2018 | Banana  | Mexico  |        |
+    | 2018 | Banana  | Mexico  |  null  |
     | 2018 | Carrots | Canada  |  2000  |
     | 2018 | Carrots |  China  |  1200  |
-    | 2018 | Carrots | Mexico  |        |
+    | 2018 | Carrots | Mexico  |  null  |
     | 2019 | Orange  | Canada  |  5000  |
-    | 2019 | Orange  |  China  |        |
+    | 2019 | Orange  |  China  |  null  |
     | 2019 | Orange  | Mexico  |  5000  |
-    | 2019 |  Beans  | Canada  |        |
+    | 2019 |  Beans  | Canada  |  null  |
     | 2019 |  Beans  |  China  |  1500  |
     | 2019 |  Beans  | Mexico  |  2000  |
-    | 2019 | Banana  | Canada  |        |
+    | 2019 | Banana  | Canada  |  null  |
     | 2019 | Banana  |  China  |  1400  |
     +------+---------+---------+--------+
     >>> pivot(df, pivot_column="country", agg_fun="sum", agg_col="amount").show()
     +------+---------+--------+-------+--------+
     | year | product | Canada | China | Mexico |
     +------+---------+--------+-------+--------+
-    | 2018 | Orange  |        | 4000  |        |
-    | 2018 |  Beans  |        | 1500  |  2000  |
-    | 2018 | Banana  |  2000  |  400  |        |
-    | 2018 | Carrots |  2000  | 1200  |        |
-    | 2019 | Orange  |  5000  |       |  5000  |
-    | 2019 |  Beans  |        | 1500  |  2000  |
-    | 2019 | Banana  |        | 1400  |  400   |
-    | 2019 | Carrots |        |  200  |        |
+    | 2018 | Orange  |  null  | 4000  |  null  |
+    | 2018 |  Beans  |  null  | 1500  |  2000  |
+    | 2018 | Banana  |  2000  |  400  |  null  |
+    | 2018 | Carrots |  2000  | 1200  |  null  |
+    | 2019 | Orange  |  5000  | null  |  5000  |
+    | 2019 |  Beans  |  null  | 1500  |  2000  |
+    | 2019 | Banana  |  null  | 1400  |  400   |
+    | 2019 | Carrots |  null  |  200  |  null  |
     +------+---------+--------+-------+--------+
 
     :param df: a DataFrame
@@ -126,38 +126,38 @@ def unpivot(df: DataFrame,
     +------+---------+--------+-------+--------+
     | year | product | Canada | China | Mexico |
     +------+---------+--------+-------+--------+
-    | 2018 | Orange  |        | 4000  |        |
-    | 2018 |  Beans  |        | 1500  |  2000  |
-    | 2018 | Banana  |  2000  |  400  |        |
-    | 2018 | Carrots |  2000  | 1200  |        |
-    | 2019 | Orange  |  5000  |       |  5000  |
-    | 2019 |  Beans  |        | 1500  |  2000  |
-    | 2019 | Banana  |        | 1400  |  400   |
-    | 2019 | Carrots |        |  200  |        |
+    | 2018 | Orange  |  null  | 4000  |  null  |
+    | 2018 |  Beans  |  null  | 1500  |  2000  |
+    | 2018 | Banana  |  2000  |  400  |  null  |
+    | 2018 | Carrots |  2000  | 1200  |  null  |
+    | 2019 | Orange  |  5000  | null  |  5000  |
+    | 2019 |  Beans  |  null  | 1500  |  2000  |
+    | 2019 | Banana  |  null  | 1400  |  400   |
+    | 2019 | Carrots |  null  |  200  |  null  |
     +------+---------+--------+-------+--------+
     >>> unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount').show()
     +------+---------+---------+--------+
     | year | product | country | amount |
     +------+---------+---------+--------+
-    | 2018 | Orange  | Canada  |        |
+    | 2018 | Orange  | Canada  |  null  |
     | 2018 | Orange  |  China  |  4000  |
-    | 2018 | Orange  | Mexico  |        |
-    | 2018 |  Beans  | Canada  |        |
+    | 2018 | Orange  | Mexico  |  null  |
+    | 2018 |  Beans  | Canada  |  null  |
     | 2018 |  Beans  |  China  |  1500  |
     | 2018 |  Beans  | Mexico  |  2000  |
     | 2018 | Banana  | Canada  |  2000  |
     | 2018 | Banana  |  China  |  400   |
-    | 2018 | Banana  | Mexico  |        |
+    | 2018 | Banana  | Mexico  |  null  |
     | 2018 | Carrots | Canada  |  2000  |
     | 2018 | Carrots |  China  |  1200  |
-    | 2018 | Carrots | Mexico  |        |
+    | 2018 | Carrots | Mexico  |  null  |
     | 2019 | Orange  | Canada  |  5000  |
-    | 2019 | Orange  |  China  |        |
+    | 2019 | Orange  |  China  |  null  |
     | 2019 | Orange  | Mexico  |  5000  |
-    | 2019 |  Beans  | Canada  |        |
+    | 2019 |  Beans  | Canada  |  null  |
     | 2019 |  Beans  |  China  |  1500  |
     | 2019 |  Beans  | Mexico  |  2000  |
-    | 2019 | Banana  | Canada  |        |
+    | 2019 | Banana  | Canada  |  null  |
     | 2019 | Banana  |  China  |  1400  |
     +------+---------+---------+--------+
 
