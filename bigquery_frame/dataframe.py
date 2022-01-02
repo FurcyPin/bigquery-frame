@@ -252,7 +252,20 @@ class DataFrame:
 
         Formatting options may be used using `format_args`.
 
-        Example: df.show(format_args={"tablefmt": 'fancy_grid'})
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+        >>> df.show()
+        +----+---------------------------+
+        | id |             s             |
+        +----+---------------------------+
+        | 1  | {'a': 1, 'b': [{'c': 1}]} |
+        +----+---------------------------+
+        >>> df.show(format_args={"tablefmt": 'fancy_grid'})
+        ╒══════╤═══════════════════════════╕
+        │   id │ s                         │
+        ╞══════╪═══════════════════════════╡
+        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
+        ╘══════╧═══════════════════════════╛
 
         :param n: Number of rows to show.
         :param format_args: extra arguments that may be passed to the function tabulate.tabulate()

@@ -85,7 +85,7 @@ But that deserves a blog article (coming soon).
 Just clone this repository, open PyCharm, and follow the
 instructions in the [AUTH.md](/AUTH.md) documentation
 to set up your connection to BigQuery. Then, go fiddle
-with the [demo](/demo.py), or have a look at the [examples](/examples).
+with the [demo](/examples/demo.py), or have a look at the [examples](/examples).
 
 
 ## How does it work ?

@@ -16,6 +16,7 @@ tabulate = "0.8.9"
 
 [tool.poetry.dev-dependencies]
 coverage = "6.2"
+nose2 = "0.10.0"
 
 [build-system]
 requires = ["poetry-core==1.1.0"]
