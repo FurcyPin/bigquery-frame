@@ -74,3 +74,12 @@ class TestDataFrame(unittest.TestCase):
         df = self.bigquery.sql("""SELECT id FROM UNNEST(GENERATE_ARRAY(1, 10, 1)) as id""")
         expected = 5
         self.assertEqual(len(df.take(5)), expected)
+
+    def test_union_with_common_dependency(self):
+        """Corner case that requires to use `_dedup_key_value_list` in `_apply_query`"""
+        df1 = self.bigquery.sql("""SELECT id FROM UNNEST(GENERATE_ARRAY(1, 10, 1)) as id""")
+        df2 = df1.where("MOD(id, 2) = 0")
+        df3 = df1.where("MOD(id, 2) = 1")
+        df4 = df2.union(df3)
+
+        self.assertEqual(10, df4.count())
