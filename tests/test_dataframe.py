@@ -11,6 +11,9 @@ class TestDataFrame(unittest.TestCase):
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 
+    def tearDown(self) -> None:
+        self.bigquery.close()
+
     def test_createOrReplaceTempView(self):
         df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
         df.createOrReplaceTempView("pokedex")

@@ -14,3 +14,6 @@ class HasBigQueryClient:
 
     def _execute_query(self, query: str) -> RowIterator:
         return self.__client.query(query).result()
+
+    def close(self):
+        self.__client.close()

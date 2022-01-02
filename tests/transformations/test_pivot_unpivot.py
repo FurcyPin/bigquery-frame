@@ -11,7 +11,11 @@ from bigquery_frame.transformations_impl.pivot_unpivot import (
 
 class TestPivotUnpivot(unittest.TestCase):
 
-    bigquery = BigQueryBuilder(get_bq_client())
+    def setUp(self) -> None:
+        self.bigquery = BigQueryBuilder(get_bq_client())
+
+    def tearDown(self) -> None:
+        self.bigquery.close()
 
     def test_pivot_v1(self):
         df = get_test_unpivoted_df()
