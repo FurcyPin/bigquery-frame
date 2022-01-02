@@ -316,6 +316,16 @@ class DataFrame:
         query = f"""SELECT * FROM {self._alias} LIMIT {num}"""
         return self._apply_query(query)
 
+    def distinct(self) -> 'DataFrame':
+        """Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
+
+        Limitations compared to Spark
+        -----------------------------
+        In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
+        """
+        query = f"""SELECT DISTINCT * FROM {self._alias}"""
+        return self._apply_query(query)
+
     def sort(self, *cols: str):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
 
