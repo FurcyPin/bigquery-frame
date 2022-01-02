@@ -5,8 +5,12 @@ from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.auth import get_bq_client
+from bigquery_frame.column import Column
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
+
+
+Column = Union[str, Column]
 
 
 def indent(str, nb) -> str:
@@ -26,6 +30,7 @@ def quote(str) -> str:
 
 
 def cols_to_str(cols, indentation: int = None) -> str:
+    cols = [str(col) for col in cols]
     if indentation is not None:
         return indent(",\n".join(cols), indentation)
     else:
@@ -244,14 +249,18 @@ class DataFrame:
         """
         self.bigquery._registerDataFrameAsTable(self, name)
 
-    def select(self, *columns: Union[List[str], str]) -> 'DataFrame':
+    def select(self, *columns: Union[List[Column], Column]) -> 'DataFrame':
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
-        if len(columns) == 1 and isinstance(columns[0], list):
-            columns = columns[0]
-        col_str = ',\n'.join(columns)
+        if isinstance(columns[0], list):
+            if len(columns) == 1:
+                columns = columns[0]
+            else:
+                raise TypeError(f"Wrong argument type: {type(columns)}")
         query = strip_margin(
             f"""SELECT 
-            |{indent(col_str, 2)}
+            |{cols_to_str(columns, 2)}
+            |FROM {self._alias}""")
+        return self._apply_query(query)
 
     def drop(self, *cols: str) -> 'DataFrame':
         """Returns a new :class:`DataFrame` that drops the specified column.
