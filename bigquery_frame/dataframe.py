@@ -259,7 +259,7 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT 
             |{cols_to_str(columns, 2)}
-            |FROM {self._alias}""")
+            |FROM {quote(self._alias)}""")
         return self._apply_query(query)
 
     def drop(self, *cols: str) -> 'DataFrame':
@@ -271,7 +271,7 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT 
             |  * EXCEPT ({cols_to_str(cols)})
-            |FROM {self._alias}""")
+            |FROM {quote(self._alias)}""")
         return self._apply_query(query)
 
     def union(self, other: 'DataFrame') -> 'DataFrame':
@@ -286,7 +286,7 @@ class DataFrame:
         :param other:
         :return: a new :class:`DataFrame`
         """
-        query = f"""SELECT * FROM {self._alias} UNION ALL SELECT * FROM {other._alias}"""
+        query = f"""SELECT * FROM {quote(self._alias)} UNION ALL SELECT * FROM {quote(other._alias)}"""
         return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
 
     unionAll = union
@@ -365,19 +365,19 @@ class DataFrame:
         |  {cols_to_str(self_only_cols, 2)}{optional_comma(self_only_cols)}
         |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
         |  {cols_to_str([f"NULL as {col}" for col in other_only_cols], 2)}
-        |FROM {self._alias} 
+        |FROM {quote(self._alias)} 
         |UNION ALL 
         |SELECT 
         |  {cols_to_str([f"NULL as {col}" for col in self_only_cols], 2)}{optional_comma(self_only_cols)}
         |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
         |  {cols_to_str(other_only_cols, 2)}
-        |FROM {other._alias}
+        |FROM {quote(other._alias)}
         |""")
         return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
 
     def limit(self, num: int) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
-        query = f"""SELECT * FROM {self._alias} LIMIT {num}"""
+        query = f"""SELECT * FROM {quote(self._alias)} LIMIT {num}"""
         return self._apply_query(query)
 
     def distinct(self) -> 'DataFrame':
@@ -387,7 +387,7 @@ class DataFrame:
         -----------------------------
         In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
         """
-        query = f"""SELECT DISTINCT * FROM {self._alias}"""
+        query = f"""SELECT DISTINCT * FROM {quote(self._alias)}"""
         return self._apply_query(query)
 
     def sort(self, *cols: str):
@@ -398,7 +398,7 @@ class DataFrame:
         """
         query = strip_margin(f"""
         |SELECT * 
-        |FROM {self._alias} 
+        |FROM {quote(self._alias)} 
         |ORDER BY {cols_to_str(cols)}""")
         return self._apply_query(query)
 
@@ -408,7 +408,7 @@ class DataFrame:
         """Filters rows using the given condition."""
         query = strip_margin(f"""
         |SELECT * 
-        |FROM {self._alias} 
+        |FROM {quote(self._alias)} 
         |WHERE {expr}""")
         return self._apply_query(query)
 
@@ -434,14 +434,14 @@ class DataFrame:
         :return: a new :class:`DataFrame`
         """
         if replace:
-            query = f"SELECT * REPLACE ({col_expr} AS {col_name}) FROM {self._alias}"
+            query = f"SELECT * REPLACE ({col_expr} AS {col_name}) FROM {quote(self._alias)}"
         else:
-            query = f"SELECT *, {col_expr} AS {col_name} FROM {self._alias}"
+            query = f"SELECT *, {col_expr} AS {col_name} FROM {quote(self._alias)}"
         return self._apply_query(query)
 
     def count(self) -> int:
         """Returns the number of rows in this :class:`DataFrame`."""
-        query = f"SELECT COUNT(1) FROM {self._alias}"
+        query = f"SELECT COUNT(1) FROM {quote(self._alias)}"
         return self._apply_query(query).collect()[0][0]
 
     def collect_iterator(self) -> RowIterator:

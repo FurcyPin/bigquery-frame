@@ -2,7 +2,7 @@ from typing import List
 
 from bigquery_frame import DataFrame
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.dataframe import strip_margin, cols_to_str, BigQueryBuilder
+from bigquery_frame.dataframe import strip_margin, cols_to_str, BigQueryBuilder, quote
 
 
 def pivot(df: DataFrame,
@@ -77,7 +77,7 @@ def pivot(df: DataFrame,
 def pivot_v1(df: DataFrame, pivot_column: str, agg_fun: str, agg_col: str, pivoted_columns: List[str] = None) -> DataFrame:
     """This version uses a good old GROUP BY statement and should be compatible with most ANSI-SQL engines."""
     group_columns = [col for col in df.columns if col.lower() not in [agg_col.lower(), pivot_column.lower()]]
-    distinct_query = f"""SELECT DISTINCT {pivot_column} FROM {df._alias}"""
+    distinct_query = f"""SELECT DISTINCT {pivot_column} FROM {quote(df._alias)}"""
     if pivoted_columns is None:
         pivoted_columns = [row.get(pivot_column) for row in df._apply_query(distinct_query).collect()]
 
@@ -87,7 +87,7 @@ def pivot_v1(df: DataFrame, pivot_column: str, agg_fun: str, agg_col: str, pivot
         |SELECT
         |{cols_to_str(group_columns, 2)},
         |{cols_to_str(aggregates, 2)}
-        |FROM {df._alias}
+        |FROM {quote(df._alias)}
         |GROUP BY {cols_to_str(group_columns)}
         |""")
     return df._apply_query(group_query)
@@ -97,7 +97,7 @@ def pivot_v2(df: DataFrame, pivot_column: str, agg_fun: str, agg_col: str, pivot
     """This version uses BigQuery's
     `PIVOT operator <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#pivot_operator>`_
     """
-    distinct_query = f"""SELECT DISTINCT {pivot_column} FROM {df._alias}"""
+    distinct_query = f"""SELECT DISTINCT {pivot_column} FROM {quote(df._alias)}"""
     if pivoted_columns is None:
         pivoted_columns = [row.get(pivot_column) for row in df._apply_query(distinct_query).collect()]
     quoted_pivoted_columns = [f"'{col}'" for col in pivoted_columns]
@@ -105,7 +105,7 @@ def pivot_v2(df: DataFrame, pivot_column: str, agg_fun: str, agg_col: str, pivot
     group_query = strip_margin(f"""
         |SELECT
         | *
-        |FROM {df._alias}
+        |FROM {quote(df._alias)}
         |PIVOT({agg_fun}({agg_col}) FOR {pivot_column} IN ({cols_to_str(quoted_pivoted_columns)}))
         |""")
     return df._apply_query(group_query)
@@ -199,7 +199,7 @@ def unpivot_v1(df: DataFrame,
         |SELECT
         |{cols_to_str(pivot_columns, 2)},
         |  pivoted.*
-        |FROM {df._alias}
+        |FROM {quote(df._alias)}
         |LEFT JOIN UNNEST([
         |{cols_to_str(struct_cols, 2)}
         |]) as pivoted
@@ -224,7 +224,7 @@ def unpivot_v2(df: DataFrame,
     query = strip_margin(f"""
         |SELECT
         |  *
-        |FROM {df._alias}
+        |FROM {quote(df._alias)}
         |UNPIVOT {exclude_nulls_str}({value_alias} FOR {key_alias} IN ({cols_to_str(cols)}))
         |""")
     return df._apply_query(query)

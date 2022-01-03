@@ -5,7 +5,7 @@ from google.cloud.bigquery import SchemaField
 from bigquery_frame import DataFrame, BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame import functions as f
-from bigquery_frame.dataframe import strip_margin
+from bigquery_frame.dataframe import strip_margin, quote
 from bigquery_frame.transformations_impl.flatten import flatten_schema
 from bigquery_frame.transformations_impl.union_dataframes import union_dataframes
 
@@ -81,7 +81,7 @@ def _unnest_column(df: DataFrame, col: str):
     query = strip_margin(f"""
         |SELECT 
         |  {col}
-        |FROM {df._alias}
+        |FROM {quote(df._alias)}
         |{cross_join_str}""")
     return df._apply_query(query)
 

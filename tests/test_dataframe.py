@@ -37,6 +37,11 @@ class TestDataFrame(unittest.TestCase):
 
         self.assertEqual(df.schema, expected)
 
+    def test_show_with_keyword_alias(self):
+        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        df = self.bigquery.sql("""SELECT 1 as id""").alias("all")
+        df.show()
+
     def test_select(self):
         """Select should work with either multiple args or a single argument which is a list"""
         df = self.bigquery.sql("""SELECT 1 as c1, 2 as c2""").select("c1", "c2").select(["c1", "c2"])
