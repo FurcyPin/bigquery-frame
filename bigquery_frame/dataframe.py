@@ -507,6 +507,29 @@ class DataFrame:
         """
         print(self.treeString())
 
+    def print_query(self) -> None:
+        """Prints out the SQL query generated to materialize this :class:`DataFrame`.
+
+        Examples:
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''SELECT 1 as a''').select('a', f.col('a')+f.lit(1).alias('b')).withColumn('c', f.expr('a + b'))
+        >>> df.print_query()
+        WITH `_default_alias_1` AS (
+          SELECT 1 as a
+        )
+        , `_default_alias_2` AS (
+          SELECT
+            a,
+            a + 1
+          FROM `_default_alias_1`
+        )
+        SELECT *, a + b AS c FROM `_default_alias_2`
+
+        """
+        print(self.compile())
+
     @property
     def columns(self) -> List[str]:
         """Returns all column names as a list."""
