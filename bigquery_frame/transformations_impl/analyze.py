@@ -66,7 +66,6 @@ def _unnest_column(df: DataFrame, col: str):
             counter += 1
             yield f"CROSS JOIN UNNEST({struct}) as {alias}"
 
-    cross_join_str = ""
     if "!" in col:
         split = col.split("!")
         cross_joins = list(build_cross_join_statement(split))
@@ -78,12 +77,14 @@ def _unnest_column(df: DataFrame, col: str):
         else:
             col += " as " + split[-2].replace(".", "")
 
-    query = strip_margin(f"""
-        |SELECT 
-        |  {col}
-        |FROM {quote(df._alias)}
-        |{cross_join_str}""")
-    return df._apply_query(query)
+        query = strip_margin(f"""
+            |SELECT 
+            |  {col}
+            |FROM {quote(df._alias)}
+            |{cross_join_str}""")
+        return df._apply_query(query)
+    else:
+        return df
 
 
 def _analyze_column(df: DataFrame, schema_field: SchemaField):
