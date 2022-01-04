@@ -49,11 +49,11 @@ def _unnest_column(df: DataFrame, col: str):
     | 6 |
     +---+
     >>> _unnest_column(df, 's2.f').show()
-    +---+
-    | f |
-    +---+
-    | 7 |
-    +---+
+    +----+--------------------------------------------------+----------+
+    | id |                        s1                        |    s2    |
+    +----+--------------------------------------------------+----------+
+    | 1  | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
+    +----+--------------------------------------------------+----------+
 
     :param df:
     :param col:
@@ -89,18 +89,17 @@ def _unnest_column(df: DataFrame, col: str):
             |FROM {quote(df._alias)}
             |{cross_join_str}""")
         return df._apply_query(query)
-    elif "." in col:
-        return df.select(col)
     else:
         return df
 
 
 def _analyze_column(df: DataFrame, schema_field: SchemaField):
     col = schema_field.name
-    if col[-1] == "!":
-        col = col.split("!")[-2]
-    elif "." in col:
-        col = col.split(".")[-1]
+    if "!" in col:
+        if col[-1] == "!":
+            col = col.split("!")[-2]
+        else:
+            col = col.split(".")[-1]
     df = _unnest_column(df, schema_field.name)
     res = df.select(
         f.lit(schema_field.name).alias("column_name"),
