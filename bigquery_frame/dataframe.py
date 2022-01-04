@@ -170,28 +170,27 @@ class BigQueryBuilder(HasBigQueryClient):
 
 class DataFrame:
 
-    def __init__(self, query: str, alias: Optional[str], bigquery: BigQueryBuilder, **kwargs):
+    def __init__(self, query: str, alias: Optional[str], bigquery: BigQueryBuilder, deps: Optional[List['DataFrame']] = None):
         self.query = query
-        self._deps: List[Tuple[str, 'DataFrame']] = []
-        deps = kwargs.get("_deps")
-        if deps is not None:
-            self._deps = deps
+        if deps is None:
+            deps = []
+        deps = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
+        self._deps: List[Tuple[str, 'DataFrame']] = _dedup_key_value_list(deps)
         if alias is None:
             alias = bigquery._get_alias()
         else:
             bigquery._check_alias(alias, self._deps)
         self._alias = alias
-        self.bigquery = bigquery
+        self.bigquery: BigQueryBuilder = bigquery
         self._schema = None
 
     def __repr__(self):
         return f"""({self.query}) as {self._alias}"""
 
-    def _apply_query(self, query: str, deps: List[Tuple[str, 'DataFrame']] = None) -> 'DataFrame':
+    def _apply_query(self, query: str, deps: Optional[List['DataFrame']] = None) -> 'DataFrame':
         if deps is None:
-            deps = self._deps + [(self._alias, self)]
-        deps = _dedup_key_value_list(deps)
-        return DataFrame(query, None, self.bigquery, _deps=deps)
+            deps = [self]
+        return DataFrame(query, None, self.bigquery, deps=deps)
 
     def _compute_schema(self):
         df = self.limit(0)
@@ -257,7 +256,7 @@ class DataFrame:
             else:
                 raise TypeError(f"Wrong argument type: {type(columns)}")
         query = strip_margin(
-            f"""SELECT 
+            f"""SELECT
             |{cols_to_str(columns, 2)}
             |FROM {quote(self._alias)}""")
         return self._apply_query(query)
@@ -287,7 +286,7 @@ class DataFrame:
         :return: a new :class:`DataFrame`
         """
         query = f"""SELECT * FROM {quote(self._alias)} UNION ALL SELECT * FROM {quote(other._alias)}"""
-        return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
+        return self._apply_query(query, deps=[self, other])
 
     unionAll = union
 
@@ -373,7 +372,7 @@ class DataFrame:
         |  {cols_to_str(other_only_cols, 2)}
         |FROM {quote(other._alias)}
         |""")
-        return self._apply_query(query, deps=self._deps + other._deps + [(self._alias, self), (other._alias, other)])
+        return self._apply_query(query, deps=[self, other])
 
     def limit(self, num: int) -> 'DataFrame':
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
