@@ -14,39 +14,45 @@ def _unnest_column(df: DataFrame, col: str):
     """Recursively unnest a :class:`DataFrame`'s column
 
     >>> bq = BigQueryBuilder(get_bq_client())
-    >>> df = bq.sql('SELECT 1 as id, [STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s')
+    >>> df = bq.sql('SELECT 1 as id, [STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s1, STRUCT(7 as f) as s2')
     >>> [col.name for col in flatten_schema(df.schema, explode=True)]
-    ['id', 's!.a', 's!.b!.c', 's!.b!.d', 's!.e!']
+    ['id', 's1!.a', 's1!.b!.c', 's1!.b!.d', 's1!.e!', 's2.f']
     >>> _unnest_column(df, 'id').show()
-    +----+--------------------------------------------------+
-    | id |                        s                         |
-    +----+--------------------------------------------------+
-    | 1  | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] |
-    +----+--------------------------------------------------+
-    >>> _unnest_column(df, 's!.a').show()
+    +----+--------------------------------------------------+----------+
+    | id |                        s1                        |    s2    |
+    +----+--------------------------------------------------+----------+
+    | 1  | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
+    +----+--------------------------------------------------+----------+
+    >>> _unnest_column(df, 's1!.a').show()
     +---+
     | a |
     +---+
     | 2 |
     +---+
-    >>> _unnest_column(df, 's!.b!.c').show()
+    >>> _unnest_column(df, 's1!.b!.c').show()
     +---+
     | c |
     +---+
     | 3 |
     +---+
-    >>> _unnest_column(df, 's!.b!.d').show()
+    >>> _unnest_column(df, 's1!.b!.d').show()
     +---+
     | d |
     +---+
     | 4 |
     +---+
-    >>> _unnest_column(df, 's!.e!').show()
+    >>> _unnest_column(df, 's1!.e!').show()
     +---+
     | e |
     +---+
     | 5 |
     | 6 |
+    +---+
+    >>> _unnest_column(df, 's2.f').show()
+    +---+
+    | f |
+    +---+
+    | 7 |
     +---+
 
     :param df:
@@ -83,16 +89,18 @@ def _unnest_column(df: DataFrame, col: str):
             |FROM {quote(df._alias)}
             |{cross_join_str}""")
         return df._apply_query(query)
+    elif "." in col:
+        return df.select(col)
     else:
         return df
 
 
 def _analyze_column(df: DataFrame, schema_field: SchemaField):
     col = schema_field.name
-    if "!" in col:
+    if col[-1] == "!":
         col = col.split("!")[-2]
-    if "." in col:
-        col = col.split(".")[-2]
+    elif "." in col:
+        col = col.split(".")[-1]
     df = _unnest_column(df, schema_field.name)
     res = df.select(
         f.lit(schema_field.name).alias("column_name"),
@@ -131,30 +139,30 @@ def analyze(df: DataFrame):
 
     >>> df = __get_test_df()
     >>> df.show()
-    +----+------------+---------------------+------------+--------------+
-    | id |    name    |        types        | can_evolve | evolves_from |
-    +----+------------+---------------------+------------+--------------+
-    | 1  | Bulbasaur  | ['Grass', 'Poison'] |    True    |     null     |
-    | 2  |  Ivysaur   | ['Grass', 'Poison'] |    True    |      1       |
-    | 3  |  Venusaur  | ['Grass', 'Poison'] |   False    |      2       |
-    | 4  | Charmander |      ['Fire']       |    True    |     null     |
-    | 5  | Charmeleon |      ['Fire']       |    True    |      4       |
-    | 6  | Charizard  | ['Fire', 'Flying']  |   False    |      5       |
-    | 7  |  Squirtle  |      ['Water']      |    True    |     null     |
-    | 8  | Wartortle  |      ['Water']      |    True    |      7       |
-    | 9  | Blastoise  |      ['Water']      |   False    |      8       |
-    +----+------------+---------------------+------------+--------------+
+    +----+------------+---------------------+--------------------------------------------+
+    | id |    name    |        types        |                 evolution                  |
+    +----+------------+---------------------+--------------------------------------------+
+    | 1  | Bulbasaur  | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
+    | 2  |  Ivysaur   | ['Grass', 'Poison'] |  {'can_evolve': True, 'evolves_from': 1}   |
+    | 3  |  Venusaur  | ['Grass', 'Poison'] |  {'can_evolve': False, 'evolves_from': 2}  |
+    | 4  | Charmander |      ['Fire']       | {'can_evolve': True, 'evolves_from': None} |
+    | 5  | Charmeleon |      ['Fire']       |  {'can_evolve': True, 'evolves_from': 4}   |
+    | 6  | Charizard  | ['Fire', 'Flying']  |  {'can_evolve': False, 'evolves_from': 5}  |
+    | 7  |  Squirtle  |      ['Water']      | {'can_evolve': True, 'evolves_from': None} |
+    | 8  | Wartortle  |      ['Water']      |  {'can_evolve': True, 'evolves_from': 7}   |
+    | 9  | Blastoise  |      ['Water']      |  {'can_evolve': False, 'evolves_from': 8}  |
+    +----+------------+---------------------+--------------------------------------------+
     >>> df = analyze(df)
     >>> df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()
-    +--------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    | column_name  | column_type | count | count_distinct | count_null |    min    |    max    |           approx_top_100           |
-    +--------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    |      id      |   INTEGER   |   9   |       9        |     0      |     1     |     9     |     {'value': '1', 'count': 1}     |
-    |     name     |   STRING    |   9   |       9        |     0      | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
-    |    types!    |   STRING    |  13   |       5        |     0      |   Fire    |   Water   |   {'value': 'Grass', 'count': 3}   |
-    |  can_evolve  |   BOOLEAN   |   9   |       2        |     0      |   false   |   true    |   {'value': 'true', 'count': 6}    |
-    | evolves_from |   INTEGER   |   9   |       6        |     3      |     1     |     8     |   {'value': 'NULL', 'count': 3}    |
-    +--------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+    +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+    |      column_name       | column_type | count | count_distinct | count_null |    min    |    max    |           approx_top_100           |
+    +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+    |           id           |   INTEGER   |   9   |       9        |     0      |     1     |     9     |     {'value': '1', 'count': 1}     |
+    |          name          |   STRING    |   9   |       9        |     0      | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
+    |         types!         |   STRING    |  13   |       5        |     0      |   Fire    |   Water   |   {'value': 'Grass', 'count': 3}   |
+    |  evolution.can_evolve  |   BOOLEAN   |   9   |       2        |     0      |   false   |   true    |   {'value': 'true', 'count': 6}    |
+    | evolution.evolves_from |   INTEGER   |   9   |       6        |     3      |     1     |     8     |   {'value': 'NULL', 'count': 3}    |
+    +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
 
     :param df:
     :return:
@@ -170,15 +178,42 @@ def __get_test_df() -> DataFrame:
         SELECT 
             *
         FROM UNNEST ([
-            STRUCT(1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, TRUE as can_evolve, NULL as evolves_from),
-            STRUCT(2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, TRUE as can_evolve, 1 as evolves_from),
-            STRUCT(3 as id, "Venusaur" as name, ["Grass", "Poison"] as types, FALSE as can_evolve, 2 as evolves_from),
-            STRUCT(4 as id, "Charmander" as name, ["Fire"] as types, TRUE as can_evolve, NULL as evolves_from),
-            STRUCT(5 as id, "Charmeleon" as name, ["Fire"] as types, TRUE as can_evolve, 4 as evolves_from),
-            STRUCT(6 as id, "Charizard" as name, ["Fire", "Flying"] as types, FALSE as can_evolve, 5 as evolves_from),
-            STRUCT(7 as id, "Squirtle" as name, ["Water"] as types, TRUE as can_evolve, NULL as evolves_from),
-            STRUCT(8 as id, "Wartortle" as name, ["Water"] as types, TRUE as can_evolve, 7 as evolves_from),
-            STRUCT(9 as id, "Blastoise" as name, ["Water"] as types, FALSE as can_evolve, 8 as evolves_from)
+            STRUCT(
+                1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, 
+                STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
+            ),
+            STRUCT(
+                2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, 
+                STRUCT(TRUE as can_evolve, 1 as evolves_from) as evolution
+            ),
+            STRUCT(
+                3 as id, "Venusaur" as name, ["Grass", "Poison"] as types, 
+                STRUCT(FALSE as can_evolve, 2 as evolves_from) as evolution
+            ),
+            STRUCT(
+                4 as id, "Charmander" as name, ["Fire"] as types, 
+                STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
+            ),
+            STRUCT(
+                5 as id, "Charmeleon" as name, ["Fire"] as types, 
+                STRUCT(TRUE as can_evolve, 4 as evolves_from) as evolution
+            ),
+            STRUCT(
+                6 as id, "Charizard" as name, ["Fire", "Flying"] as types, 
+                STRUCT(FALSE as can_evolve, 5 as evolves_from) as evolution
+            ),
+            STRUCT(
+                7 as id, "Squirtle" as name, ["Water"] as types, 
+                STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
+            ),
+            STRUCT(
+                8 as id, "Wartortle" as name, ["Water"] as types, 
+                STRUCT(TRUE as can_evolve, 7 as evolves_from) as evolution
+            ),
+            STRUCT(
+                9 as id, "Blastoise" as name, ["Water"] as types, 
+                STRUCT(FALSE as can_evolve, 8 as evolves_from) as evolution
+            )
         ])
     """
     return bq.sql(query)
