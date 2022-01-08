@@ -1,5 +1,5 @@
 import re
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, Set
 
 from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
@@ -29,7 +29,7 @@ def quote(str) -> str:
     return "`" + str + "`"
 
 
-def cols_to_str(cols, indentation: int = None) -> str:
+def cols_to_str(cols, indentation: Optional[int] = None) -> str:
     cols = [str(col) for col in cols]
     if indentation is not None:
         return indent(",\n".join(cols), indentation)
@@ -120,11 +120,14 @@ def _dedup_key_value_list(l: List[Tuple[object, object]]):
 
 class BigQueryBuilder(HasBigQueryClient):
     DEFAULT_ALIAS_NAME = "_default_alias_{num}"
+    DEFAULT_TEMP_TABLE_NAME = "_default_temp_table_{num}"
 
     def __init__(self, client: Client):
         super().__init__(client)
         self._alias_count = 0
+        self._temp_table_count = 0
         self._views: List[Tuple[str, 'DataFrame']] = []
+        self._temp_tables: Set[str] = set()
 
     def table(self, full_table_name: str) -> 'DataFrame':
         """Returns the specified table as a :class:`DataFrame`.
@@ -137,9 +140,16 @@ class BigQueryBuilder(HasBigQueryClient):
         """
         return DataFrame(sql_query, None, self)
 
-    def _registerDataFrameAsTable(self, df: 'DataFrame', alias: str) -> None:
+    def _registerDataFrameAsTempView(self, df: 'DataFrame', alias: str) -> None:
         self._check_alias(alias, [])
         self._views.append((alias, df))
+
+    def _registerDataFrameAsTempTable(self, df: 'DataFrame', alias: Optional[str]=None) -> 'DataFrame':
+        if alias is None:
+            alias = self._get_temp_table_alias()
+        query = f"CREATE OR REPLACE TEMP TABLE {quote(alias)} AS \n" + df.compile()
+        self._execute_query(query)
+        return self.table(alias)
 
     def _compile_views(self) -> List[str]:
         return [
@@ -152,6 +162,10 @@ class BigQueryBuilder(HasBigQueryClient):
     def _get_alias(self) -> str:
         self._alias_count += 1
         return self.DEFAULT_ALIAS_NAME.format(num=self._alias_count)
+
+    def _get_temp_table_alias(self) -> str:
+        self._temp_table_count += 1
+        return self.DEFAULT_TEMP_TABLE_NAME.format(num=self._temp_table_count)
 
     def _check_alias(self, new_alias, deps: List[Tuple[str, 'DataFrame']]) -> None:
         """Checks that the alias follows BigQuery constraints, such as:
@@ -185,7 +199,7 @@ class DataFrame:
         self._schema = None
 
     def __repr__(self):
-        return f"""({self.query}) as {self._alias}"""
+        return f"""DataFrame('{self.query}) as {self._alias}')"""
 
     def _apply_query(self, query: str, deps: Optional[List['DataFrame']] = None) -> 'DataFrame':
         if deps is None:
@@ -230,9 +244,36 @@ class DataFrame:
         """Returns a new :class:`DataFrame` with an alias set."""
         return DataFrame(self.query, alias, self.bigquery)
 
-    # TODO: persist would create a temporary table
-    def persist(self, alias) -> 'DataFrame':
-        pass
+    def persist(self) -> 'DataFrame':
+        """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
+        from that table.
+
+        Limitations compared to Spark
+        -----------------------------
+        Unlike with Spark, this operation is an action and the temporary table is created immediately.
+        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this method must be used.
+
+        :return: a new :class:`DataFrame`
+        """
+        return self.bigquery._registerDataFrameAsTempTable(self)
+
+    def createOrReplaceTempTable(self, alias: str) -> 'DataFrame':
+        """Creates or replace a persisted temporary table.
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql("SELECT 1 as id")
+        >>> df.createOrReplaceTempTable("temp_table")
+        DataFrame('SELECT * FROM `temp_table`) as _default_alias_2')
+        >>> bq.sql("SELECT * FROM temp_table").show()
+        +----+
+        | id |
+        +----+
+        | 1  |
+        +----+
+
+        :return: a new :class:`DataFrame`
+        """
+        return self.bigquery._registerDataFrameAsTempTable(self, alias)
 
     def createOrReplaceTempView(self, name: str) -> None:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
@@ -246,7 +287,7 @@ class DataFrame:
         :param name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
         :return: Nothing
         """
-        self.bigquery._registerDataFrameAsTable(self, name)
+        self.bigquery._registerDataFrameAsTempView(self, name)
 
     def select(self, *columns: Union[List[Column], Column]) -> 'DataFrame':
         """Projects a set of expressions and returns a new :class:`DataFrame`."""

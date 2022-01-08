@@ -37,6 +37,29 @@ class TestDataFrame(unittest.TestCase):
 
         self.assertEqual(df.schema, expected)
 
+    def test_createOrReplaceTempTable(self):
+        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df.createOrReplaceTempTable("pokedex")
+        df2 = self.bigquery.sql("""SELECT * FROM pokedex""")
+
+        expected = [
+            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
+            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
+            SchemaField('types', 'STRING', 'REPEATED', None, (), None),
+            SchemaField('other_col', 'INTEGER', 'NULLABLE', None, (), None)
+        ]
+
+        self.assertEqual(df2.schema, expected)
+
+    def test_createOrReplaceTempTable_with_reserved_keyword_alias(self):
+        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempTable("all")
+        df = self.bigquery.table("all")
+
+        expected = [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None)]
+
+        self.assertEqual(df.schema, expected)
+
     def test_show_with_keyword_alias(self):
         """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
         df = self.bigquery.sql("""SELECT 1 as id""").alias("all")
