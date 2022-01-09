@@ -13,10 +13,12 @@ repository = "https://github.com/FurcyPin/bigquery-frame"
 python = ">=3.6,<3.11"
 google-cloud-bigquery = "2.31.0"
 tabulate = "0.8.9"
+tqdm = "4.62.3"
 
 [tool.poetry.dev-dependencies]
 coverage = "6.2"
 nose2 = "0.10.0"
+pipdeptree = "2.2.1"
 
 [build-system]
 requires = ["poetry-core==1.1.0"]
