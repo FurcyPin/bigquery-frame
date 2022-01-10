@@ -19,9 +19,9 @@ def _unnest_column(df: DataFrame, col: str):
     ['id', 's1!.a', 's1!.b!.c', 's1!.b!.d', 's1!.e!', 's2.f']
     >>> _unnest_column(df, 'id').show()
     +----+--------------------------------------------------+----------+
-    | id |                        s1                        |    s2    |
+    | id |                                               s1 |       s2 |
     +----+--------------------------------------------------+----------+
-    | 1  | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
+    |  1 | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
     +----+--------------------------------------------------+----------+
     >>> _unnest_column(df, 's1!.a').show()
     +---+
@@ -50,9 +50,9 @@ def _unnest_column(df: DataFrame, col: str):
     +---+
     >>> _unnest_column(df, 's2.f').show()
     +----+--------------------------------------------------+----------+
-    | id |                        s1                        |    s2    |
+    | id |                                               s1 |       s2 |
     +----+--------------------------------------------------+----------+
-    | 1  | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
+    |  1 | [{'a': 2, 'b': [{'c': 3, 'd': 4}], 'e': [5, 6]}] | {'f': 7} |
     +----+--------------------------------------------------+----------+
 
     :param df:
@@ -160,29 +160,29 @@ def analyze(df: DataFrame, _chunk_size: int = 50):
     >>> df = __get_test_df()
     >>> df.show()
     +----+------------+---------------------+--------------------------------------------+
-    | id |    name    |        types        |                 evolution                  |
+    | id |       name |               types |                                  evolution |
     +----+------------+---------------------+--------------------------------------------+
-    | 1  | Bulbasaur  | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
-    | 2  |  Ivysaur   | ['Grass', 'Poison'] |  {'can_evolve': True, 'evolves_from': 1}   |
-    | 3  |  Venusaur  | ['Grass', 'Poison'] |  {'can_evolve': False, 'evolves_from': 2}  |
-    | 4  | Charmander |      ['Fire']       | {'can_evolve': True, 'evolves_from': None} |
-    | 5  | Charmeleon |      ['Fire']       |  {'can_evolve': True, 'evolves_from': 4}   |
-    | 6  | Charizard  | ['Fire', 'Flying']  |  {'can_evolve': False, 'evolves_from': 5}  |
-    | 7  |  Squirtle  |      ['Water']      | {'can_evolve': True, 'evolves_from': None} |
-    | 8  | Wartortle  |      ['Water']      |  {'can_evolve': True, 'evolves_from': 7}   |
-    | 9  | Blastoise  |      ['Water']      |  {'can_evolve': False, 'evolves_from': 8}  |
+    |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
+    |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |
+    |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |
+    |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |
+    |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |
+    |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |
+    |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |
+    |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |
+    |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |
     +----+------------+---------------------+--------------------------------------------+
     >>> df = analyze(df)
     Analyzing 5 columns ...
     >>> df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()
     +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    |      column_name       | column_type | count | count_distinct | count_null |    min    |    max    |           approx_top_100           |
+    |            column_name | column_type | count | count_distinct | count_null |       min |       max |                     approx_top_100 |
     +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    |           id           |   INTEGER   |   9   |       9        |     0      |     1     |     9     |     {'value': '1', 'count': 1}     |
-    |          name          |   STRING    |   9   |       9        |     0      | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
-    |         types!         |   STRING    |  13   |       5        |     0      |   Fire    |   Water   |   {'value': 'Grass', 'count': 3}   |
-    |  evolution.can_evolve  |   BOOLEAN   |   9   |       2        |     0      |   false   |   true    |   {'value': 'true', 'count': 6}    |
-    | evolution.evolves_from |   INTEGER   |   9   |       6        |     3      |     1     |     8     |   {'value': 'NULL', 'count': 3}    |
+    |                     id |     INTEGER |     9 |              9 |          0 |         1 |         9 |         {'value': '1', 'count': 1} |
+    |                   name |      STRING |     9 |              9 |          0 | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
+    |                 types! |      STRING |    13 |              5 |          0 |      Fire |     Water |     {'value': 'Grass', 'count': 3} |
+    |   evolution.can_evolve |     BOOLEAN |     9 |              2 |          0 |     false |      true |      {'value': 'true', 'count': 6} |
+    | evolution.evolves_from |     INTEGER |     9 |              6 |          3 |         1 |         8 |      {'value': 'NULL', 'count': 3} |
     +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
 
     :param df:

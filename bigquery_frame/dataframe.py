@@ -268,7 +268,7 @@ class DataFrame:
         +----+
         | id |
         +----+
-        | 1  |
+        |  1 |
         +----+
 
         :return: a new :class:`DataFrame`
@@ -351,15 +351,15 @@ class DataFrame:
         +------+------+------+
         | col0 | col1 | col2 |
         +------+------+------+
-        |  1   |  2   |  3   |
-        |  4   |  5   |  6   |
+        |    1 |    2 |    3 |
+        |    4 |    5 |    6 |
         +------+------+------+
         >>> df1.unionByName(df2).show()
         +------+------+------+
         | col0 | col1 | col2 |
         +------+------+------+
-        |  1   |  2   |  3   |
-        |  6   |  4   |  5   |
+        |    1 |    2 |    3 |
+        |    6 |    4 |    5 |
         +------+------+------+
 
         When the parameter `allowMissingColumns` is ``True``, the set of column names
@@ -373,8 +373,8 @@ class DataFrame:
         +------+------+------+------+
         | col0 | col1 | col2 | col3 |
         +------+------+------+------+
-        |  1   |  2   |  3   | null |
-        | null |  4   |  5   |  6   |
+        |    1 |    2 |    3 | null |
+        | null |    4 |    5 |    6 |
         +------+------+------+------+
 
         :param other: Another DataFrame
@@ -506,9 +506,9 @@ class DataFrame:
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.show()
         +----+---------------------------+
-        | id |             s             |
+        | id |                         s |
         +----+---------------------------+
-        | 1  | {'a': 1, 'b': [{'c': 1}]} |
+        |  1 | {'a': 1, 'b': [{'c': 1}]} |
         +----+---------------------------+
         >>> df.show(format_args={"tablefmt": 'fancy_grid'})
         ╒══════╤═══════════════════════════╕

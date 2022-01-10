@@ -47,9 +47,9 @@ def count(col: Union[Column, str]):
     +------+------+
     | col1 | col2 |
     +------+------+
-    |  1   |  a   |
-    |  1   |  b   |
-    |  2   | null |
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
     +------+------+
     >>> from bigquery_frame import functions as f
     >>> df.select(
@@ -61,7 +61,7 @@ def count(col: Union[Column, str]):
     +---------+------------+------------+------------+
     | count_1 | count_col1 | count_col2 | count_star |
     +---------+------------+------------+------------+
-    |    3    |     3      |     2      |     3      |
+    |       3 |          3 |          2 |          3 |
     +---------+------------+------------+------------+
 
     """
@@ -77,9 +77,9 @@ def count_distinct(col: Union[Column, str]):
     +------+------+
     | col1 | col2 |
     +------+------+
-    |  1   |  a   |
-    |  1   |  b   |
-    |  2   | null |
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
     +------+------+
     >>> from bigquery_frame import functions as f
     >>> df.select(
@@ -89,7 +89,7 @@ def count_distinct(col: Union[Column, str]):
     +---------------------+---------------------+
     | count_distinct_col1 | count_distinct_col2 |
     +---------------------+---------------------+
-    |          2          |          2          |
+    |                   2 |                   2 |
     +---------------------+---------------------+
 
     """
@@ -105,9 +105,9 @@ def min(col: Union[Column, str]):
     +------+------+
     | col1 | col2 |
     +------+------+
-    |  1   |  a   |
-    |  1   |  b   |
-    |  2   | null |
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
     +------+------+
     >>> from bigquery_frame import functions as f
     >>> df.select(
@@ -117,7 +117,7 @@ def min(col: Union[Column, str]):
     +----------+----------+
     | min_col1 | min_col2 |
     +----------+----------+
-    |    1     |    a     |
+    |        1 |        a |
     +----------+----------+
 
     """
@@ -133,9 +133,9 @@ def max(col: Union[Column, str]):
     +------+------+
     | col1 | col2 |
     +------+------+
-    |  1   |  a   |
-    |  1   |  b   |
-    |  2   | null |
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
     +------+------+
     >>> from bigquery_frame import functions as f
     >>> df.select(
@@ -145,7 +145,7 @@ def max(col: Union[Column, str]):
     +----------+----------+
     | max_col1 | max_col2 |
     +----------+----------+
-    |    2     |    b     |
+    |        2 |        b |
     +----------+----------+
 
     """
@@ -161,9 +161,9 @@ def expr(expr: str):
     +------+------+
     | col1 | col2 |
     +------+------+
-    |  1   |  a   |
-    |  1   |  b   |
-    |  2   | null |
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
     +------+------+
     >>> from bigquery_frame import functions as f
     >>> df.select(
@@ -172,9 +172,9 @@ def expr(expr: str):
     +---------+
     | new_col |
     +---------+
-    |    a    |
-    |    b    |
-    |    2    |
+    |       a |
+    |       b |
+    |       2 |
     +---------+
 
     """
