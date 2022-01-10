@@ -36,6 +36,9 @@ class HasBigQueryClient:
 
         job = self.__client.query(query=query, job_config=job_config)
 
+        if job.error_result:
+            return job.result()
+
         if self.__use_session and self.__session_id is None:
             self.__session_id = job.session_info.session_id
 

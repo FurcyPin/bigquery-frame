@@ -126,3 +126,12 @@ class TestDataFrame(unittest.TestCase):
         ]
 
         self.assertEqual(df2.schema, expected)
+
+    def test_sql_syntax_error(self):
+        df = self.bigquery.sql("""SELECT *""")
+
+        with self.assertRaises(Exception) as context:
+            df.show()
+
+        expected = "400 SELECT * must have a FROM clause at [2:10]"
+        self.assertIn(expected, str(context.exception))
