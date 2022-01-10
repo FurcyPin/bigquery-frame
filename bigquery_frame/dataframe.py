@@ -524,6 +524,27 @@ class DataFrame:
         res = self.limit(n).collect_iterator()
         print_results(res, format_args)
 
+    def toPandas(self):
+        """Returns the contents of this :class:`DataFrame` as Pandas ``pandas.DataFrame``.
+
+        This method requires to have following extra dependencies installed
+        - pandas
+        - pyarrow
+
+        >>> df = __get_test_df()
+        >>> import tabulate
+        >>> pdf = df.toPandas()
+        >>> type(pdf)
+        <class 'pandas.core.frame.DataFrame'>
+        >>> pdf
+           id       name
+        0   1  Bulbasaur
+        1   2    Ivysaur
+        2   3   Venusaur
+
+        """
+        return self.collect_iterator().to_dataframe()
+
     def treeString(self):
         """Generates a string representing the schema in tree format"""
         return schema_to_tree_string(self.schema)
@@ -575,3 +596,16 @@ class DataFrame:
         """Returns all column names as a list."""
         return [field.name for field in self.schema]
 
+
+def __get_test_df() -> DataFrame:
+    bq = BigQueryBuilder(get_bq_client())
+    query = """
+        SELECT 
+            *
+        FROM UNNEST ([
+            STRUCT(1 as id, "Bulbasaur" as name),
+            STRUCT(2 as id, "Ivysaur" as name),
+            STRUCT(3 as id, "Venusaur" as name)
+        ])
+    """
+    return bq.sql(query)
