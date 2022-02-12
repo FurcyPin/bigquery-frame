@@ -44,6 +44,7 @@ And this is an equivalent working example using bigquery_frame, that runs on Goo
 ```python
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
+from bigquery_frame import functions as f
 
 bigquery = BigQueryBuilder(get_bq_client())
 
@@ -56,15 +57,15 @@ df = bigquery.sql("""
 df.select("id", "name", "types").createOrReplaceTempView("pokedex")
 
 df2 = bigquery.sql("""SELECT * FROM pokedex""")\
-    .withColumn("nb_types", "ARRAY_LENGTH(types)")\
-    .withColumn("name", "LOWER(name)", replace=True)
+    .withColumn("nb_types", f.expr("ARRAY_LENGTH(types)"))\
+    .withColumn("name", f.expr("LOWER(name)"), replace=True)
 
 df2.show()
 # +----+-----------+---------------------+----------+
-# | id |   name    |        types        | nb_types |
+# | id |      name |               types | nb_types |
 # +----+-----------+---------------------+----------+
-# | 1  | bulbasaur | ['Grass', 'Poison'] |    2     |
-# | 2  |  ivysaur  | ['Grass', 'Poison'] |    2     |
+# |  1 | bulbasaur | ['Grass', 'Poison'] |        2 |
+# |  2 |   ivysaur | ['Grass', 'Poison'] |        2 |
 # +----+-----------+---------------------+----------+
 ```
 
