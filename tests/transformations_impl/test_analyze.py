@@ -19,7 +19,7 @@ def get_expected() -> List[Row]:
     return expected
 
 
-class TestUnionDataFrames(unittest.TestCase):
+class TestAnalyze(unittest.TestCase):
 
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
