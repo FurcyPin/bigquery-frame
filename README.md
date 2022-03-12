@@ -153,10 +153,9 @@ Here is a list of other known limitations, please also see the
   - unlike in Spark, replacing an existing column is  
     not done automatically, an extra argument `replace=True` must be passed.
 - `DataFrame.createOrReplaceTempView`: 
-  - I kept the same name as Spark for consistency, 
-    but with the current implementation does not allow to replace an existing view
-  - Also, keep in mind this will not create an actual view on BigQuery, 
-    it just emulates Spark's behaviour by using a CTE.
+  - I kept the same name as Spark for consistency, but it does not create an actual view on BigQuery, it just emulates 
+    Spark's behaviour by using a CTE. Because of this, if you replace a temp view that already exists, the new view
+    can not derive from the old view (while in Spark it is possible). 
 
 ## Further developments
 

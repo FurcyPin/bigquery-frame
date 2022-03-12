@@ -1,11 +1,11 @@
 import contextlib
 import io
+import unittest
 
+from google.api_core.exceptions import BadRequest
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import BigQueryBuilder
-import unittest
-
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
 
@@ -40,6 +40,30 @@ class TestDataFrame(unittest.TestCase):
         expected = [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None)]
 
         self.assertEqual(df.schema, expected)
+
+    def test_createOrReplaceTempView_multiple_times(self):
+        """When we call df.createOrReplaceTempView with the same view name multiple times,
+        it should overwrite the first view"""
+        df1 = self.bigquery.sql("""SELECT 1 as id""")
+        df2 = self.bigquery.sql("""SELECT 2 as id""")
+        df1.createOrReplaceTempView("T")
+        df2.createOrReplaceTempView("T")
+        df = self.bigquery.table("T")
+        self.assertEqual([2], [r["id"] for r in df.collect()])
+
+    def test_createOrReplaceTempView_cyclic_dependency(self):
+        """When we call df.createOrReplaceTempView with the same view name multiple times,
+        it should overwrite the first view, but beware of cyclic dependencies!"""
+        # This should work
+        self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("T")
+        self.bigquery.sql("""SELECT * FROM T""").createOrReplaceTempView("T2")
+        self.bigquery.table("T2").collect()
+
+        # But this should not
+        self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("T")
+        self.bigquery.sql("""SELECT * FROM T""").createOrReplaceTempView("T")
+        with self.assertRaises(BadRequest) as context:
+            self.bigquery.table("T").show()
 
     def test_createOrReplaceTempTable(self):
         df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")

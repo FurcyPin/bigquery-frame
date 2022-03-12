@@ -1,6 +1,7 @@
 import re
-from typing import List, Tuple, Optional, Union, Set
+from typing import List, Tuple, Optional, Union, Set, Dict
 
+import google
 from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
@@ -126,7 +127,7 @@ class BigQueryBuilder(HasBigQueryClient):
         super().__init__(client)
         self._alias_count = 0
         self._temp_table_count = 0
-        self._views: List[Tuple[str, 'DataFrame']] = []
+        self._views: Dict[str, 'DataFrame'] = {}
         self._temp_tables: Set[str] = set()
 
     def table(self, full_table_name: str) -> 'DataFrame':
@@ -141,8 +142,8 @@ class BigQueryBuilder(HasBigQueryClient):
         return DataFrame(sql_query, None, self)
 
     def _registerDataFrameAsTempView(self, df: 'DataFrame', alias: str) -> None:
-        self._check_alias(alias, [])
-        self._views.append((alias, df))
+        # self._check_alias(alias, [])
+        self._views[alias] = df
 
     def _registerDataFrameAsTempTable(self, df: 'DataFrame', alias: Optional[str]=None) -> 'DataFrame':
         if alias is None:
@@ -156,7 +157,7 @@ class BigQueryBuilder(HasBigQueryClient):
             strip_margin(f"""{quote(alias)} AS (
             |{indent(df._compile_with_deps(), 2)}
             |)""")
-            for alias, df in self._views
+            for alias, df in self._views.items()
         ]
 
     def _get_alias(self) -> str:
@@ -177,12 +178,15 @@ class BigQueryBuilder(HasBigQueryClient):
         :return: None
         :raises: an Exception if something that does not comply with BigQuery's rules is found.
         """
-        collisions = [alias for alias, df in self._views + deps if alias == new_alias]
+        collisions = [alias for alias, df in list(self._views.items()) + deps if alias == new_alias]
         if len(collisions) > 0:
             raise Exception(f"Duplicate alias {new_alias}")
 
 
 class DataFrame:
+
+    _deps: List[Tuple[str, 'DataFrame']]
+    _alias: str
 
     def __init__(self, query: str, alias: Optional[str], bigquery: BigQueryBuilder, deps: Optional[List['DataFrame']] = None):
         self.query = query
@@ -263,7 +267,6 @@ class DataFrame:
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempTable("temp_table")
-        DataFrame('SELECT * FROM `temp_table`) as _default_alias_2')
         >>> bq.sql("SELECT * FROM temp_table").show()
         +----+
         | id |
@@ -273,16 +276,44 @@ class DataFrame:
 
         :return: a new :class:`DataFrame`
         """
-        return self.bigquery._registerDataFrameAsTempTable(self, alias)
+        self.bigquery._registerDataFrameAsTempTable(self, alias)
 
     def createOrReplaceTempView(self, name: str) -> None:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql("SELECT 1 as id")
+        >>> df.createOrReplaceTempView("temp_view")
+        >>> bq.sql("SELECT * FROM temp_view").show()
+        +----+
+        | id |
+        +----+
+        |  1 |
+        +----+
+
         Limitations compared to Spark
         -----------------------------
-        - Currently, replacing an existing temp view with a new one will raise an error.
-          In this project, temporary views are implemented as CTEs in the final compiled query.
-          As such, BigQuery does not allow to define two CTEs with the same name.
+        Replacing an existing temp view with a new one will make the old view inaccessible to future instruction
+        (like Spark), but also to past instructions (unlike Spark). It means that the newly defined view cannot
+        derive from the view it is replacing. For instance, the following code works in Spark but not here :
+
+        >>> bq.sql("SELECT 2 as id").createOrReplaceTempView("temp_view")
+        >>> bq.sql("SELECT * FROM temp_view").show()
+        +----+
+        | id |
+        +----+
+        |  2 |
+        +----+
+        >>> bq.sql("SELECT * FROM temp_view").createOrReplaceTempView("temp_view")
+        >>> try:  #doctest: +ELLIPSIS
+        ...   bq.sql("SELECT * FROM temp_view").show()
+        ... except google.api_core.exceptions.BadRequest as e:
+        ...   print(e)
+        400 Table name "temp_view" missing dataset while no default dataset is set in the request.
+        ...
+
+        In this project, temporary views are implemented as CTEs in the final compiled query.
+        As such, BigQuery does not allow to define two CTEs with the same name.
 
         :param name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
         :return: Nothing
