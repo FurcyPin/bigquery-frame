@@ -521,8 +521,8 @@ class DataFrame:
         :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
         :return: Nothing
         """
-        res = self.limit(n).collect_iterator()
-        print_results(res, format_args)
+        res = self.limit(n+1).collect_iterator()
+        print_results(res, format_args, limit=n)
 
     def toPandas(self):
         """Returns the contents of this :class:`DataFrame` as Pandas ``pandas.DataFrame``.

@@ -43,6 +43,7 @@ def pivot(df: DataFrame,
     | 2019 |  Banana |  Canada |   null |
     | 2019 |  Banana |   China |   1400 |
     +------+---------+---------+--------+
+    only showing top 20 rows
     >>> pivot(df, pivot_column="country", agg_fun="sum", agg_col="amount").show()
     +------+---------+--------+-------+--------+
     | year | product | Canada | China | Mexico |
@@ -160,6 +161,7 @@ def unpivot(df: DataFrame,
     | 2019 |  Banana |  Canada |   null |
     | 2019 |  Banana |   China |   1400 |
     +------+---------+---------+--------+
+    only showing top 20 rows
 
     :param df: a DataFrame
     :param pivot_columns: The list of columns names on which to perform the pivot

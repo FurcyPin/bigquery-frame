@@ -1,9 +1,13 @@
+import contextlib
+import io
+
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import BigQueryBuilder
 import unittest
 
 from bigquery_frame.auth import get_bq_client
+from bigquery_frame.dataframe import strip_margin
 
 
 class TestDataFrame(unittest.TestCase):
@@ -135,3 +139,48 @@ class TestDataFrame(unittest.TestCase):
 
         expected = "400 SELECT * must have a FROM clause at [2:10]"
         self.assertIn(expected, str(context.exception))
+
+    def test_show_limit(self):
+        """When df.show() does not display all rows, a message should be printed"""
+        df = self.bigquery.sql("""SELECT * FROM UNNEST([1, 2, 3]) as a""")
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                df.show(1)
+                expected = strip_margin("""
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                |+---+
+                |only showing top 1 row
+                |""")
+                self.assertEqual(expected, buf.getvalue())
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                df.show(2)
+                expected = strip_margin("""
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                || 2 |
+                |+---+
+                |only showing top 2 rows
+                |""")
+                self.assertEqual(expected, buf.getvalue())
+
+        with io.StringIO() as buf:
+            with contextlib.redirect_stdout(buf):
+                df.show(3)
+                expected = strip_margin("""
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                || 2 |
+                || 3 |
+                |+---+
+                |""")
+                self.assertEqual(expected, buf.getvalue())
