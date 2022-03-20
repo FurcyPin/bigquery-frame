@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bigquery-frame"
-version = "0.2.9"
+version = "0.2.10"
 description = "A DataFrame API for Google BigQuery"
 authors = ["FurcyPin"]
 license = "Apache-2.0"
