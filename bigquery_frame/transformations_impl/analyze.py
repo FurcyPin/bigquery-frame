@@ -110,7 +110,7 @@ def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int):
         (f.count(f.lit(1)) - f.count(col)).alias("count_null"),
         f.min(col).asType("STRING").alias("min"),
         f.max(col).asType("STRING").alias("max"),
-        f.expr(f"APPROX_TOP_COUNT(COALESCE(CAST({col} as STRING), 'NULL'), 100)").alias("approx_top_100")
+        f.expr(f"APPROX_TOP_COUNT(COALESCE(CAST({f.col(col)} as STRING), 'NULL'), 100)").alias("approx_top_100")
     )
     return res
 

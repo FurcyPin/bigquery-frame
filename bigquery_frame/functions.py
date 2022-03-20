@@ -1,45 +1,58 @@
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column as StrictColumn
-from bigquery_frame.dataframe import cols_to_str, DataFrame
+from bigquery_frame.column import Column
+from bigquery_frame.dataframe import cols_to_str, DataFrame, quote
 from typing import Union, List, Iterable
 
-Column = Union[str, StrictColumn]
+StringOrColumn = Union[str, Column]
 
 
-def __str_to_col(args: Union[Iterable[Column], Column]) -> Union[List[StrictColumn], StrictColumn]:
-    """Converts string arguments to Column types"""
+def col(expr: str) -> Column:
+    return Column(expr=quote(expr))
+
+
+def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union[List[Column], Column]:
+    """Converts string or Column arguments to Column types
+
+    Examples:
+
+    >>> __str_to_col("id")
+    Column('`id`')
+    >>> __str_to_col(["c1", "c2"])
+    [Column('`c1`'), Column('`c2`')]
+    >>> __str_to_col(expr("COUNT(1)"))
+    Column('COUNT(1)')
+    >>> __str_to_col("*")
+    Column('*')
+
+    """
     if isinstance(args, str):
-        return StrictColumn(expr=args)
+        return col(args)
     elif isinstance(args, list):
         return [__str_to_col(arg) for arg in args]
     else:
         return args
 
 
-def col(expr: str) -> StrictColumn:
-    return StrictColumn(expr=expr)
-
-
-def lit(val: object) -> StrictColumn:
+def lit(val: object) -> Column:
     if val is None:
-        return StrictColumn("NULL")
+        return Column("NULL")
     if type(val) == str:
-        return StrictColumn(f"'{val}'")
+        return Column(f"'{val}'")
     if type(val) in [bool, int, float]:
-        return StrictColumn(str(val))
+        return Column(str(val))
     raise ValueError(f'lit({val}): The type {type(val)} is not supported yet.')
 
 
-def struct(*cols: Column) -> Column:
-    return StrictColumn(f"STRUCT({cols_to_str(cols)})")
+def struct(*cols: StringOrColumn) -> Column:
+    return Column(f"STRUCT({cols_to_str(cols)})")
 
 
-def isnull(col: Column) -> Column:
-    return StrictColumn(f"{col} IS NULL")
+def isnull(col: StringOrColumn) -> Column:
+    return Column(f"{col} IS NULL")
 
 
-def count(col: Union[Column, str]):
+def count(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
     >>> df = __get_test_df_1()
@@ -66,10 +79,10 @@ def count(col: Union[Column, str]):
 
     """
     col = __str_to_col(col)
-    return StrictColumn(f"COUNT({col.expr})")
+    return Column(f"COUNT({col.expr})")
 
 
-def count_distinct(col: Union[Column, str]):
+def count_distinct(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of distinct non-null values
 
     >>> df = __get_test_df_1()
@@ -94,10 +107,10 @@ def count_distinct(col: Union[Column, str]):
 
     """
     col = __str_to_col(col)
-    return StrictColumn(f"COUNT(DISTINCT {col.expr})")
+    return Column(f"COUNT(DISTINCT {col.expr})")
 
 
-def min(col: Union[Column, str]):
+def min(col: StringOrColumn) -> Column:
     """Aggregate function: returns the minimum value of the expression in a group.
 
     >>> df = __get_test_df_1()
@@ -122,10 +135,10 @@ def min(col: Union[Column, str]):
 
     """
     col = __str_to_col(col)
-    return StrictColumn(f"MIN({col.expr})")
+    return Column(f"MIN({col.expr})")
 
 
-def max(col: Union[Column, str]):
+def max(col: StringOrColumn) -> Column:
     """Aggregate function: returns the maximum value of the expression in a group.
 
     >>> df = __get_test_df_1()
@@ -150,10 +163,10 @@ def max(col: Union[Column, str]):
 
     """
     col = __str_to_col(col)
-    return StrictColumn(f"MAX({col.expr})")
+    return Column(f"MAX({col.expr})")
 
 
-def expr(expr: str):
+def expr(expr: str) -> Column:
     """Parses the expression string into the column that it represents.
 
     >>> df = __get_test_df_1()
@@ -178,7 +191,7 @@ def expr(expr: str):
     +---------+
 
     """
-    return StrictColumn(expr)
+    return Column(expr)
 
 
 def __get_test_df_1() -> DataFrame:

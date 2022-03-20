@@ -27,7 +27,23 @@ def strip_margin(text):
 
 
 def quote(str) -> str:
-    return "`" + str + "`"
+    """Add quotes around a column or table names to prevent collision with SQL keywords.
+    This method is idempotent: it does not add new quotes to an already quoted string.
+    If the column name is a reference to a nested column (i.e. if it contains dots), each part is quoted separately.
+
+    Examples:
+
+    >>> quote("table")
+    '`table`'
+    >>> quote("`table`")
+    '`table`'
+    >>> quote("column.name")
+    '`column`.`name`'
+    >>> quote("*")
+    '*'
+
+    """
+    return '.'.join(['`' + s + '`' if s != '*' else '*' for s in str.replace('`', '').split('.')])
 
 
 def cols_to_str(cols, indentation: Optional[int] = None) -> str:
@@ -606,7 +622,7 @@ class DataFrame:
 
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''SELECT 1 as a''').select('a', f.col('a')+f.lit(1).alias('b')).withColumn('c', f.expr('a + b'))
+        >>> df = bq.sql('''SELECT 1 as a''').select('a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b'))
         >>> df.print_query()
         WITH `_default_alias_1` AS (
           SELECT 1 as a
@@ -614,7 +630,7 @@ class DataFrame:
         , `_default_alias_2` AS (
           SELECT
             a,
-            a + 1
+            `a` + 1
           FROM `_default_alias_1`
         )
         SELECT *, a + b AS c FROM `_default_alias_2`
