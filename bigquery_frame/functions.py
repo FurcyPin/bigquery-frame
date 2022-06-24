@@ -111,7 +111,7 @@ def hash(*cols: Union[str, Column]) -> Column:
 
 
 def isnull(col: StringOrColumn) -> Column:
-    return Column(f"{col} IS NULL")
+    return Column(f"{col.expr} IS NULL")
 
 
 def lit(val: object) -> Column:
