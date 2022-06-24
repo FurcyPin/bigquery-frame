@@ -1,12 +1,43 @@
-from typing import Optional, Callable, List, Tuple
+from typing import Optional, Callable, List, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.utils import strip_margin, cols_to_str
 
 
-def _bin_op(op: str) -> Callable[['Column', 'Column'], 'Column']:
-    def fun(self, other: 'Column') -> 'Column':
-        return Column(f"{self.expr} {op} {other.expr}")
+LitOrColumn = Union[object, 'Column']
+
+
+def literal_col(val: LitOrColumn) -> 'Column':
+    if val is None:
+        return Column("NULL")
+    if type(val) == str:
+        return Column(f"'{val}'")
+    if type(val) in [bool, int, float]:
+        return Column(str(val))
+    raise IllegalArgumentException(f'lit({val}): The type {type(val)} is not supported yet.')
+
+
+def _bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
+    def fun(self, other: LitOrColumn) -> 'Column':
+        if not isinstance(other, Column):
+            other = literal_col(other)
+        return Column(f"({self.expr}) {op} ({other.expr})")
+
+    return fun
+
+
+def _reverse_bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
+    def fun(self, other: LitOrColumn) -> 'Column':
+        if not isinstance(other, Column):
+            other = literal_col(other)
+        return Column(f"({other.expr}) {op} ({self.expr})")
+
+    return fun
+
+
+def _func_op(op: str) -> Callable[['Column'], 'Column']:
+    def fun(self) -> 'Column':
+        return Column(f"{op} ({self.expr})")
 
     return fun
 
@@ -39,20 +70,31 @@ class Column:
     def __repr__(self):
         return f"Column('{self.expr}')"
 
-    __add__: Callable[['Column'], 'Column'] = _bin_op("+")
-    __sub__: Callable[['Column'], 'Column'] = _bin_op("-")
-    __mul__: Callable[['Column'], 'Column'] = _bin_op("*")
-    __truediv__: Callable[['Column'], 'Column'] = _bin_op("/")
-    __and__: Callable[['Column'], 'Column'] = _bin_op("AND")
-    __or__: Callable[['Column'], 'Column'] = _bin_op("OR")
+    __add__: Callable[[LitOrColumn], 'Column'] = _bin_op("+")
+    __radd__: Callable[[LitOrColumn], 'Column'] = _bin_op("+")
+    __sub__: Callable[[LitOrColumn], 'Column'] = _bin_op("-")
+    __rsub__: Callable[[LitOrColumn], 'Column'] = _reverse_bin_op("-")
+    __neg__: Callable[[], 'Column'] = _func_op("-")
+    __mul__: Callable[[LitOrColumn], 'Column'] = _bin_op("*")
+    __rmul__: Callable[[LitOrColumn], 'Column'] = _bin_op("*")
+    __truediv__: Callable[[LitOrColumn], 'Column'] = _bin_op("/")
+    __rtruediv__: Callable[[LitOrColumn], 'Column'] = _reverse_bin_op("/")
+    __and__: Callable[[LitOrColumn], 'Column'] = _bin_op("AND")
+    __rand__: Callable[[LitOrColumn], 'Column'] = _bin_op("AND")
+    __or__: Callable[[LitOrColumn], 'Column'] = _bin_op("OR")
+    __ror__: Callable[[LitOrColumn], 'Column'] = _bin_op("OR")
 
     # logistic operators
-    __eq__: Callable[['Column'], 'Column'] = _bin_op("=")
-    __ne__: Callable[['Column'], 'Column'] = _bin_op("<>")
-    __lt__: Callable[['Column'], 'Column'] = _bin_op("<")
-    __le__: Callable[['Column'], 'Column'] = _bin_op("<=")
-    __ge__: Callable[['Column'], 'Column'] = _bin_op(">=")
-    __gt__: Callable[['Column'], 'Column'] = _bin_op(">")
+    __eq__: Callable[[LitOrColumn], 'Column'] = _bin_op("=")
+    __ne__: Callable[[LitOrColumn], 'Column'] = _bin_op("<>")
+    __lt__: Callable[[LitOrColumn], 'Column'] = _bin_op("<")
+    __le__: Callable[[LitOrColumn], 'Column'] = _bin_op("<=")
+    __ge__: Callable[[LitOrColumn], 'Column'] = _bin_op(">=")
+    __gt__: Callable[[LitOrColumn], 'Column'] = _bin_op(">")
+
+    def __bool__(self):
+        raise ValueError("Cannot convert column into bool: please use '&' for 'and', '|' for 'or', "
+                         "'~' for 'not' when building DataFrame boolean expressions.")
 
     def alias(self, alias: str) -> 'Column':
         return Column(self.expr, alias)

@@ -1,11 +1,9 @@
 import unittest
 
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column
+from bigquery_frame import functions as f
 from bigquery_frame.dataframe import strip_margin
-from bigquery_frame.exceptions import IllegalArgumentException
 from tests.utils import captured_output
 
 
@@ -49,9 +47,10 @@ class TestColumn(unittest.TestCase):
         |+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a & b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "True & a"
+            df.withColumn("c", True & a & b & True).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_or(self):
@@ -86,9 +85,10 @@ class TestColumn(unittest.TestCase):
         |+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a | b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "False | a"
+            df.withColumn("c", False | a | b | False).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_add(self):
@@ -111,9 +111,10 @@ class TestColumn(unittest.TestCase):
         |+------+------+------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a + b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "0 + a"
+            df.withColumn("c", 0 + a + b + 0).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_sub(self):
@@ -136,9 +137,10 @@ class TestColumn(unittest.TestCase):
         |+------+------+------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a - b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "0 + a"
+            df.withColumn("c", - (1 - (a - b) - 1)).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_mul(self):
@@ -161,9 +163,10 @@ class TestColumn(unittest.TestCase):
         |+------+------+------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a * b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "1 * a"
+            df.withColumn("c", 1 * a * b * 1).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_div(self):
@@ -186,9 +189,10 @@ class TestColumn(unittest.TestCase):
         |+------+------+------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a / b).show()
+            a = f.col("a")
+            b = f.col("b")
+            # Operators must be compatible with literals, hence the "1 * a"
+            df.withColumn("c", 1 / (a / b / 1)).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_eq(self):
@@ -203,20 +207,23 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    a |    a |  True |
-        ||    a |    b | False |
-        ||    a | null |  null |
-        || null |    b |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    a |    a |  True |  True |  True |
+        ||    a |    b | False | False | False |
+        ||    a | null |  null |  null |  null |
+        || null |    b |  null | False | False |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a == b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a == b).withColumn("d", "a" == b).withColumn("e", b == "a").show()
             self.assertEqual(expected, stdout.getvalue())
+        with self.assertRaises(ValueError):
+            a = f.col("a")
+            res = a == a == a
 
     def test_neq(self):
         df = self.bigquery.sql("""
@@ -230,19 +237,19 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    a |    a | False |
-        ||    a |    b |  True |
-        ||    a | null |  null |
-        || null |    b |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    a |    a | False | False | False |
+        ||    a |    b |  True |  True |  True |
+        ||    a | null |  null |  null |  null |
+        || null |    b |  null |  True |  True |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a != b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a != b).withColumn("d", "a" != b).withColumn("e", b != "a").show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_lt(self):
@@ -258,20 +265,20 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    1 |    2 |  True |
-        ||    2 |    2 | False |
-        ||    3 |    2 | False |
-        ||    2 | null |  null |
-        || null |    2 |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    1 |    2 |  True |  True | False |
+        ||    2 |    2 | False | False | False |
+        ||    3 |    2 | False | False |  True |
+        ||    2 | null |  null | False | False |
+        || null |    2 |  null |  null |  null |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a < b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a < b).withColumn("d", a < 2).withColumn("e", 2 < a).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_le(self):
@@ -287,20 +294,20 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    1 |    2 |  True |
-        ||    2 |    2 |  True |
-        ||    3 |    2 | False |
-        ||    2 | null |  null |
-        || null |    2 |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    1 |    2 |  True |  True | False |
+        ||    2 |    2 |  True |  True |  True |
+        ||    3 |    2 | False | False |  True |
+        ||    2 | null |  null |  True |  True |
+        || null |    2 |  null |  null |  null |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a <= b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a <= b).withColumn("d", a <= 2).withColumn("e", 2 <= a).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_gt(self):
@@ -316,20 +323,20 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    1 |    2 | False |
-        ||    2 |    2 | False |
-        ||    3 |    2 |  True |
-        ||    2 | null |  null |
-        || null |    2 |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    1 |    2 | False | False |  True |
+        ||    2 |    2 | False | False | False |
+        ||    3 |    2 |  True |  True | False |
+        ||    2 | null |  null | False | False |
+        || null |    2 |  null |  null |  null |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a > b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a > b).withColumn("d", a > 2).withColumn("e", 2 > a).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_ge(self):
@@ -345,56 +352,18 @@ class TestColumn(unittest.TestCase):
             ])
         """)
         expected = strip_margin("""
-        |+------+------+-------+
-        ||    a |    b |     c |
-        |+------+------+-------+
-        ||    1 |    2 | False |
-        ||    2 |    2 |  True |
-        ||    3 |    2 |  True |
-        ||    2 | null |  null |
-        || null |    2 |  null |
-        |+------+------+-------+
+        |+------+------+-------+-------+-------+
+        ||    a |    b |     c |     d |     e |
+        |+------+------+-------+-------+-------+
+        ||    1 |    2 | False | False |  True |
+        ||    2 |    2 |  True |  True |  True |
+        ||    3 |    2 |  True |  True | False |
+        ||    2 | null |  null |  True |  True |
+        || null |    2 |  null |  null |  null |
+        |+------+------+-------+-------+-------+
         |""")
         with captured_output() as (stdout, stderr):
-            a = Column("a")
-            b = Column("b")
-            df.withColumn("c", a >= b).show()
+            a = f.col("a")
+            b = f.col("b")
+            df.withColumn("c", a >= b).withColumn("d", a >= 2).withColumn("e", 2 >= a).show()
             self.assertEqual(expected, stdout.getvalue())
-
-    def test_when(self):
-        df = self.bigquery.sql("""
-            SELECT 
-                *
-            FROM UNNEST ([
-                STRUCT(1 as a),
-                STRUCT(2 as a),
-                STRUCT(3 as a),
-                STRUCT(4 as a)
-            ])
-        """)
-        expected = strip_margin("""
-        |+---+---+
-        || a | c |
-        |+---+---+
-        || 1 | a |
-        || 2 | b |
-        || 3 | c |
-        || 4 | c |
-        |+---+---+
-        |""")
-        with captured_output() as (stdout, stderr):
-            a = Column("a")
-
-            df.withColumn("c",
-                          f.when(a == f.lit(1), f.lit("a"))
-                          .when(a == f.lit(2), f.lit("b"))
-                          .otherwise(f.lit("c"))).show()
-            self.assertEqual(expected, stdout.getvalue())
-
-    def test_when_without_bootstrap(self):
-        with self.assertRaises(IllegalArgumentException):
-            f.col("1").when(f.col("a") > f.lit(1), f.lit("ok"))
-
-    def test_when_multiple_otherwise(self):
-        with self.assertRaises(IllegalArgumentException):
-            f.when(f.col("a") > f.lit(1), f.lit("ok")).otherwise(f.lit(1)).otherwise(f.lit(2))

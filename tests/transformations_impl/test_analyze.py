@@ -7,7 +7,6 @@ from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.transformations_impl.analyze import __get_test_df as get_test_df, analyze
 
-
 field_to_index = {
     'column_name': 0,
     'column_type': 1,

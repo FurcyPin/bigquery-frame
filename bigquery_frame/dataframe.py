@@ -589,7 +589,7 @@ class DataFrame:
         , `_default_alias_2` AS (
           SELECT
             a,
-            `a` + 1
+            (`a`) + (1)
           FROM `_default_alias_1`
         )
         SELECT *, a + b AS c FROM `_default_alias_2`

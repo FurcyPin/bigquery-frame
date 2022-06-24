@@ -2,7 +2,7 @@ from typing import Union, List, Iterable
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column
+from bigquery_frame.column import Column, literal_col
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, cols_to_str
 
@@ -114,14 +114,7 @@ def isnull(col: StringOrColumn) -> Column:
     return Column(f"{col.expr} IS NULL")
 
 
-def lit(val: object) -> Column:
-    if val is None:
-        return Column("NULL")
-    if type(val) == str:
-        return Column(f"'{val}'")
-    if type(val) in [bool, int, float]:
-        return Column(str(val))
-    raise ValueError(f'lit({val}): The type {type(val)} is not supported yet.')
+lit = literal_col
 
 
 def min(col: StringOrColumn) -> Column:
