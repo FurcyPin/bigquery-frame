@@ -11,47 +11,6 @@ def col(expr: str) -> Column:
     return Column(expr=quote(expr))
 
 
-def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union[List[Column], Column]:
-    """Converts string or Column arguments to Column types
-
-    Examples:
-
-    >>> __str_to_col("id")
-    Column('`id`')
-    >>> __str_to_col(["c1", "c2"])
-    [Column('`c1`'), Column('`c2`')]
-    >>> __str_to_col(expr("COUNT(1)"))
-    Column('COUNT(1)')
-    >>> __str_to_col("*")
-    Column('*')
-
-    """
-    if isinstance(args, str):
-        return col(args)
-    elif isinstance(args, list):
-        return [__str_to_col(arg) for arg in args]
-    else:
-        return args
-
-
-def lit(val: object) -> Column:
-    if val is None:
-        return Column("NULL")
-    if type(val) == str:
-        return Column(f"'{val}'")
-    if type(val) in [bool, int, float]:
-        return Column(str(val))
-    raise ValueError(f'lit({val}): The type {type(val)} is not supported yet.')
-
-
-def struct(*cols: StringOrColumn) -> Column:
-    return Column(f"STRUCT({cols_to_str(cols)})")
-
-
-def isnull(col: StringOrColumn) -> Column:
-    return Column(f"{col} IS NULL")
-
-
 def count(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
@@ -110,6 +69,68 @@ def count_distinct(col: StringOrColumn) -> Column:
     return Column(f"COUNT(DISTINCT {col.expr})")
 
 
+def expr(expr: str) -> Column:
+    """Parses the expression string into the column that it represents.
+
+    >>> df = __get_test_df_1()
+    >>> df.show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(
+    ...   f.expr('COALESCE(col2, CAST(col1 as STRING)) as new_col')
+    ... ).show()
+    +---------+
+    | new_col |
+    +---------+
+    |       a |
+    |       b |
+    |       2 |
+    +---------+
+
+    """
+    return Column(expr)
+
+
+def hash(*cols: Union[str, Column]) -> Column:
+    """Calculates the hash code of given columns, and returns the result as an int column.
+
+    Examples
+    --------
+    >>> df = __get_test_df_1().withColumn('hash_col', hash('col1', 'col2'))
+    >>> df.show()
+    +------+------+----------------------+
+    | col1 | col2 |             hash_col |
+    +------+------+----------------------+
+    |    1 |    a |  6206812198800083495 |
+    |    1 |    b | -6785414452297021595 |
+    |    2 | null |  1951453458346972811 |
+    +------+------+----------------------+
+    """
+
+    cols = __str_to_col(cols)
+    return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(cols)})))")
+
+
+def isnull(col: StringOrColumn) -> Column:
+    return Column(f"{col} IS NULL")
+
+
+def lit(val: object) -> Column:
+    if val is None:
+        return Column("NULL")
+    if type(val) == str:
+        return Column(f"'{val}'")
+    if type(val) in [bool, int, float]:
+        return Column(str(val))
+    raise ValueError(f'lit({val}): The type {type(val)} is not supported yet.')
+
+
 def min(col: StringOrColumn) -> Column:
     """Aggregate function: returns the minimum value of the expression in a group.
 
@@ -166,32 +187,31 @@ def max(col: StringOrColumn) -> Column:
     return Column(f"MAX({col.expr})")
 
 
-def expr(expr: str) -> Column:
-    """Parses the expression string into the column that it represents.
+def struct(*cols: StringOrColumn) -> Column:
+    return Column(f"STRUCT({cols_to_str(cols)})")
 
-    >>> df = __get_test_df_1()
-    >>> df.show()
-    +------+------+
-    | col1 | col2 |
-    +------+------+
-    |    1 |    a |
-    |    1 |    b |
-    |    2 | null |
-    +------+------+
-    >>> from bigquery_frame import functions as f
-    >>> df.select(
-    ...   f.expr('COALESCE(col2, CAST(col1 as STRING)) as new_col')
-    ... ).show()
-    +---------+
-    | new_col |
-    +---------+
-    |       a |
-    |       b |
-    |       2 |
-    +---------+
+
+def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union[List[Column], Column]:
+    """Converts string or Column arguments to Column types
+
+    Examples:
+
+    >>> __str_to_col("id")
+    Column('`id`')
+    >>> __str_to_col(["c1", "c2"])
+    [Column('`c1`'), Column('`c2`')]
+    >>> __str_to_col(expr("COUNT(1)"))
+    Column('COUNT(1)')
+    >>> __str_to_col("*")
+    Column('*')
 
     """
-    return Column(expr)
+    if isinstance(args, str):
+        return col(args)
+    elif isinstance(args, list):
+        return [__str_to_col(arg) for arg in args]
+    else:
+        return args
 
 
 def __get_test_df_1() -> DataFrame:
