@@ -2,7 +2,8 @@ from typing import List
 
 from bigquery_frame import DataFrame
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.dataframe import strip_margin, cols_to_str, BigQueryBuilder, quote
+from bigquery_frame.dataframe import strip_margin, BigQueryBuilder
+from bigquery_frame.utils import quote, cols_to_str
 
 
 def pivot(df: DataFrame,

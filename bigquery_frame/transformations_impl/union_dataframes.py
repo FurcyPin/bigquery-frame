@@ -1,7 +1,7 @@
 from typing import List
 
 from bigquery_frame import DataFrame
-from bigquery_frame.dataframe import quote
+from bigquery_frame.utils import quote
 
 
 def union_dataframes(dfs: List[DataFrame]) -> DataFrame:

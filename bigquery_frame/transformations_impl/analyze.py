@@ -3,11 +3,12 @@ from typing import List
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import DataFrame, BigQueryBuilder
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame import functions as f
-from bigquery_frame.dataframe import strip_margin, quote
+from bigquery_frame.auth import get_bq_client
+from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.transformations_impl.flatten import flatten_schema
 from bigquery_frame.transformations_impl.union_dataframes import union_dataframes
+from bigquery_frame.utils import quote
 
 
 def _unnest_column(df: DataFrame, col: str):
