@@ -501,7 +501,7 @@ class DataFrame:
 
     where = filter
 
-    def withColumn(self, col_name: str, col_expr: str, replace: bool = False) -> 'DataFrame':
+    def withColumn(self, col_name: str, col_expr: Column, replace: bool = False) -> 'DataFrame':
         """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.
 
         The column expression must be an expression over this :class:`DataFrame`; attempting to add a column from

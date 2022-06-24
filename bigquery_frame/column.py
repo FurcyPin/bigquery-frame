@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, Callable
 
 
-def _bin_op(op: str):
-    def fun(self, other: 'Column'):
+def _bin_op(op: str) -> Callable[['Column', 'Column'], 'Column']:
+    def fun(self, other: 'Column') -> 'Column':
         return Column(f"{self.expr} {op} {other.expr}")
 
     return fun
@@ -23,10 +23,20 @@ class Column:
     def __repr__(self):
         return f"Column('{self.expr}')"
 
-    __sub__ = _bin_op("-")
-    __add__ = _bin_op("+")
-    __mul__ = _bin_op("*")
-    __div__ = _bin_op("/")
+    __add__: Callable[['Column'], 'Column'] = _bin_op("+")
+    __sub__: Callable[['Column'], 'Column'] = _bin_op("-")
+    __mul__: Callable[['Column'], 'Column'] = _bin_op("*")
+    __truediv__: Callable[['Column'], 'Column'] = _bin_op("/")
+    __and__: Callable[['Column'], 'Column'] = _bin_op("AND")
+    __or__: Callable[['Column'], 'Column'] = _bin_op("OR")
+
+    # logistic operators
+    __eq__: Callable[['Column'], 'Column'] = _bin_op("=")
+    __ne__: Callable[['Column'], 'Column'] = _bin_op("<>")
+    __lt__: Callable[['Column'], 'Column'] = _bin_op("<")
+    __le__: Callable[['Column'], 'Column'] = _bin_op("<=")
+    __ge__: Callable[['Column'], 'Column'] = _bin_op(">=")
+    __gt__: Callable[['Column'], 'Column'] = _bin_op(">")
 
     def alias(self, alias: str) -> "Column":
         return Column(self.expr, alias)
