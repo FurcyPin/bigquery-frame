@@ -1,8 +1,10 @@
+from typing import Union, List, Iterable
+
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column
-from bigquery_frame.dataframe import cols_to_str, DataFrame, quote
-from typing import Union, List, Iterable
+from bigquery_frame.dataframe import DataFrame
+from bigquery_frame.utils import quote, cols_to_str
 
 StringOrColumn = Union[str, Column]
 
@@ -14,7 +16,7 @@ def col(expr: str) -> Column:
 def count(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
-    >>> df = __get_test_df_1()
+    >>> df = _get_test_df_1()
     >>> df.show()
     +------+------+
     | col1 | col2 |
@@ -44,7 +46,7 @@ def count(col: StringOrColumn) -> Column:
 def count_distinct(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of distinct non-null values
 
-    >>> df = __get_test_df_1()
+    >>> df = _get_test_df_1()
     >>> df.show()
     +------+------+
     | col1 | col2 |
@@ -72,26 +74,16 @@ def count_distinct(col: StringOrColumn) -> Column:
 def expr(expr: str) -> Column:
     """Parses the expression string into the column that it represents.
 
-    >>> df = __get_test_df_1()
-    >>> df.show()
-    +------+------+
-    | col1 | col2 |
-    +------+------+
-    |    1 |    a |
-    |    1 |    b |
-    |    2 | null |
-    +------+------+
     >>> from bigquery_frame import functions as f
-    >>> df.select(
-    ...   f.expr('COALESCE(col2, CAST(col1 as STRING)) as new_col')
-    ... ).show()
-    +---------+
-    | new_col |
-    +---------+
-    |       a |
-    |       b |
-    |       2 |
-    +---------+
+    >>> df = _get_test_df_1()
+    >>> df.select("col1", "col2", f.expr('COALESCE(col2, CAST(col1 as STRING)) as new_col')).show()
+    +------+------+---------+
+    | col1 | col2 | new_col |
+    +------+------+---------+
+    |    1 |    a |       a |
+    |    1 |    b |       b |
+    |    2 | null |       2 |
+    +------+------+---------+
 
     """
     return Column(expr)
@@ -102,7 +94,8 @@ def hash(*cols: Union[str, Column]) -> Column:
 
     Examples
     --------
-    >>> df = __get_test_df_1().withColumn('hash_col', hash('col1', 'col2'))
+    >>> from bigquery_frame import functions as f
+    >>> df = _get_test_df_1().withColumn('hash_col', f.hash('col1', 'col2'))
     >>> df.show()
     +------+------+----------------------+
     | col1 | col2 |             hash_col |
@@ -134,7 +127,7 @@ def lit(val: object) -> Column:
 def min(col: StringOrColumn) -> Column:
     """Aggregate function: returns the minimum value of the expression in a group.
 
-    >>> df = __get_test_df_1()
+    >>> df = _get_test_df_1()
     >>> df.show()
     +------+------+
     | col1 | col2 |
@@ -162,7 +155,7 @@ def min(col: StringOrColumn) -> Column:
 def max(col: StringOrColumn) -> Column:
     """Aggregate function: returns the maximum value of the expression in a group.
 
-    >>> df = __get_test_df_1()
+    >>> df = _get_test_df_1()
     >>> df.show()
     +------+------+
     | col1 | col2 |
@@ -191,6 +184,32 @@ def struct(*cols: StringOrColumn) -> Column:
     return Column(f"STRUCT({cols_to_str(cols)})")
 
 
+def when(condition: Column, value: Column) -> Column:
+    """Evaluates a list of conditions and returns one of multiple possible result expressions.
+    If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
+
+    Examples
+    --------
+    >>> from bigquery_frame import functions as f
+    >>> df = _get_test_df_1()
+    >>> df.select("col1", f.when(f.col("col1") > f.lit(1), f.lit("yes")).otherwise(f.lit("no"))).show()
+    +------+-----+
+    | col1 | f0_ |
+    +------+-----+
+    |    1 |  no |
+    |    1 |  no |
+    |    2 | yes |
+    +------+-----+
+
+    :param condition: a boolean :class:`Column` expression.
+    :param value: a :class:`Column` expression.
+    :return:
+    """
+    c = Column("")
+    c._when_condition = [(condition, value)]
+    return c
+
+
 def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union[List[Column], Column]:
     """Converts string or Column arguments to Column types
 
@@ -214,7 +233,7 @@ def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union
         return args
 
 
-def __get_test_df_1() -> DataFrame:
+def _get_test_df_1() -> DataFrame:
     bq = BigQueryBuilder(get_bq_client())
     query = """
         SELECT * FROM UNNEST ([
