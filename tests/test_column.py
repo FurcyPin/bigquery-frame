@@ -17,7 +17,7 @@ class TestColumn(unittest.TestCase):
     def test_and(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(false as a, false as b),
@@ -59,7 +59,7 @@ class TestColumn(unittest.TestCase):
     def test_or(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(false as a, false as b),
@@ -101,7 +101,7 @@ class TestColumn(unittest.TestCase):
     def test_add(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(2 as a, 2 as b),
@@ -131,7 +131,7 @@ class TestColumn(unittest.TestCase):
     def test_sub(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(2 as a, 2 as b),
@@ -161,7 +161,7 @@ class TestColumn(unittest.TestCase):
     def test_mul(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(2 as a, 2 as b),
@@ -191,7 +191,7 @@ class TestColumn(unittest.TestCase):
     def test_div(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(2 as a, 2 as b),
@@ -221,7 +221,7 @@ class TestColumn(unittest.TestCase):
     def test_eq(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT("a" as a, "a" as b),
@@ -250,12 +250,12 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
         with self.assertRaises(ValueError):
             a = f.col("a")
-            res = a == a == a
+            print(a == a == a)
 
     def test_neq(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT("a" as a, "a" as b),
@@ -286,7 +286,7 @@ class TestColumn(unittest.TestCase):
     def test_lt(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(1 as a, 2 as b),
@@ -319,7 +319,7 @@ class TestColumn(unittest.TestCase):
     def test_le(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(1 as a, 2 as b),
@@ -352,7 +352,7 @@ class TestColumn(unittest.TestCase):
     def test_gt(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(1 as a, 2 as b),
@@ -385,7 +385,7 @@ class TestColumn(unittest.TestCase):
     def test_ge(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(1 as a, 2 as b),

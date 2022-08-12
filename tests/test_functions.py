@@ -37,7 +37,7 @@ class TestDataFrame(unittest.TestCase):
     def test_when(self):
         df = self.bigquery.sql(
             """
-            SELECT 
+            SELECT
                 *
             FROM UNNEST ([
                 STRUCT(1 as a),

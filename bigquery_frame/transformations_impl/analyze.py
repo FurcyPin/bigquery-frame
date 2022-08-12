@@ -15,7 +15,8 @@ def _unnest_column(df: DataFrame, col: str):
     """Recursively unnest a :class:`DataFrame`'s column
 
     >>> bq = BigQueryBuilder(get_bq_client())
-    >>> df = bq.sql('SELECT 1 as id, [STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s1, STRUCT(7 as f) as s2')
+    >>> df = bq.sql('SELECT 1 as id, '
+    ... '[STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s1, STRUCT(7 as f) as s2')
     >>> [col.name for col in flatten_schema(df.schema, explode=True)]
     ['id', 's1!.a', 's1!.b!.c', 's1!.b!.d', 's1!.e!', 's2.f']
     >>> _unnest_column(df, 'id').show()
@@ -87,7 +88,7 @@ def _unnest_column(df: DataFrame, col: str):
 
         query = strip_margin(
             f"""
-            |SELECT 
+            |SELECT
             |  {col}
             |FROM {quote(df._alias)}
             |{cross_join_str}"""
@@ -122,7 +123,9 @@ def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int):
 def __chunks(lst: List, n: int):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i : i + n]
+        # fmt: off
+        yield lst[i: i + n]
+        # fmt: on
 
 
 def analyze(df: DataFrame, _chunk_size: int = 50):
@@ -178,7 +181,7 @@ def analyze(df: DataFrame, _chunk_size: int = 50):
     +----+------------+---------------------+--------------------------------------------+
     >>> df = analyze(df)
     Analyzing 5 columns ...
-    >>> df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()
+    >>> df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()  # noqa: E501
     +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
     |            column_name | column_type | count | count_distinct | count_null |       min |       max |                     approx_top_100 |
     +------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
@@ -214,43 +217,43 @@ def analyze(df: DataFrame, _chunk_size: int = 50):
 def __get_test_df() -> DataFrame:
     bq = BigQueryBuilder(get_bq_client())
     query = """
-        SELECT 
+        SELECT
             *
         FROM UNNEST ([
             STRUCT(
-                1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, 
+                1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types,
                 STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
             ),
             STRUCT(
-                2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, 
+                2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types,
                 STRUCT(TRUE as can_evolve, 1 as evolves_from) as evolution
             ),
             STRUCT(
-                3 as id, "Venusaur" as name, ["Grass", "Poison"] as types, 
+                3 as id, "Venusaur" as name, ["Grass", "Poison"] as types,
                 STRUCT(FALSE as can_evolve, 2 as evolves_from) as evolution
             ),
             STRUCT(
-                4 as id, "Charmander" as name, ["Fire"] as types, 
+                4 as id, "Charmander" as name, ["Fire"] as types,
                 STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
             ),
             STRUCT(
-                5 as id, "Charmeleon" as name, ["Fire"] as types, 
+                5 as id, "Charmeleon" as name, ["Fire"] as types,
                 STRUCT(TRUE as can_evolve, 4 as evolves_from) as evolution
             ),
             STRUCT(
-                6 as id, "Charizard" as name, ["Fire", "Flying"] as types, 
+                6 as id, "Charizard" as name, ["Fire", "Flying"] as types,
                 STRUCT(FALSE as can_evolve, 5 as evolves_from) as evolution
             ),
             STRUCT(
-                7 as id, "Squirtle" as name, ["Water"] as types, 
+                7 as id, "Squirtle" as name, ["Water"] as types,
                 STRUCT(TRUE as can_evolve, NULL as evolves_from) as evolution
             ),
             STRUCT(
-                8 as id, "Wartortle" as name, ["Water"] as types, 
+                8 as id, "Wartortle" as name, ["Water"] as types,
                 STRUCT(TRUE as can_evolve, 7 as evolves_from) as evolution
             ),
             STRUCT(
-                9 as id, "Blastoise" as name, ["Water"] as types, 
+                9 as id, "Blastoise" as name, ["Water"] as types,
                 STRUCT(FALSE as can_evolve, 8 as evolves_from) as evolution
             )
         ])

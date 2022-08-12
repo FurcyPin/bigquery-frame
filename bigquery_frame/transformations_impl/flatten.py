@@ -2,14 +2,8 @@ from typing import List
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import BigQueryBuilder, DataFrame
-from bigquery_frame.auth import get_bq_client
-from bigquery_frame.dataframe import (
-    is_nullable,
-    is_repeated,
-    is_struct,
-    schema_to_simple_string,
-)
+from bigquery_frame import DataFrame
+from bigquery_frame.dataframe import is_nullable, is_repeated, is_struct
 
 
 def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
@@ -17,7 +11,8 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
     Nested fields names will be joined together using the specified separator
 
     Examples:
-
+    >>> from bigquery_frame import BigQueryBuilder
+    >>> from bigquery_frame.auth import get_bq_client
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, STRUCT(1 as c, 1 as d) as b) as s''')
     >>> df.printSchema()
@@ -45,7 +40,8 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
     <BLANKLINE>
 
     :param df: a DataFrame
-    :param struct_separator: It might be useful to change the separator when some DataFrame's column names already contain dots
+    :param struct_separator: It might be useful to change the separator when some DataFrame's column names already
+            contain dots
     :return: a flattened DataFrame
     """
     # The idea is to recursively write a "SELECT s.b.c as s_b_c" for each nested column.
@@ -74,6 +70,9 @@ def flatten_schema(
     If `explode` option is set, arrays are exploded with a '!' separator.
 
     Example:
+    >>> from bigquery_frame import BigQueryBuilder
+    >>> from bigquery_frame.auth import get_bq_client
+    >>> from bigquery_frame.dataframe import schema_to_simple_string
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> schema_to_simple_string(df.schema)

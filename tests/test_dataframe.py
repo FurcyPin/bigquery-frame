@@ -33,7 +33,8 @@ class TestDataFrame(unittest.TestCase):
         self.assertEqual(df2.schema, expected)
 
     def test_createOrReplaceTempView_with_reserved_keyword_alias(self):
-        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        """Some words like 'ALL' are reserved by BigQuery
+        and may not be used as table names without being backticked."""
         self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("all")
         df = self.bigquery.table("all")
 
@@ -62,7 +63,7 @@ class TestDataFrame(unittest.TestCase):
         # But this should not
         self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("T")
         self.bigquery.sql("""SELECT * FROM T""").createOrReplaceTempView("T")
-        with self.assertRaises(BadRequest) as context:
+        with self.assertRaises(BadRequest):
             self.bigquery.table("T").show()
 
     def test_createOrReplaceTempTable(self):
@@ -82,7 +83,8 @@ class TestDataFrame(unittest.TestCase):
         self.assertEqual(df2.schema, expected)
 
     def test_createOrReplaceTempTable_with_reserved_keyword_alias(self):
-        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        """Some words like 'ALL' are reserved by BigQuery
+        and may not be used as table names without being backticked."""
         self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempTable("all")
         df = self.bigquery.table("all")
 
@@ -91,7 +93,8 @@ class TestDataFrame(unittest.TestCase):
         self.assertEqual(df.schema, expected)
 
     def test_show_with_keyword_alias(self):
-        """Some words like 'ALL' are reserved by BigQuery and may not be used as table names without being backticked."""
+        """Some words like 'ALL' are reserved by BigQuery
+        and may not be used as table names without being backticked."""
         df = self.bigquery.sql("""SELECT 1 as id""").alias("all")
         df.show()
 

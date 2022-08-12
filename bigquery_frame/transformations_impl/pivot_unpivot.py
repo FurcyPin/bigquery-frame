@@ -66,7 +66,8 @@ def pivot(
     :param pivot_column: column to pivot
     :param agg_fun: aggregation function that will be applied
     :param agg_col: column that will be aggregated
-    :param pivoted_columns: (Optional) list of distinct values in the pivot column. Execution will be faster if provided.
+    :param pivoted_columns: (Optional) list of distinct values in the pivot column.
+        Execution will be faster if provided.
     :param implem_version: (Possible values [1, 2]) Version of the code to use.
         Version 2 uses the BigQuery's PIVOT statement, while version 1 doesn't.
     :return:
@@ -251,7 +252,7 @@ def unpivot_v2(
 
     cols, types = zip(*pivoted_columns)
 
-    exclude_nulls_str = f"EXCLUDE NULLS" if exclude_nulls else "INCLUDE NULLS"
+    exclude_nulls_str = "EXCLUDE NULLS" if exclude_nulls else "INCLUDE NULLS"
     query = strip_margin(
         f"""
         |SELECT
@@ -266,7 +267,7 @@ def unpivot_v2(
 def __get_test_pivoted_df() -> DataFrame:
     bq = BigQueryBuilder(get_bq_client())
     query = """
-        SELECT 
+        SELECT
             *
         FROM UNNEST ([
             STRUCT(2018 as year,  "Orange" as product, null as Canada, 4000 as China,  null as Mexico),
@@ -285,7 +286,7 @@ def __get_test_pivoted_df() -> DataFrame:
 def __get_test_unpivoted_df():
     bq = BigQueryBuilder(get_bq_client())
     query = """
-        SELECT 
+        SELECT
             *
         FROM UNNEST ([
             STRUCT(2018 as year, "Orange"  as product, "Canada" as country, null as amount),

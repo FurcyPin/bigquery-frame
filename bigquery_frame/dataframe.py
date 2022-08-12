@@ -1,6 +1,5 @@
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
-import google
 from google.cloud.bigquery import Client, Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
@@ -34,7 +33,7 @@ def schema_to_simple_string(schema: List[SchemaField]):
 
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
-    >>> print(df.schema)
+    >>> print(df.schema)  # noqa: E501
     [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, (), None)), None)]
     >>> schema_to_simple_string(df.schema)
     'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
@@ -77,7 +76,7 @@ def schema_to_tree_string(schema: List[SchemaField]) -> str:
     return "\n".join(res) + "\n"
 
 
-def _dedup_key_value_list(l: List[Tuple[object, object]]):
+def _dedup_key_value_list(items: Iterable[Tuple[object, object]]) -> Iterable[Tuple[object, object]]:
     """Deduplicate a list of key, values by their keys.
     Unlike `list(set(l))`, this does preserve ordering.
 
@@ -85,10 +84,10 @@ def _dedup_key_value_list(l: List[Tuple[object, object]]):
     >>> _dedup_key_value_list([('a', 1), ('b', 2), ('a', 3)])
     [('a', 3), ('b', 2)]
 
-    :param l:
-    :return:
+    :param items: an iterable of couples
+    :return: an iterable of couples
     """
-    return list({k: v for k, v in l}.items())
+    return list({k: v for k, v in items}.items())
 
 
 class BigQueryBuilder(HasBigQueryClient):
@@ -235,7 +234,8 @@ class DataFrame:
         Limitations compared to Spark
         -----------------------------
         Unlike with Spark, this operation is an action and the temporary table is created immediately.
-        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this method must be used.
+        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this
+        method must be used.
 
         :return: a new :class:`DataFrame`
         """
@@ -285,6 +285,7 @@ class DataFrame:
         |  2 |
         +----+
         >>> bq.sql("SELECT * FROM temp_view").createOrReplaceTempView("temp_view")
+        >>> import google
         >>> try:  #doctest: +ELLIPSIS
         ...   bq.sql("SELECT * FROM temp_view").show()
         ... except google.api_core.exceptions.BadRequest as e:
@@ -321,7 +322,7 @@ class DataFrame:
         schema_cols = set(self.columns)
         cols = [col for col in cols if col in schema_cols]
         query = strip_margin(
-            f"""SELECT 
+            f"""SELECT
             |  * EXCEPT ({cols_to_str(cols)})
             |FROM {quote(self._alias)}"""
         )
@@ -412,18 +413,18 @@ class DataFrame:
                 f"Columns in second DataFrame: [{cols_to_str(other.columns)}]"
             )
 
-        def optional_comma(l: list):
-            return "," if len(l) > 0 else ""
+        def optional_comma(_list: List[object]):
+            return "," if len(_list) > 0 else ""
 
         query = strip_margin(
             f"""
-            |SELECT 
+            |SELECT
             |  {cols_to_str(self_only_cols, 2)}{optional_comma(self_only_cols)}
             |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
             |  {cols_to_str([f"NULL as {col}" for col in other_only_cols], 2)}
-            |FROM {quote(self._alias)} 
-            |UNION ALL 
-            |SELECT 
+            |FROM {quote(self._alias)}
+            |UNION ALL
+            |SELECT
             |  {cols_to_str([f"NULL as {col}" for col in self_only_cols], 2)}{optional_comma(self_only_cols)}
             |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
             |  {cols_to_str(other_only_cols, 2)}
@@ -455,8 +456,8 @@ class DataFrame:
         """
         query = strip_margin(
             f"""
-            |SELECT * 
-            |FROM {quote(self._alias)} 
+            |SELECT *
+            |FROM {quote(self._alias)}
             |ORDER BY {cols_to_str(cols)}"""
         )
         return self._apply_query(query)
@@ -467,8 +468,8 @@ class DataFrame:
         """Filters rows using the given condition."""
         query = strip_margin(
             f"""
-            |SELECT * 
-            |FROM {quote(self._alias)} 
+            |SELECT *
+            |FROM {quote(self._alias)}
             |WHERE {expr}"""
         )
         return self._apply_query(query)
@@ -487,7 +488,7 @@ class DataFrame:
         - Each time this function is called, a new CTE will be created. This may lead to reaching BigQuery's
           query size limit very quickly.
 
-        TODO: This project is just a POC. Future versions may bring improvements to these features but this will require more on-the-fly schema inspections.
+        TODO: This project is just a POC. Future versions may bring improvements to these features but this will require more on-the-fly schema inspections.  # noqa: E501
 
         :param col_name: Name of the new column
         :param col_expr: Expression defining the new column
@@ -606,7 +607,9 @@ class DataFrame:
 
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''SELECT 1 as a''').select('a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b'))
+        >>> df = bq.sql('''SELECT 1 as a''').select(
+        ...   'a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b')
+        ... )
         >>> df.print_query()
         WITH `_default_alias_1` AS (
           SELECT 1 as a
@@ -631,7 +634,7 @@ class DataFrame:
 def __get_test_df() -> DataFrame:
     bq = BigQueryBuilder(get_bq_client())
     query = """
-        SELECT 
+        SELECT
             *
         FROM UNNEST ([
             STRUCT(1 as id, "Bulbasaur" as name),
