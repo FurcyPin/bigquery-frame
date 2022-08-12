@@ -7,6 +7,36 @@ from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col
 
 
+def cast(column: StringOrColumn, tpe: str) -> Column:
+    """Converts a column to the specified type.
+
+    Available types are listed here:
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions
+
+    >>> df = _get_test_df_1()
+    >>> df.show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.withColumn("col1",  f.cast("col1", "float64"), replace=True).show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |  1.0 |    a |
+    |  1.0 |    b |
+    |  2.0 | null |
+    +------+------+
+
+    """
+    column = str_to_col(column)
+    return Column(f"CAST({column.expr} as {tpe.upper()})")
+
+
 def col(expr: str) -> Column:
     return Column(expr=quote(expr))
 

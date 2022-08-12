@@ -205,8 +205,11 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ### 0.3
 
+#### Breaking changes
 - Dropped support for Python 3.6
 - Bumped dependencies versions
 - DataFrame.toPandas() now requires extra permissions by default
   (the BigQuery ReadSession User role), but downloads data faster.
 
+#### Features
+- Added `functions.cast` method
