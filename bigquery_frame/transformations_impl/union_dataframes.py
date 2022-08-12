@@ -10,4 +10,3 @@ def union_dataframes(dfs: List[DataFrame]) -> DataFrame:
         raise ValueError("input list is empty")
     query = "\nUNION ALL\n".join([f"  SELECT * FROM {quote(df._alias)}" for df in dfs])
     return DataFrame(query, alias=None, bigquery=dfs[0].bigquery, deps=dfs)
-

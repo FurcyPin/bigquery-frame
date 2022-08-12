@@ -1,13 +1,12 @@
 import re
-from typing import Union, Iterable, List
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, List, Union
 
 if TYPE_CHECKING:
-    from bigquery_frame.column import StringOrColumn, Column
+    from bigquery_frame.column import Column, StringOrColumn
 
 
 def strip_margin(text):
-    s = re.sub('\n[ \t]*\|', '\n', text)
+    s = re.sub(r"\n[ \t]*\|", "\n", text)
     if s.startswith("\n"):
         return s[1:]
     else:
@@ -35,10 +34,10 @@ def quote(str) -> str:
     '*'
 
     """
-    return '.'.join(['`' + s + '`' if s != '*' else '*' for s in str.replace('`', '').split('.')])
+    return ".".join(["`" + s + "`" if s != "*" else "*" for s in str.replace("`", "").split(".")])
 
 
-def str_to_col(args: Union[Iterable['StringOrColumn'], 'StringOrColumn']) -> Union[List['Column'], 'Column']:
+def str_to_col(args: Union[Iterable["StringOrColumn"], "StringOrColumn"]) -> Union[List["Column"], "Column"]:
     """Converts string or Column arguments to Column types
 
     Examples:
@@ -55,6 +54,7 @@ def str_to_col(args: Union[Iterable['StringOrColumn'], 'StringOrColumn']) -> Uni
 
     """
     from bigquery_frame import functions as f
+
     if isinstance(args, str):
         return f.col(args)
     elif isinstance(args, list):

@@ -7,7 +7,7 @@ def print_results(it: RowIterator, format_args: dict = None, limit=None):
         format_args = {
             "tablefmt": "pretty",
             "missingval": "null",
-            "stralign": 'right',
+            "stralign": "right",
         }
     headers = {field.name: field.name for field in it.schema}
     rows = list(it)
@@ -15,4 +15,3 @@ def print_results(it: RowIterator, format_args: dict = None, limit=None):
     if len(rows) > limit:
         plural = "s" if limit > 1 else ""
         print(f"only showing top {limit} row{plural}")
-

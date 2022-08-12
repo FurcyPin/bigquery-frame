@@ -1,4 +1,4 @@
-from bigquery_frame import DataFrame, BigQueryBuilder
+from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame.auth import get_bq_client
 
 
@@ -22,4 +22,3 @@ def sort_columns(df: DataFrame) -> DataFrame:
     <BLANKLINE>
     """
     return df.select(*sorted(df.columns))
-

@@ -1,14 +1,13 @@
 import unittest
 
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame import functions as f
+from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
 from tests.utils import captured_output
 
 
 class TestColumn(unittest.TestCase):
-
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 
@@ -16,7 +15,8 @@ class TestColumn(unittest.TestCase):
         self.bigquery.close()
 
     def test_and(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -30,22 +30,25 @@ class TestColumn(unittest.TestCase):
                 STRUCT(true as a, null as b),
                 STRUCT(null as a, null as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+-------+-------+-------+
-        ||     a |     b |     c |
-        |+-------+-------+-------+
-        || False | False | False |
-        ||  True | False | False |
-        ||  null | False | False |
-        || False |  True | False |
-        ||  True |  True |  True |
-        ||  null |  True |  null |
-        || False |  null | False |
-        ||  True |  null |  null |
-        ||  null |  null |  null |
-        |+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+-------+-------+-------+
+            ||     a |     b |     c |
+            |+-------+-------+-------+
+            || False | False | False |
+            ||  True | False | False |
+            ||  null | False | False |
+            || False |  True | False |
+            ||  True |  True |  True |
+            ||  null |  True |  null |
+            || False |  null | False |
+            ||  True |  null |  null |
+            ||  null |  null |  null |
+            |+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -54,7 +57,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_or(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -68,22 +72,25 @@ class TestColumn(unittest.TestCase):
                 STRUCT(true as a, null as b),
                 STRUCT(null as a, null as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+-------+-------+-------+
-        ||     a |     b |     c |
-        |+-------+-------+-------+
-        || False | False | False |
-        ||  True | False |  True |
-        ||  null | False |  null |
-        || False |  True |  True |
-        ||  True |  True |  True |
-        ||  null |  True |  True |
-        || False |  null |  null |
-        ||  True |  null |  True |
-        ||  null |  null |  null |
-        |+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+-------+-------+-------+
+            ||     a |     b |     c |
+            |+-------+-------+-------+
+            || False | False | False |
+            ||  True | False |  True |
+            ||  null | False |  null |
+            || False |  True |  True |
+            ||  True |  True |  True |
+            ||  null |  True |  True |
+            || False |  null |  null |
+            ||  True |  null |  True |
+            ||  null |  null |  null |
+            |+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -92,7 +99,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_add(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -100,16 +108,19 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+------+
-        ||    a |    b |    c |
-        |+------+------+------+
-        ||    2 |    2 |    4 |
-        ||    2 | null | null |
-        || null |    2 | null |
-        |+------+------+------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+------+
+            ||    a |    b |    c |
+            |+------+------+------+
+            ||    2 |    2 |    4 |
+            ||    2 | null | null |
+            || null |    2 | null |
+            |+------+------+------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -118,7 +129,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_sub(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -126,25 +138,29 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+------+
-        ||    a |    b |    c |
-        |+------+------+------+
-        ||    2 |    2 |    0 |
-        ||    2 | null | null |
-        || null |    2 | null |
-        |+------+------+------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+------+
+            ||    a |    b |    c |
+            |+------+------+------+
+            ||    2 |    2 |    0 |
+            ||    2 | null | null |
+            || null |    2 | null |
+            |+------+------+------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
             # Operators must be compatible with literals, hence the "0 + a"
-            df.withColumn("c", - (1 - (a - b) - 1)).show()
+            df.withColumn("c", -(1 - (a - b) - 1)).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_mul(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -152,16 +168,19 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+------+
-        ||    a |    b |    c |
-        |+------+------+------+
-        ||    2 |    2 |    4 |
-        ||    2 | null | null |
-        || null |    2 | null |
-        |+------+------+------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+------+
+            ||    a |    b |    c |
+            |+------+------+------+
+            ||    2 |    2 |    4 |
+            ||    2 | null | null |
+            || null |    2 | null |
+            |+------+------+------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -170,7 +189,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_div(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -178,16 +198,19 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+------+
-        ||    a |    b |    c |
-        |+------+------+------+
-        ||    2 |    2 |  1.0 |
-        ||    2 | null | null |
-        || null |    2 | null |
-        |+------+------+------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+------+
+            ||    a |    b |    c |
+            |+------+------+------+
+            ||    2 |    2 |  1.0 |
+            ||    2 | null | null |
+            || null |    2 | null |
+            |+------+------+------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -196,7 +219,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_eq(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -205,17 +229,20 @@ class TestColumn(unittest.TestCase):
                 STRUCT("a" as a, null as b),
                 STRUCT(null as a, "b" as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    a |    a |  True |  True |  True |
-        ||    a |    b | False | False | False |
-        ||    a | null |  null |  null |  null |
-        || null |    b |  null | False | False |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    a |    a |  True |  True |  True |
+            ||    a |    b | False | False | False |
+            ||    a | null |  null |  null |  null |
+            || null |    b |  null | False | False |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -226,7 +253,8 @@ class TestColumn(unittest.TestCase):
             res = a == a == a
 
     def test_neq(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -235,17 +263,20 @@ class TestColumn(unittest.TestCase):
                 STRUCT("a" as a, null as b),
                 STRUCT(null as a, "b" as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    a |    a | False | False | False |
-        ||    a |    b |  True |  True |  True |
-        ||    a | null |  null |  null |  null |
-        || null |    b |  null |  True |  True |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    a |    a | False | False | False |
+            ||    a |    b |  True |  True |  True |
+            ||    a | null |  null |  null |  null |
+            || null |    b |  null |  True |  True |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -253,7 +284,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_lt(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -263,18 +295,21 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    1 |    2 |  True |  True | False |
-        ||    2 |    2 | False | False | False |
-        ||    3 |    2 | False | False |  True |
-        ||    2 | null |  null | False | False |
-        || null |    2 |  null |  null |  null |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    1 |    2 |  True |  True | False |
+            ||    2 |    2 | False | False | False |
+            ||    3 |    2 | False | False |  True |
+            ||    2 | null |  null | False | False |
+            || null |    2 |  null |  null |  null |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -282,7 +317,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_le(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -292,18 +328,21 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    1 |    2 |  True |  True | False |
-        ||    2 |    2 |  True |  True |  True |
-        ||    3 |    2 | False | False |  True |
-        ||    2 | null |  null |  True |  True |
-        || null |    2 |  null |  null |  null |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    1 |    2 |  True |  True | False |
+            ||    2 |    2 |  True |  True |  True |
+            ||    3 |    2 | False | False |  True |
+            ||    2 | null |  null |  True |  True |
+            || null |    2 |  null |  null |  null |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -311,7 +350,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_gt(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -321,18 +361,21 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    1 |    2 | False | False |  True |
-        ||    2 |    2 | False | False | False |
-        ||    3 |    2 |  True |  True | False |
-        ||    2 | null |  null | False | False |
-        || null |    2 |  null |  null |  null |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    1 |    2 | False | False |  True |
+            ||    2 |    2 | False | False | False |
+            ||    3 |    2 |  True |  True | False |
+            ||    2 | null |  null | False | False |
+            || null |    2 |  null |  null |  null |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")
@@ -340,7 +383,8 @@ class TestColumn(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_ge(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -350,18 +394,21 @@ class TestColumn(unittest.TestCase):
                 STRUCT(2 as a, null as b),
                 STRUCT(null as a, 2 as b)
             ])
-        """)
-        expected = strip_margin("""
-        |+------+------+-------+-------+-------+
-        ||    a |    b |     c |     d |     e |
-        |+------+------+-------+-------+-------+
-        ||    1 |    2 | False | False |  True |
-        ||    2 |    2 |  True |  True |  True |
-        ||    3 |    2 |  True |  True | False |
-        ||    2 | null |  null |  True |  True |
-        || null |    2 |  null |  null |  null |
-        |+------+------+-------+-------+-------+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+------+------+-------+-------+-------+
+            ||    a |    b |     c |     d |     e |
+            |+------+------+-------+-------+-------+
+            ||    1 |    2 | False | False |  True |
+            ||    2 |    2 |  True |  True |  True |
+            ||    3 |    2 |  True |  True | False |
+            ||    2 | null |  null |  True |  True |
+            || null |    2 |  null |  null |  null |
+            |+------+------+-------+-------+-------+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
             b = f.col("b")

@@ -7,7 +7,8 @@ bigquery = BigQueryBuilder(get_bq_client())
 # The data in this example has been inspired by:
 # https://sparkbyexamples.com/spark/how-to-pivot-table-and-unpivot-a-spark-dataframe/
 
-df = bigquery.sql("""
+df = bigquery.sql(
+    """
     SELECT 
         *
     FROM UNNEST ([
@@ -20,7 +21,8 @@ df = bigquery.sql("""
         STRUCT(2019 as year,  "Banana" as product, null as Canada, 1400 as China,   400 as Mexico),
         STRUCT(2019 as year, "Carrots" as product, null as Canada,  200 as China,  null as Mexico)
     ])
-""")
+"""
+)
 df.show()
 # +------+---------+--------+-------+--------+
 # | year | product | Canada | China | Mexico |
@@ -35,7 +37,7 @@ df.show()
 # | 2019 | Carrots |        |  200  |        |
 # +------+---------+--------+-------+--------+
 
-unpivotted = unpivot(df, ['year', 'product'], key_alias='country', value_alias='Amount', implem_version=1)
+unpivotted = unpivot(df, ["year", "product"], key_alias="country", value_alias="Amount", implem_version=1)
 unpivotted.show(100)
 # +------+---------+---------+--------+
 # | year | product | country | Amount |
@@ -66,7 +68,13 @@ unpivotted.show(100)
 # | 2019 | Carrots | Mexico  |        |
 # +------+---------+---------+--------+
 
-repivotted = pivot(unpivotted, pivot_column="country", agg_fun="sum", agg_col="amount", implem_version=1)
+repivotted = pivot(
+    unpivotted,
+    pivot_column="country",
+    agg_fun="sum",
+    agg_col="amount",
+    implem_version=1,
+)
 repivotted.show()
 # +------+---------+--------+-------+--------+
 # | year | product | Canada | China | Mexico |
@@ -81,5 +89,4 @@ repivotted.show()
 # | 2019 | Carrots |        |  200  |        |
 # +------+---------+--------+-------+--------+
 
-assert(df.collect() == repivotted.collect())
-
+assert df.collect() == repivotted.collect()

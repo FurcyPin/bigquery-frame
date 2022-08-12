@@ -2,9 +2,14 @@ from typing import List
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import DataFrame, BigQueryBuilder
+from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.dataframe import is_struct, is_repeated, is_nullable, schema_to_simple_string
+from bigquery_frame.dataframe import (
+    is_nullable,
+    is_repeated,
+    is_struct,
+    schema_to_simple_string,
+)
 
 
 def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
@@ -51,17 +56,19 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
             if is_struct(field) and not is_repeated(field):
                 expand_struct(field.fields, col_stack + [field.name])
             else:
-                column = '.'.join(col_stack + [field.name]) + " as " + struct_separator.join(col_stack + [field.name])
+                column = ".".join(col_stack + [field.name]) + " as " + struct_separator.join(col_stack + [field.name])
                 cols.append(column)
 
     expand_struct(df.schema, col_stack=[])
     return df.select(cols)
 
 
-def flatten_schema(schema: List[SchemaField],
-                   explode: bool,
-                   struct_separator: str = ".",
-                   array_separator: str = "!") -> List[SchemaField]:
+def flatten_schema(
+    schema: List[SchemaField],
+    explode: bool,
+    struct_separator: str = ".",
+    array_separator: str = "!",
+) -> List[SchemaField]:
     """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
     The field names are kept, with a '.' separator for struct fields.
     If `explode` option is set, arrays are exploded with a '!' separator.
@@ -82,15 +89,20 @@ def flatten_schema(schema: List[SchemaField],
     :param array_separator: separator used to delimit arrays
     :return:
     """
+
     def flatten_schema_field(prefix: str, schema_field: SchemaField, nullable: bool) -> List[SchemaField]:
         if is_struct(schema_field) and is_repeated(schema_field) and explode:
-            return flatten_struct_type(schema_field.fields,
-                                       nullable or is_nullable(schema_field),
-                                       prefix + array_separator + struct_separator)
+            return flatten_struct_type(
+                schema_field.fields,
+                nullable or is_nullable(schema_field),
+                prefix + array_separator + struct_separator,
+            )
         elif is_struct(schema_field) and not is_repeated(schema_field):
-            return flatten_struct_type(schema_field.fields,
-                                       nullable or is_nullable(schema_field),
-                                       prefix + struct_separator)
+            return flatten_struct_type(
+                schema_field.fields,
+                nullable or is_nullable(schema_field),
+                prefix + struct_separator,
+            )
         else:
             mode = "NULLABLE" if nullable or is_nullable(schema_field) else "REQUIRED"
             if is_repeated(schema_field):
@@ -98,7 +110,15 @@ def flatten_schema(schema: List[SchemaField],
                     prefix += array_separator
                 else:
                     mode = "REPEATED"
-            return [SchemaField(prefix, schema_field.field_type, mode, schema_field.description, schema_field.fields)]
+            return [
+                SchemaField(
+                    prefix,
+                    schema_field.field_type,
+                    mode,
+                    schema_field.description,
+                    schema_field.fields,
+                )
+            ]
 
     def flatten_struct_type(schema: List[SchemaField], nullable: bool = False, prefix: str = "") -> List[SchemaField]:
         res = []

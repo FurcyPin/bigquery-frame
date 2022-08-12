@@ -1,10 +1,10 @@
-from typing import Optional, Callable, List, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
-from bigquery_frame.utils import strip_margin, indent
+from bigquery_frame.utils import indent, strip_margin
 
-LitOrColumn = Union[object, 'Column']
-StringOrColumn = Union[str, 'Column']
+LitOrColumn = Union[object, "Column"]
+StringOrColumn = Union[str, "Column"]
 
 
 def cols_to_str(cols: List[StringOrColumn], indentation: Optional[int] = None, sep: str = ",") -> str:
@@ -15,18 +15,18 @@ def cols_to_str(cols: List[StringOrColumn], indentation: Optional[int] = None, s
         return ", ".join(cols)
 
 
-def literal_col(val: LitOrColumn) -> 'Column':
+def literal_col(val: LitOrColumn) -> "Column":
     if val is None:
         return Column("NULL")
     if type(val) == str:
         return Column(f"'{val}'")
     if type(val) in [bool, int, float]:
         return Column(str(val))
-    raise IllegalArgumentException(f'lit({val}): The type {type(val)} is not supported yet.')
+    raise IllegalArgumentException(f"lit({val}): The type {type(val)} is not supported yet.")
 
 
-def _bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
-    def fun(self, other: LitOrColumn) -> 'Column':
+def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
+    def fun(self, other: LitOrColumn) -> "Column":
         if not isinstance(other, Column):
             other = literal_col(other)
         return Column(f"({self.expr}) {op} ({other.expr})")
@@ -34,8 +34,8 @@ def _bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
     return fun
 
 
-def _reverse_bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
-    def fun(self, other: LitOrColumn) -> 'Column':
+def _reverse_bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
+    def fun(self, other: LitOrColumn) -> "Column":
         if not isinstance(other, Column):
             other = literal_col(other)
         return Column(f"({other.expr}) {op} ({self.expr})")
@@ -43,20 +43,19 @@ def _reverse_bin_op(op: str) -> Callable[['Column', LitOrColumn], 'Column']:
     return fun
 
 
-def _func_op(op: str) -> Callable[['Column'], 'Column']:
-    def fun(self) -> 'Column':
+def _func_op(op: str) -> Callable[["Column"], "Column"]:
+    def fun(self) -> "Column":
         return Column(f"{op} ({self.expr})")
 
     return fun
 
 
 class Column:
-
     def __init__(self, expr: str, alias: Optional[str] = None):
         self.expr = expr
         self._alias = alias
-        self._when_condition: Optional[List[Tuple['Column', 'Column']]] = None
-        self._when_default: Optional['Column'] = None
+        self._when_condition: Optional[List[Tuple["Column", "Column"]]] = None
+        self._when_default: Optional["Column"] = None
 
     def __str__(self):
         if self._when_condition is not None:
@@ -65,10 +64,12 @@ class Column:
                 default_str = f"\n  ELSE {self._when_default}"
             else:
                 default_str = ""
-            res = strip_margin(f"""
+            res = strip_margin(
+                f"""
                 |CASE
                 |{cols_to_str(conditions_str, indentation=2, sep="")}{default_str}
-                |END""")
+                |END"""
+            )
         else:
             res = self.expr
         if self._alias is not None:
@@ -78,39 +79,41 @@ class Column:
     def __repr__(self):
         return f"Column('{self.expr}')"
 
-    __add__: Callable[[LitOrColumn], 'Column'] = _bin_op("+")
-    __radd__: Callable[[LitOrColumn], 'Column'] = _bin_op("+")
-    __sub__: Callable[[LitOrColumn], 'Column'] = _bin_op("-")
-    __rsub__: Callable[[LitOrColumn], 'Column'] = _reverse_bin_op("-")
-    __neg__: Callable[[], 'Column'] = _func_op("-")
-    __mul__: Callable[[LitOrColumn], 'Column'] = _bin_op("*")
-    __rmul__: Callable[[LitOrColumn], 'Column'] = _bin_op("*")
-    __truediv__: Callable[[LitOrColumn], 'Column'] = _bin_op("/")
-    __rtruediv__: Callable[[LitOrColumn], 'Column'] = _reverse_bin_op("/")
-    __and__: Callable[[LitOrColumn], 'Column'] = _bin_op("AND")
-    __rand__: Callable[[LitOrColumn], 'Column'] = _bin_op("AND")
-    __or__: Callable[[LitOrColumn], 'Column'] = _bin_op("OR")
-    __ror__: Callable[[LitOrColumn], 'Column'] = _bin_op("OR")
+    __add__: Callable[[LitOrColumn], "Column"] = _bin_op("+")
+    __radd__: Callable[[LitOrColumn], "Column"] = _bin_op("+")
+    __sub__: Callable[[LitOrColumn], "Column"] = _bin_op("-")
+    __rsub__: Callable[[LitOrColumn], "Column"] = _reverse_bin_op("-")
+    __neg__: Callable[[], "Column"] = _func_op("-")
+    __mul__: Callable[[LitOrColumn], "Column"] = _bin_op("*")
+    __rmul__: Callable[[LitOrColumn], "Column"] = _bin_op("*")
+    __truediv__: Callable[[LitOrColumn], "Column"] = _bin_op("/")
+    __rtruediv__: Callable[[LitOrColumn], "Column"] = _reverse_bin_op("/")
+    __and__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
+    __rand__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
+    __or__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
+    __ror__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
 
     # logistic operators
-    __eq__: Callable[[LitOrColumn], 'Column'] = _bin_op("=")
-    __ne__: Callable[[LitOrColumn], 'Column'] = _bin_op("<>")
-    __lt__: Callable[[LitOrColumn], 'Column'] = _bin_op("<")
-    __le__: Callable[[LitOrColumn], 'Column'] = _bin_op("<=")
-    __ge__: Callable[[LitOrColumn], 'Column'] = _bin_op(">=")
-    __gt__: Callable[[LitOrColumn], 'Column'] = _bin_op(">")
+    __eq__: Callable[[LitOrColumn], "Column"] = _bin_op("=")
+    __ne__: Callable[[LitOrColumn], "Column"] = _bin_op("<>")
+    __lt__: Callable[[LitOrColumn], "Column"] = _bin_op("<")
+    __le__: Callable[[LitOrColumn], "Column"] = _bin_op("<=")
+    __ge__: Callable[[LitOrColumn], "Column"] = _bin_op(">=")
+    __gt__: Callable[[LitOrColumn], "Column"] = _bin_op(">")
 
     def __bool__(self):
-        raise ValueError("Cannot convert column into bool: please use '&' for 'and', '|' for 'or', "
-                         "'~' for 'not' when building DataFrame boolean expressions.")
+        raise ValueError(
+            "Cannot convert column into bool: please use '&' for 'and', '|' for 'or', "
+            "'~' for 'not' when building DataFrame boolean expressions."
+        )
 
-    def alias(self, alias: str) -> 'Column':
+    def alias(self, alias: str) -> "Column":
         return Column(self.expr, alias)
 
-    def asType(self, col_type: str) -> 'Column':
+    def asType(self, col_type: str) -> "Column":
         return Column(expr=f"CAST({self.expr} as {col_type})", alias=self._alias)
 
-    def when(self, condition: 'Column', value: 'Column') -> 'Column':
+    def when(self, condition: "Column", value: "Column") -> "Column":
         """Evaluates a list of conditions and returns one of multiple possible result expressions.
         If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
@@ -136,15 +139,14 @@ class Column:
         :return:
         """
         if self._when_condition is None:
-            raise IllegalArgumentException(
-                "when() can only be applied on a Column previously generated by when()")
+            raise IllegalArgumentException("when() can only be applied on a Column previously generated by when()")
         else:
             c = Column(expr=self.expr, alias=self._alias)
             c._alias = self._alias
             c._when_condition = [*self._when_condition, (condition, value)]
             return c
 
-    def otherwise(self, value: 'Column') -> 'Column':
+    def otherwise(self, value: "Column") -> "Column":
         """Evaluates a list of conditions and returns one of multiple possible result expressions.
         If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
@@ -170,7 +172,8 @@ class Column:
         """
         if self._when_default is not None:
             raise IllegalArgumentException(
-                "otherwise() can only be applied once on a Column previously generated by when()")
+                "otherwise() can only be applied once on a Column previously generated by when()"
+            )
         else:
             c = Column(expr=self.expr, alias=self._alias)
             c._when_condition = self._when_condition

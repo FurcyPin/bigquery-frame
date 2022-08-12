@@ -1,7 +1,7 @@
-from typing import List, Tuple, Optional, Union, Set, Dict
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import google
-from google.cloud.bigquery import SchemaField, Client, Row
+from google.cloud.bigquery import Client, Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.auth import get_bq_client
@@ -42,6 +42,7 @@ def schema_to_simple_string(schema: List[SchemaField]):
     :param schema:
     :return:
     """
+
     def schema_field_to_simple_string(schema_field: SchemaField):
         if is_struct(schema_field):
             if is_repeated(schema_field):
@@ -69,11 +70,7 @@ def schema_to_tree_string(schema: List[SchemaField]) -> str:
         return res
 
     def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
-        return [
-            str
-            for schema_field in schema
-            for str in str_gen_schema_field(schema_field, prefix)
-        ]
+        return [str for schema_field in schema for str in str_gen_schema_field(schema_field, prefix)]
 
     res = ["root"] + str_gen_schema(schema, " |-- ")
 
@@ -102,25 +99,23 @@ class BigQueryBuilder(HasBigQueryClient):
         super().__init__(client)
         self._alias_count = 0
         self._temp_table_count = 0
-        self._views: Dict[str, 'DataFrame'] = {}
+        self._views: Dict[str, "DataFrame"] = {}
         self._temp_tables: Set[str] = set()
 
-    def table(self, full_table_name: str) -> 'DataFrame':
-        """Returns the specified table as a :class:`DataFrame`.
-        """
+    def table(self, full_table_name: str) -> "DataFrame":
+        """Returns the specified table as a :class:`DataFrame`."""
         query = f"""SELECT * FROM {quote(full_table_name)}"""
         return DataFrame(query, alias=None, bigquery=self)
 
-    def sql(self, sql_query) -> 'DataFrame':
-        """Returns a :class:`DataFrame` representing the result of the given query.
-        """
+    def sql(self, sql_query) -> "DataFrame":
+        """Returns a :class:`DataFrame` representing the result of the given query."""
         return DataFrame(sql_query, None, self)
 
-    def _registerDataFrameAsTempView(self, df: 'DataFrame', alias: str) -> None:
+    def _registerDataFrameAsTempView(self, df: "DataFrame", alias: str) -> None:
         # self._check_alias(alias, [])
         self._views[alias] = df
 
-    def _registerDataFrameAsTempTable(self, df: 'DataFrame', alias: Optional[str]=None) -> 'DataFrame':
+    def _registerDataFrameAsTempTable(self, df: "DataFrame", alias: Optional[str] = None) -> "DataFrame":
         if alias is None:
             alias = self._get_temp_table_alias()
         query = f"CREATE OR REPLACE TEMP TABLE {quote(alias)} AS \n" + df.compile()
@@ -129,9 +124,11 @@ class BigQueryBuilder(HasBigQueryClient):
 
     def _compile_views(self) -> List[str]:
         return [
-            strip_margin(f"""{quote(alias)} AS (
-            |{indent(df._compile_with_deps(), 2)}
-            |)""")
+            strip_margin(
+                f"""{quote(alias)} AS (
+                |{indent(df._compile_with_deps(), 2)}
+                |)"""
+            )
             for alias, df in self._views.items()
         ]
 
@@ -143,7 +140,7 @@ class BigQueryBuilder(HasBigQueryClient):
         self._temp_table_count += 1
         return self.DEFAULT_TEMP_TABLE_NAME.format(num=self._temp_table_count)
 
-    def _check_alias(self, new_alias, deps: List[Tuple[str, 'DataFrame']]) -> None:
+    def _check_alias(self, new_alias, deps: List[Tuple[str, "DataFrame"]]) -> None:
         """Checks that the alias follows BigQuery constraints, such as:
 
         - BigQuery does not allow having two CTEs with the same name in a query.
@@ -160,15 +157,21 @@ class BigQueryBuilder(HasBigQueryClient):
 
 class DataFrame:
 
-    _deps: List[Tuple[str, 'DataFrame']]
+    _deps: List[Tuple[str, "DataFrame"]]
     _alias: str
 
-    def __init__(self, query: str, alias: Optional[str], bigquery: BigQueryBuilder, deps: Optional[List['DataFrame']] = None):
+    def __init__(
+        self,
+        query: str,
+        alias: Optional[str],
+        bigquery: BigQueryBuilder,
+        deps: Optional[List["DataFrame"]] = None,
+    ):
         self.query = query
         if deps is None:
             deps = []
         deps = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
-        self._deps: List[Tuple[str, 'DataFrame']] = _dedup_key_value_list(deps)
+        self._deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps)
         if alias is None:
             alias = bigquery._get_alias()
         else:
@@ -180,7 +183,7 @@ class DataFrame:
     def __repr__(self):
         return f"""DataFrame('{self.query}) as {self._alias}')"""
 
-    def _apply_query(self, query: str, deps: Optional[List['DataFrame']] = None) -> 'DataFrame':
+    def _apply_query(self, query: str, deps: Optional[List["DataFrame"]] = None) -> "DataFrame":
         if deps is None:
             deps = [self]
         return DataFrame(query, None, self.bigquery, deps=deps)
@@ -191,9 +194,11 @@ class DataFrame:
 
     def _compile_deps(self) -> List[str]:
         return [
-            strip_margin(f"""{quote(alias)} AS (
-            |{indent(cte.query, 2)}
-            |)""")
+            strip_margin(
+                f"""{quote(alias)} AS (
+                |{indent(cte.query, 2)}
+                |)"""
+            )
             for (alias, cte) in self._deps
         ]
 
@@ -219,11 +224,11 @@ class DataFrame:
         ctes = self.bigquery._compile_views() + self._compile_deps()
         return self._compile_with_ctes(ctes)
 
-    def alias(self, alias) -> 'DataFrame':
+    def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
         return DataFrame(self.query, alias, self.bigquery)
 
-    def persist(self) -> 'DataFrame':
+    def persist(self) -> "DataFrame":
         """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
         from that table.
 
@@ -236,7 +241,7 @@ class DataFrame:
         """
         return self.bigquery._registerDataFrameAsTempTable(self)
 
-    def createOrReplaceTempTable(self, alias: str) -> 'DataFrame':
+    def createOrReplaceTempTable(self, alias: str) -> "DataFrame":
         """Creates or replace a persisted temporary table.
 
         >>> bq = BigQueryBuilder(get_bq_client())
@@ -295,7 +300,7 @@ class DataFrame:
         """
         self.bigquery._registerDataFrameAsTempView(self, name)
 
-    def select(self, *columns: Union[List[Column], Column]) -> 'DataFrame':
+    def select(self, *columns: Union[List[Column], Column]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
         if isinstance(columns[0], list):
             if len(columns) == 1:
@@ -305,10 +310,11 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT
             |{cols_to_str(columns, 2)}
-            |FROM {quote(self._alias)}""")
+            |FROM {quote(self._alias)}"""
+        )
         return self._apply_query(query)
 
-    def drop(self, *cols: str) -> 'DataFrame':
+    def drop(self, *cols: str) -> "DataFrame":
         """Returns a new :class:`DataFrame` that drops the specified column.
         This is a no-op if schema doesn't contain the given column name(s).
         """
@@ -317,10 +323,11 @@ class DataFrame:
         query = strip_margin(
             f"""SELECT 
             |  * EXCEPT ({cols_to_str(cols)})
-            |FROM {quote(self._alias)}""")
+            |FROM {quote(self._alias)}"""
+        )
         return self._apply_query(query)
 
-    def union(self, other: 'DataFrame') -> 'DataFrame':
+    def union(self, other: "DataFrame") -> "DataFrame":
         """Return a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
 
         This is equivalent to `UNION ALL` in SQL. To do a SQL-style `UNION DISTINCT`
@@ -337,7 +344,7 @@ class DataFrame:
 
     unionAll = union
 
-    def unionByName(self, other: 'DataFrame', allowMissingColumns: bool = False) -> 'DataFrame':
+    def unionByName(self, other: "DataFrame", allowMissingColumns: bool = False) -> "DataFrame":
         """Returns a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
 
         This is different from both `UNION ALL` and `UNION DISTINCT` in SQL. To do a SQL-style set
@@ -398,35 +405,39 @@ class DataFrame:
         other_only_cols = [col for col in other_cols if col not in self_cols_set]
 
         if (len(self_only_cols) > 0 or len(other_only_cols) > 0) and not allowMissingColumns:
-            raise ValueError(f"UnionByName: dataFrames must have the same columns, "
-                             f"unless allowMissingColumns is set to True.\n"
-                             f"Columns in first DataFrame: [{cols_to_str(self.columns)}]\n"
-                             f"Columns in second DataFrame: [{cols_to_str(other.columns)}]")
+            raise ValueError(
+                f"UnionByName: dataFrames must have the same columns, "
+                f"unless allowMissingColumns is set to True.\n"
+                f"Columns in first DataFrame: [{cols_to_str(self.columns)}]\n"
+                f"Columns in second DataFrame: [{cols_to_str(other.columns)}]"
+            )
 
         def optional_comma(l: list):
-            return ',' if len(l) > 0 else ''
+            return "," if len(l) > 0 else ""
 
-        query = strip_margin(f"""
-        |SELECT 
-        |  {cols_to_str(self_only_cols, 2)}{optional_comma(self_only_cols)}
-        |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
-        |  {cols_to_str([f"NULL as {col}" for col in other_only_cols], 2)}
-        |FROM {quote(self._alias)} 
-        |UNION ALL 
-        |SELECT 
-        |  {cols_to_str([f"NULL as {col}" for col in self_only_cols], 2)}{optional_comma(self_only_cols)}
-        |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
-        |  {cols_to_str(other_only_cols, 2)}
-        |FROM {quote(other._alias)}
-        |""")
+        query = strip_margin(
+            f"""
+            |SELECT 
+            |  {cols_to_str(self_only_cols, 2)}{optional_comma(self_only_cols)}
+            |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
+            |  {cols_to_str([f"NULL as {col}" for col in other_only_cols], 2)}
+            |FROM {quote(self._alias)} 
+            |UNION ALL 
+            |SELECT 
+            |  {cols_to_str([f"NULL as {col}" for col in self_only_cols], 2)}{optional_comma(self_only_cols)}
+            |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
+            |  {cols_to_str(other_only_cols, 2)}
+            |FROM {quote(other._alias)}
+            |"""
+        )
         return self._apply_query(query, deps=[self, other])
 
-    def limit(self, num: int) -> 'DataFrame':
+    def limit(self, num: int) -> "DataFrame":
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
         query = f"""SELECT * FROM {quote(self._alias)} LIMIT {num}"""
         return self._apply_query(query)
 
-    def distinct(self) -> 'DataFrame':
+    def distinct(self) -> "DataFrame":
         """Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
 
         Limitations compared to Spark
@@ -442,25 +453,29 @@ class DataFrame:
         :param cols:
         :return:
         """
-        query = strip_margin(f"""
-        |SELECT * 
-        |FROM {quote(self._alias)} 
-        |ORDER BY {cols_to_str(cols)}""")
+        query = strip_margin(
+            f"""
+            |SELECT * 
+            |FROM {quote(self._alias)} 
+            |ORDER BY {cols_to_str(cols)}"""
+        )
         return self._apply_query(query)
 
     orderBy = sort
 
-    def filter(self, expr: str) -> 'DataFrame':
+    def filter(self, expr: str) -> "DataFrame":
         """Filters rows using the given condition."""
-        query = strip_margin(f"""
-        |SELECT * 
-        |FROM {quote(self._alias)} 
-        |WHERE {expr}""")
+        query = strip_margin(
+            f"""
+            |SELECT * 
+            |FROM {quote(self._alias)} 
+            |WHERE {expr}"""
+        )
         return self._apply_query(query)
 
     where = filter
 
-    def withColumn(self, col_name: str, col_expr: Column, replace: bool = False) -> 'DataFrame':
+    def withColumn(self, col_name: str, col_expr: Column, replace: bool = False) -> "DataFrame":
         """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.
 
         The column expression must be an expression over this :class:`DataFrame`; attempting to add a column from
@@ -527,7 +542,7 @@ class DataFrame:
         :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
         :return: Nothing
         """
-        res = self.limit(n+1).collect_iterator()
+        res = self.limit(n + 1).collect_iterator()
         print_results(res, format_args, limit=n)
 
     def toPandas(self, **kwargs):

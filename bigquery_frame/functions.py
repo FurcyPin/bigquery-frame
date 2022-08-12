@@ -2,7 +2,7 @@ from typing import Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column, literal_col, cols_to_str, StringOrColumn
+from bigquery_frame.column import Column, StringOrColumn, cols_to_str, literal_col
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col
 
@@ -211,4 +211,3 @@ def _get_test_df_1() -> DataFrame:
        ])
     """
     return bq.sql(query)
-

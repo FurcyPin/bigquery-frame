@@ -2,7 +2,7 @@ from typing import List
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import DataFrame, BigQueryBuilder
+from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
@@ -60,6 +60,7 @@ def _unnest_column(df: DataFrame, col: str):
     :param col:
     :return:
     """
+
     def build_cross_join_statement(split: List[str]):
         previous = ""
         counter = 1
@@ -84,11 +85,13 @@ def _unnest_column(df: DataFrame, col: str):
         else:
             col += " as " + split[-2].replace(".", "")
 
-        query = strip_margin(f"""
+        query = strip_margin(
+            f"""
             |SELECT 
             |  {col}
             |FROM {quote(df._alias)}
-            |{cross_join_str}""")
+            |{cross_join_str}"""
+        )
         return df._apply_query(query)
     else:
         return df
@@ -111,7 +114,7 @@ def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int):
         (f.count(f.lit(1)) - f.count(col)).alias("count_null"),
         f.min(col).asType("STRING").alias("min"),
         f.max(col).asType("STRING").alias("max"),
-        f.expr(f"APPROX_TOP_COUNT(COALESCE(CAST({f.col(col)} as STRING), 'NULL'), 100)").alias("approx_top_100")
+        f.expr(f"APPROX_TOP_COUNT(COALESCE(CAST({f.col(col)} as STRING), 'NULL'), 100)").alias("approx_top_100"),
     )
     return res
 
@@ -119,7 +122,7 @@ def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int):
 def __chunks(lst: List, n: int):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i : i + n]
 
 
 def analyze(df: DataFrame, _chunk_size: int = 50):
@@ -199,10 +202,8 @@ def analyze(df: DataFrame, _chunk_size: int = 50):
         union_df = union_dataframes(col_dfs)
     else:
         from tqdm import tqdm
-        big_dfs = [
-            union_dataframes(chunk).persist()
-            for chunk in tqdm(list(__chunks(col_dfs, _chunk_size)))
-        ]
+
+        big_dfs = [union_dataframes(chunk).persist() for chunk in tqdm(list(__chunks(col_dfs, _chunk_size)))]
         union_df = union_dataframes(big_dfs)
     # For some reason, `union_df.orderBy("column_number").drop("column_number")`
     # does not preserve the ordering, but this does:

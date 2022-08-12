@@ -1,6 +1,6 @@
 from typing import Optional
 
-from google.cloud.bigquery import QueryJobConfig, ConnectionProperty
+from google.cloud.bigquery import ConnectionProperty, QueryJobConfig
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.table import RowIterator
 
@@ -46,4 +46,3 @@ class HasBigQueryClient:
 
     def close(self):
         self.__client.close()
-

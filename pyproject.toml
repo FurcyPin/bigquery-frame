@@ -17,6 +17,9 @@ tabulate = "^0.8.10"
 tqdm = "^4.64.0"
 
 [tool.poetry.dev-dependencies]
+black = "^22.6.0"
+isort = "^5.10.1"
+flake8 = "^5.0.4"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 pipdeptree = "2.2.1"
@@ -30,6 +33,9 @@ db-dtypes = "^1.0.3"
 [build-system]
 requires = ["poetry-core==1.1.14"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
 
 
 [tool.pytest.ini_options]

@@ -6,7 +6,6 @@ from bigquery_frame.transformations_impl.union_dataframes import union_dataframe
 
 
 class TestUnionDataFrames(unittest.TestCase):
-
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 

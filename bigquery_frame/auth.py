@@ -12,7 +12,8 @@ def _get_bq_client_from_credentials() -> Optional[Client]:
     gcp_credentials_path = os.getenv("GCP_CREDENTIALS_PATH") or conf.GCP_CREDENTIALS_PATH
     if gcp_credentials_path.endswith(".json"):
         credentials = service_account.Credentials.from_service_account_file(
-            gcp_credentials_path, scopes=["https://www.googleapis.com/auth/cloud-platform"],
+            gcp_credentials_path,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
         )
         client = google.cloud.bigquery.Client(credentials=credentials, project=credentials.project_id)
         return client
@@ -29,4 +30,3 @@ def get_bq_client():
     if client is None:
         client = _get_bq_client_from_default()
     return client
-

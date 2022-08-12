@@ -9,7 +9,6 @@ from tests.utils import captured_output
 
 
 class TestDataFrame(unittest.TestCase):
-
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 
@@ -22,19 +21,22 @@ class TestDataFrame(unittest.TestCase):
 
         with captured_output() as (stdout, stderr):
             df.withColumn("b", f.isnull(f.col("a").alias("a"))).show()
-            expected = strip_margin("""
-            |+------+-------+
-            ||    a |     b |
-            |+------+-------+
-            ||    1 | False |
-            ||    2 | False |
-            || null |  True |
-            |+------+-------+
-            |""")
+            expected = strip_margin(
+                """
+                |+------+-------+
+                ||    a |     b |
+                |+------+-------+
+                ||    1 | False |
+                ||    2 | False |
+                || null |  True |
+                |+------+-------+
+                |"""
+            )
             self.assertEqual(expected, stdout.getvalue())
 
     def test_when(self):
-        df = self.bigquery.sql("""
+        df = self.bigquery.sql(
+            """
             SELECT 
                 *
             FROM UNNEST ([
@@ -43,24 +45,27 @@ class TestDataFrame(unittest.TestCase):
                 STRUCT(3 as a),
                 STRUCT(4 as a)
             ])
-        """)
-        expected = strip_margin("""
-        |+---+---+
-        || a | c |
-        |+---+---+
-        || 1 | a |
-        || 2 | b |
-        || 3 | c |
-        || 4 | c |
-        |+---+---+
-        |""")
+        """
+        )
+        expected = strip_margin(
+            """
+            |+---+---+
+            || a | c |
+            |+---+---+
+            || 1 | a |
+            || 2 | b |
+            || 3 | c |
+            || 4 | c |
+            |+---+---+
+            |"""
+        )
         with captured_output() as (stdout, stderr):
             a = f.col("a")
 
-            df.withColumn("c",
-                          f.when(a == f.lit(1), f.lit("a"))
-                          .when(a == f.lit(2), f.lit("b"))
-                          .otherwise(f.lit("c"))).show()
+            df.withColumn(
+                "c",
+                f.when(a == f.lit(1), f.lit("a")).when(a == f.lit(2), f.lit("b")).otherwise(f.lit("c")),
+            ).show()
             self.assertEqual(expected, stdout.getvalue())
 
     def test_when_without_bootstrap(self):

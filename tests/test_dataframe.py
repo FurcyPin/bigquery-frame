@@ -10,7 +10,6 @@ from tests.utils import captured_output
 
 
 class TestDataFrame(unittest.TestCase):
-
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 
@@ -18,15 +17,17 @@ class TestDataFrame(unittest.TestCase):
         self.bigquery.close()
 
     def test_createOrReplaceTempView(self):
-        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df = self.bigquery.sql(
+            """SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col"""
+        )
         df.createOrReplaceTempView("pokedex")
         df2 = self.bigquery.sql("""SELECT * FROM pokedex""")
 
         expected = [
-            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
-            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
-            SchemaField('types', 'STRING', 'REPEATED', None, (), None),
-            SchemaField('other_col', 'INTEGER', 'NULLABLE', None, (), None)
+            SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
+            SchemaField("name", "STRING", "NULLABLE", None, (), None),
+            SchemaField("types", "STRING", "REPEATED", None, (), None),
+            SchemaField("other_col", "INTEGER", "NULLABLE", None, (), None),
         ]
 
         self.assertEqual(df2.schema, expected)
@@ -36,7 +37,7 @@ class TestDataFrame(unittest.TestCase):
         self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempView("all")
         df = self.bigquery.table("all")
 
-        expected = [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None)]
+        expected = [SchemaField("id", "INTEGER", "NULLABLE", None, (), None)]
 
         self.assertEqual(df.schema, expected)
 
@@ -65,15 +66,17 @@ class TestDataFrame(unittest.TestCase):
             self.bigquery.table("T").show()
 
     def test_createOrReplaceTempTable(self):
-        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df = self.bigquery.sql(
+            """SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col"""
+        )
         df.createOrReplaceTempTable("pokedex")
         df2 = self.bigquery.sql("""SELECT * FROM pokedex""")
 
         expected = [
-            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
-            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
-            SchemaField('types', 'STRING', 'REPEATED', None, (), None),
-            SchemaField('other_col', 'INTEGER', 'NULLABLE', None, (), None)
+            SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
+            SchemaField("name", "STRING", "NULLABLE", None, (), None),
+            SchemaField("types", "STRING", "REPEATED", None, (), None),
+            SchemaField("other_col", "INTEGER", "NULLABLE", None, (), None),
         ]
 
         self.assertEqual(df2.schema, expected)
@@ -83,7 +86,7 @@ class TestDataFrame(unittest.TestCase):
         self.bigquery.sql("""SELECT 1 as id""").createOrReplaceTempTable("all")
         df = self.bigquery.table("all")
 
-        expected = [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None)]
+        expected = [SchemaField("id", "INTEGER", "NULLABLE", None, (), None)]
 
         self.assertEqual(df.schema, expected)
 
@@ -97,8 +100,8 @@ class TestDataFrame(unittest.TestCase):
         df = self.bigquery.sql("""SELECT 1 as c1, 2 as c2""").select("c1", "c2").select(["c1", "c2"])
 
         expected = [
-            SchemaField('c1', 'INTEGER', 'NULLABLE', None, (), None),
-            SchemaField('c2', 'INTEGER', 'NULLABLE', None, (), None),
+            SchemaField("c1", "INTEGER", "NULLABLE", None, (), None),
+            SchemaField("c2", "INTEGER", "NULLABLE", None, (), None),
         ]
 
         self.assertEqual(df.schema, expected)
@@ -107,7 +110,9 @@ class TestDataFrame(unittest.TestCase):
             df.select(["c1"], ["c2"])
 
     def test_2(self):
-        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df = self.bigquery.sql(
+            """SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col"""
+        )
         df2 = df.select("id", "name", "types")
         df2.createOrReplaceTempView("pokedex")
         df3 = self.bigquery.sql("""SELECT * FROM pokedex""")
@@ -115,10 +120,10 @@ class TestDataFrame(unittest.TestCase):
         df5 = df4.withColumn("name", "LOWER(name)", replace=True)
 
         expected = [
-            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
-            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
-            SchemaField('types', 'STRING', 'REPEATED', None, (), None),
-            SchemaField('nb_types', 'INTEGER', 'NULLABLE', None, (), None)
+            SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
+            SchemaField("name", "STRING", "NULLABLE", None, (), None),
+            SchemaField("types", "STRING", "REPEATED", None, (), None),
+            SchemaField("nb_types", "INTEGER", "NULLABLE", None, (), None),
         ]
 
         self.assertEqual(df5.schema, expected)
@@ -143,13 +148,15 @@ class TestDataFrame(unittest.TestCase):
         self.assertEqual(10, df4.count())
 
     def test_drop(self):
-        df = self.bigquery.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
+        df = self.bigquery.sql(
+            """SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col"""
+        )
         df2 = df.drop("other_col", "col_that_does_not_exists")
 
         expected = [
-            SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None),
-            SchemaField('name', 'STRING', 'NULLABLE', None, (), None),
-            SchemaField('types', 'STRING', 'REPEATED', None, (), None)
+            SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
+            SchemaField("name", "STRING", "NULLABLE", None, (), None),
+            SchemaField("types", "STRING", "REPEATED", None, (), None),
         ]
 
         self.assertEqual(df2.schema, expected)
@@ -169,38 +176,44 @@ class TestDataFrame(unittest.TestCase):
 
         with captured_output() as (stdout, stderr):
             df.show(1)
-            expected = strip_margin("""
-            |+---+
-            || a |
-            |+---+
-            || 1 |
-            |+---+
-            |only showing top 1 row
-            |""")
+            expected = strip_margin(
+                """
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                |+---+
+                |only showing top 1 row
+                |"""
+            )
             self.assertEqual(expected, stdout.getvalue())
 
         with captured_output() as (stdout, stderr):
             df.show(2)
-            expected = strip_margin("""
-            |+---+
-            || a |
-            |+---+
-            || 1 |
-            || 2 |
-            |+---+
-            |only showing top 2 rows
-            |""")
+            expected = strip_margin(
+                """
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                || 2 |
+                |+---+
+                |only showing top 2 rows
+                |"""
+            )
             self.assertEqual(expected, stdout.getvalue())
 
         with captured_output() as (stdout, stderr):
             df.show(3)
-            expected = strip_margin("""
-            |+---+
-            || a |
-            |+---+
-            || 1 |
-            || 2 |
-            || 3 |
-            |+---+
-            |""")
+            expected = strip_margin(
+                """
+                |+---+
+                || a |
+                |+---+
+                || 1 |
+                || 2 |
+                || 3 |
+                |+---+
+                |"""
+            )
             self.assertEqual(expected, stdout.getvalue())
