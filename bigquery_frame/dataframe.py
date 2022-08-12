@@ -212,34 +212,38 @@ class DataFrame:
         return self._compile_with_ctes(ctes)
 
     @property
+    def columns(self) -> List[str]:
+        """Returns all column names as a list."""
+        return [field.name for field in self.schema]
+
+    @property
     def schema(self) -> List[SchemaField]:
         """Returns the schema of this :class:`DataFrame` as a list of :class:`google.cloud.bigquery.SchemaField`."""
         if self._schema is None:
             self._schema = self._compute_schema()
         return self._schema
 
-    def compile(self) -> str:
-        """Returns the sql query that will be executed to materialize this :class:`DataFrame`"""
-        ctes = self.bigquery._compile_views() + self._compile_deps()
-        return self._compile_with_ctes(ctes)
-
     def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
         return DataFrame(self.query, alias, self.bigquery)
 
-    def persist(self) -> "DataFrame":
-        """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
-        from that table.
+    def collect(self) -> List[Row]:
+        """Returns all the records as list of :class:`Row`."""
+        return list(self.bigquery._execute_query(self.compile()))
 
-        Limitations compared to Spark
-        -----------------------------
-        Unlike with Spark, this operation is an action and the temporary table is created immediately.
-        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this
-        method must be used.
+    def collect_iterator(self) -> RowIterator:
+        """Returns all the records as :class:`RowIterator`."""
+        return self.bigquery._execute_query(self.compile())
 
-        :return: a new :class:`DataFrame`
-        """
-        return self.bigquery._registerDataFrameAsTempTable(self)
+    def count(self) -> int:
+        """Returns the number of rows in this :class:`DataFrame`."""
+        query = f"SELECT COUNT(1) FROM {quote(self._alias)}"
+        return self._apply_query(query).collect()[0][0]
+
+    def compile(self) -> str:
+        """Returns the sql query that will be executed to materialize this :class:`DataFrame`"""
+        ctes = self.bigquery._compile_views() + self._compile_deps()
+        return self._compile_with_ctes(ctes)
 
     def createOrReplaceTempTable(self, alias: str) -> "DataFrame":
         """Creates or replace a persisted temporary table.
@@ -301,18 +305,14 @@ class DataFrame:
         """
         self.bigquery._registerDataFrameAsTempView(self, name)
 
-    def select(self, *columns: Union[List[Column], Column]) -> "DataFrame":
-        """Projects a set of expressions and returns a new :class:`DataFrame`."""
-        if isinstance(columns[0], list):
-            if len(columns) == 1:
-                columns = columns[0]
-            else:
-                raise TypeError(f"Wrong argument type: {type(columns)}")
-        query = strip_margin(
-            f"""SELECT
-            |{cols_to_str(columns, 2)}
-            |FROM {quote(self._alias)}"""
-        )
+    def distinct(self) -> "DataFrame":
+        """Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
+
+        Limitations compared to Spark
+        -----------------------------
+        In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
+        """
+        query = f"""SELECT DISTINCT * FROM {quote(self._alias)}"""
         return self._apply_query(query)
 
     def drop(self, *cols: str) -> "DataFrame":
@@ -328,6 +328,174 @@ class DataFrame:
         )
         return self._apply_query(query)
 
+    def filter(self, expr: str) -> "DataFrame":
+        """Filters rows using the given condition."""
+        query = strip_margin(
+            f"""
+            |SELECT *
+            |FROM {quote(self._alias)}
+            |WHERE {expr}"""
+        )
+        return self._apply_query(query)
+
+    def limit(self, num: int) -> "DataFrame":
+        """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
+        query = f"""SELECT * FROM {quote(self._alias)} LIMIT {num}"""
+        return self._apply_query(query)
+
+    def persist(self) -> "DataFrame":
+        """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
+        from that table.
+
+        Limitations compared to Spark
+        -----------------------------
+        Unlike with Spark, this operation is an action and the temporary table is created immediately.
+        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this
+        method must be used.
+
+        :return: a new :class:`DataFrame`
+        """
+        return self.bigquery._registerDataFrameAsTempTable(self)
+
+    def printSchema(self) -> None:
+        """Prints out the schema in tree format.
+
+        Examples:
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+        >>> df.printSchema()
+        root
+         |-- id: INTEGER (NULLABLE)
+         |-- s: RECORD (NULLABLE)
+         |    |-- a: INTEGER (NULLABLE)
+         |    |-- b: RECORD (REPEATED)
+         |    |    |-- c: INTEGER (NULLABLE)
+        <BLANKLINE>
+
+        """
+        print(self.treeString())
+
+    def print_query(self) -> None:
+        """Prints out the SQL query generated to materialize this :class:`DataFrame`.
+
+        Examples:
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''SELECT 1 as a''').select(
+        ...   'a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b')
+        ... )
+        >>> df.print_query()
+        WITH `_default_alias_1` AS (
+          SELECT 1 as a
+        )
+        , `_default_alias_2` AS (
+          SELECT
+            a,
+            (`a`) + (1)
+          FROM `_default_alias_1`
+        )
+        SELECT *, a + b AS c FROM `_default_alias_2`
+
+        """
+        print(self.compile())
+
+    def select(self, *columns: Union[List[Column], Column]) -> "DataFrame":
+        """Projects a set of expressions and returns a new :class:`DataFrame`."""
+        if isinstance(columns[0], list):
+            if len(columns) == 1:
+                columns = columns[0]
+            else:
+                raise TypeError(f"Wrong argument type: {type(columns)}")
+        query = strip_margin(
+            f"""SELECT
+            |{cols_to_str(columns, 2)}
+            |FROM {quote(self._alias)}"""
+        )
+        return self._apply_query(query)
+
+    def show(self, n: int = 20, format_args=None) -> None:
+        """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
+        <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
+
+        Formating options may be set using `format_args`.
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+        >>> df.show()
+        +----+---------------------------+
+        | id |                         s |
+        +----+---------------------------+
+        |  1 | {'a': 1, 'b': [{'c': 1}]} |
+        +----+---------------------------+
+        >>> df.show(format_args={"tablefmt": 'fancy_grid'})
+        ╒══════╤═══════════════════════════╕
+        │   id │ s                         │
+        ╞══════╪═══════════════════════════╡
+        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
+        ╘══════╧═══════════════════════════╛
+
+        :param n: Number of rows to show.
+        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
+        :return: Nothing
+        """
+        res = self.limit(n + 1).collect_iterator()
+        print_results(res, format_args, limit=n)
+
+    def sort(self, *cols: str):
+        """Returns a new :class:`DataFrame` sorted by the specified column(s).
+
+        :param cols:
+        :return:
+        """
+        query = strip_margin(
+            f"""
+            |SELECT *
+            |FROM {quote(self._alias)}
+            |ORDER BY {cols_to_str(cols)}"""
+        )
+        return self._apply_query(query)
+
+    def take(self, num):
+        """Returns the first ``num`` rows as a :class:`list` of :class:`Row`."""
+        return self.limit(num).collect()
+
+    def toPandas(self, **kwargs):
+        """Returns the contents of this :class:`DataFrame` as Pandas :class:`pandas.DataFrame`.
+
+        This method requires to have following extra dependencies installed
+        - pandas
+        - pyarrow
+        - db-dtypes
+
+        Optional extra arguments (kwargs) will be passed directly to the
+        :func:`bigquery.table.RowIterator.to_dataframe` method.
+        Please check its documentation for further information.
+
+        By default, the BigQuery client will use the BigQuery Storage API to download data faster.
+        This requires to have the extra role "BigQuery Read Session User".
+        You can disable this behavior and use the regular, slower download method (which does not require additionnal
+        rights) by passing the argument `create_bqstorage_client=False`.
+
+        >>> df = __get_test_df()
+        >>> import tabulate
+        >>> pdf = df.toPandas()
+        >>> type(pdf)
+        <class 'pandas.core.frame.DataFrame'>
+        >>> pdf
+           id       name
+        0   1  Bulbasaur
+        1   2    Ivysaur
+        2   3   Venusaur
+
+        """
+        return self.collect_iterator().to_dataframe(**kwargs)
+
+    def treeString(self):
+        """Generates a string representing the schema in tree format"""
+        return schema_to_tree_string(self.schema)
+
     def union(self, other: "DataFrame") -> "DataFrame":
         """Return a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
 
@@ -342,8 +510,6 @@ class DataFrame:
         """
         query = f"""SELECT * FROM {quote(self._alias)} UNION ALL SELECT * FROM {quote(other._alias)}"""
         return self._apply_query(query, deps=[self, other])
-
-    unionAll = union
 
     def unionByName(self, other: "DataFrame", allowMissingColumns: bool = False) -> "DataFrame":
         """Returns a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
@@ -433,49 +599,6 @@ class DataFrame:
         )
         return self._apply_query(query, deps=[self, other])
 
-    def limit(self, num: int) -> "DataFrame":
-        """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
-        query = f"""SELECT * FROM {quote(self._alias)} LIMIT {num}"""
-        return self._apply_query(query)
-
-    def distinct(self) -> "DataFrame":
-        """Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
-
-        Limitations compared to Spark
-        -----------------------------
-        In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
-        """
-        query = f"""SELECT DISTINCT * FROM {quote(self._alias)}"""
-        return self._apply_query(query)
-
-    def sort(self, *cols: str):
-        """Returns a new :class:`DataFrame` sorted by the specified column(s).
-
-        :param cols:
-        :return:
-        """
-        query = strip_margin(
-            f"""
-            |SELECT *
-            |FROM {quote(self._alias)}
-            |ORDER BY {cols_to_str(cols)}"""
-        )
-        return self._apply_query(query)
-
-    orderBy = sort
-
-    def filter(self, expr: str) -> "DataFrame":
-        """Filters rows using the given condition."""
-        query = strip_margin(
-            f"""
-            |SELECT *
-            |FROM {quote(self._alias)}
-            |WHERE {expr}"""
-        )
-        return self._apply_query(query)
-
-    where = filter
-
     def withColumn(self, col_name: str, col_expr: Column, replace: bool = False) -> "DataFrame":
         """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.
 
@@ -501,134 +624,11 @@ class DataFrame:
             query = f"SELECT *, {col_expr} AS {col_name} FROM {quote(self._alias)}"
         return self._apply_query(query)
 
-    def count(self) -> int:
-        """Returns the number of rows in this :class:`DataFrame`."""
-        query = f"SELECT COUNT(1) FROM {quote(self._alias)}"
-        return self._apply_query(query).collect()[0][0]
+    orderBy = sort
 
-    def collect_iterator(self) -> RowIterator:
-        """Returns all the records as :class:`RowIterator`."""
-        return self.bigquery._execute_query(self.compile())
+    unionAll = union
 
-    def collect(self) -> List[Row]:
-        """Returns all the records as list of :class:`Row`."""
-        return list(self.bigquery._execute_query(self.compile()))
-
-    def take(self, num):
-        """Returns the first ``num`` rows as a :class:`list` of :class:`Row`."""
-        return self.limit(num).collect()
-
-    def show(self, n: int = 20, format_args=None) -> None:
-        """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
-        <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
-
-        Formating options may be set using `format_args`.
-
-        >>> bq = BigQueryBuilder(get_bq_client())
-        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
-        >>> df.show()
-        +----+---------------------------+
-        | id |                         s |
-        +----+---------------------------+
-        |  1 | {'a': 1, 'b': [{'c': 1}]} |
-        +----+---------------------------+
-        >>> df.show(format_args={"tablefmt": 'fancy_grid'})
-        ╒══════╤═══════════════════════════╕
-        │   id │ s                         │
-        ╞══════╪═══════════════════════════╡
-        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
-        ╘══════╧═══════════════════════════╛
-
-        :param n: Number of rows to show.
-        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
-        :return: Nothing
-        """
-        res = self.limit(n + 1).collect_iterator()
-        print_results(res, format_args, limit=n)
-
-    def toPandas(self, **kwargs):
-        """Returns the contents of this :class:`DataFrame` as Pandas :class:`pandas.DataFrame`.
-
-        This method requires to have following extra dependencies installed
-        - pandas
-        - pyarrow
-        - db-dtypes
-
-        Optional extra arguments (kwargs) will be passed directly to the
-        :func:`bigquery.table.RowIterator.to_dataframe` method.
-        Please check its documentation for further information.
-
-        By default, the BigQuery client will use the BigQuery Storage API to download data faster.
-        This requires to have the extra role "BigQuery Read Session User".
-        You can disable this behavior and use the regular, slower download method (which does not require additionnal
-        rights) by passing the argument `create_bqstorage_client=False`.
-
-        >>> df = __get_test_df()
-        >>> import tabulate
-        >>> pdf = df.toPandas()
-        >>> type(pdf)
-        <class 'pandas.core.frame.DataFrame'>
-        >>> pdf
-           id       name
-        0   1  Bulbasaur
-        1   2    Ivysaur
-        2   3   Venusaur
-
-        """
-        return self.collect_iterator().to_dataframe(**kwargs)
-
-    def treeString(self):
-        """Generates a string representing the schema in tree format"""
-        return schema_to_tree_string(self.schema)
-
-    def printSchema(self) -> None:
-        """Prints out the schema in tree format.
-
-        Examples:
-
-        >>> bq = BigQueryBuilder(get_bq_client())
-        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
-        >>> df.printSchema()
-        root
-         |-- id: INTEGER (NULLABLE)
-         |-- s: RECORD (NULLABLE)
-         |    |-- a: INTEGER (NULLABLE)
-         |    |-- b: RECORD (REPEATED)
-         |    |    |-- c: INTEGER (NULLABLE)
-        <BLANKLINE>
-
-        """
-        print(self.treeString())
-
-    def print_query(self) -> None:
-        """Prints out the SQL query generated to materialize this :class:`DataFrame`.
-
-        Examples:
-
-        >>> bq = BigQueryBuilder(get_bq_client())
-        >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''SELECT 1 as a''').select(
-        ...   'a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b')
-        ... )
-        >>> df.print_query()
-        WITH `_default_alias_1` AS (
-          SELECT 1 as a
-        )
-        , `_default_alias_2` AS (
-          SELECT
-            a,
-            (`a`) + (1)
-          FROM `_default_alias_1`
-        )
-        SELECT *, a + b AS c FROM `_default_alias_2`
-
-        """
-        print(self.compile())
-
-    @property
-    def columns(self) -> List[str]:
-        """Returns all column names as a list."""
-        return [field.name for field in self.schema]
+    where = filter
 
 
 def __get_test_df() -> DataFrame:
