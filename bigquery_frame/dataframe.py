@@ -5,10 +5,10 @@ from google.cloud.bigquery import SchemaField, Client, Row
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column
+from bigquery_frame.column import Column, cols_to_str
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
-from bigquery_frame.utils import indent, quote, cols_to_str, strip_margin
+from bigquery_frame.utils import indent, quote, strip_margin
 
 Column = Union[str, Column]
 

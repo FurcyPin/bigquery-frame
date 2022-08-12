@@ -1,5 +1,9 @@
 import re
-from typing import Optional
+from typing import Union, Iterable, List
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bigquery_frame.column import StringOrColumn, Column
 
 
 def strip_margin(text):
@@ -34,9 +38,26 @@ def quote(str) -> str:
     return '.'.join(['`' + s + '`' if s != '*' else '*' for s in str.replace('`', '').split('.')])
 
 
-def cols_to_str(cols, indentation: Optional[int] = None, sep: str = ",") -> str:
-    cols = [str(col) for col in cols]
-    if indentation is not None:
-        return indent(f"{sep}\n".join(cols), indentation)
+def str_to_col(args: Union[Iterable['StringOrColumn'], 'StringOrColumn']) -> Union[List['Column'], 'Column']:
+    """Converts string or Column arguments to Column types
+
+    Examples:
+
+    >>> str_to_col("id")
+    Column('`id`')
+    >>> str_to_col(["c1", "c2"])
+    [Column('`c1`'), Column('`c2`')]
+    >>> from bigquery_frame import functions as f
+    >>> str_to_col(f.expr("COUNT(1)"))
+    Column('COUNT(1)')
+    >>> str_to_col("*")
+    Column('*')
+
+    """
+    from bigquery_frame import functions as f
+    if isinstance(args, str):
+        return f.col(args)
+    elif isinstance(args, list):
+        return [str_to_col(arg) for arg in args]
     else:
-        return ", ".join(cols)
+        return args

@@ -1,12 +1,10 @@
-from typing import Union, List, Iterable
+from typing import Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column, literal_col
+from bigquery_frame.column import Column, literal_col, cols_to_str, StringOrColumn
 from bigquery_frame.dataframe import DataFrame
-from bigquery_frame.utils import quote, cols_to_str
-
-StringOrColumn = Union[str, Column]
+from bigquery_frame.utils import quote, str_to_col
 
 
 def col(expr: str) -> Column:
@@ -39,7 +37,7 @@ def count(col: StringOrColumn) -> Column:
     +---------+------------+------------+------------+
 
     """
-    col = __str_to_col(col)
+    col = str_to_col(col)
     return Column(f"COUNT({col.expr})")
 
 
@@ -67,7 +65,7 @@ def count_distinct(col: StringOrColumn) -> Column:
     +---------------------+---------------------+
 
     """
-    col = __str_to_col(col)
+    col = str_to_col(col)
     return Column(f"COUNT(DISTINCT {col.expr})")
 
 
@@ -106,7 +104,7 @@ def hash(*cols: Union[str, Column]) -> Column:
     +------+------+----------------------+
     """
 
-    cols = __str_to_col(cols)
+    cols = str_to_col(cols)
     return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(cols)})))")
 
 
@@ -141,7 +139,7 @@ def min(col: StringOrColumn) -> Column:
     +----------+----------+
 
     """
-    col = __str_to_col(col)
+    col = str_to_col(col)
     return Column(f"MIN({col.expr})")
 
 
@@ -169,7 +167,7 @@ def max(col: StringOrColumn) -> Column:
     +----------+----------+
 
     """
-    col = __str_to_col(col)
+    col = str_to_col(col)
     return Column(f"MAX({col.expr})")
 
 
@@ -201,29 +199,6 @@ def when(condition: Column, value: Column) -> Column:
     c = Column("")
     c._when_condition = [(condition, value)]
     return c
-
-
-def __str_to_col(args: Union[Iterable[StringOrColumn], StringOrColumn]) -> Union[List[Column], Column]:
-    """Converts string or Column arguments to Column types
-
-    Examples:
-
-    >>> __str_to_col("id")
-    Column('`id`')
-    >>> __str_to_col(["c1", "c2"])
-    [Column('`c1`'), Column('`c2`')]
-    >>> __str_to_col(expr("COUNT(1)"))
-    Column('COUNT(1)')
-    >>> __str_to_col("*")
-    Column('*')
-
-    """
-    if isinstance(args, str):
-        return col(args)
-    elif isinstance(args, list):
-        return [__str_to_col(arg) for arg in args]
-    else:
-        return args
 
 
 def _get_test_df_1() -> DataFrame:
