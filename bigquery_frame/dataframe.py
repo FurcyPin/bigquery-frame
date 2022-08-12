@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import Client, Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
@@ -8,6 +8,9 @@ from bigquery_frame.column import Column, cols_to_str
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
 from bigquery_frame.utils import indent, quote, strip_margin
+
+A = TypeVar("A")
+B = TypeVar("B")
 
 Column = Union[str, Column]
 
@@ -76,7 +79,7 @@ def schema_to_tree_string(schema: List[SchemaField]) -> str:
     return "\n".join(res) + "\n"
 
 
-def _dedup_key_value_list(items: Iterable[Tuple[object, object]]) -> Iterable[Tuple[object, object]]:
+def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
     """Deduplicate a list of key, values by their keys.
     Unlike `list(set(l))`, this does preserve ordering.
 
@@ -225,7 +228,7 @@ class DataFrame:
 
     def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
-        return DataFrame(self.query, alias, self.bigquery)
+        return DataFrame(self.query, alias, self.bigquery, deps=[df for alias, df in self._deps])
 
     def collect(self) -> List[Row]:
         """Returns all the records as list of :class:`Row`."""

@@ -213,3 +213,7 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 #### Features
 - Added `functions.cast` method
+
+#### Bugfixes
+- Fix DataFrame deps being lost when using `df.alias()`
+
