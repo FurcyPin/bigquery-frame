@@ -17,8 +17,8 @@ tabulate = "^0.8.10"
 tqdm = "^4.64.0"
 
 [tool.poetry.dev-dependencies]
-coverage = "6.2"
-nose2 = "0.10.0"
+pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
 pipdeptree = "2.2.1"
 
 # Dependencies used by DataFrame.toPandas()
@@ -30,3 +30,16 @@ db-dtypes = "^1.0.3"
 [build-system]
 requires = ["poetry-core==1.1.14"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.pytest.ini_options]
+addopts = [
+    "-ra",
+    "--cov=bigquery_frame",
+    "--doctest-modules"
+]
+
+testpaths = [
+    "bigquery_frame",
+    "tests"
+]
