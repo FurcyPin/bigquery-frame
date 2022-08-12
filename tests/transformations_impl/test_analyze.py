@@ -5,10 +5,8 @@ from google.cloud.bigquery import Row
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.transformations_impl.analyze import (
-    __get_test_df as get_test_df,
-    analyze,
-)
+from bigquery_frame.transformations_impl.analyze import __get_test_df as get_test_df
+from bigquery_frame.transformations_impl.analyze import analyze
 
 field_to_index = {
     "column_name": 0,
