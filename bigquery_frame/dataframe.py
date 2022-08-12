@@ -530,12 +530,22 @@ class DataFrame:
         res = self.limit(n+1).collect_iterator()
         print_results(res, format_args, limit=n)
 
-    def toPandas(self):
-        """Returns the contents of this :class:`DataFrame` as Pandas ``pandas.DataFrame``.
+    def toPandas(self, **kwargs):
+        """Returns the contents of this :class:`DataFrame` as Pandas :class:`pandas.DataFrame`.
 
         This method requires to have following extra dependencies installed
         - pandas
         - pyarrow
+        - db-dtypes
+
+        Optional extra arguments (kwargs) will be passed directly to the
+        :func:`bigquery.table.RowIterator.to_dataframe` method.
+        Please check its documentation for further information.
+
+        By default, the BigQuery client will use the BigQuery Storage API to download data faster.
+        This requires to have the extra role "BigQuery Read Session User".
+        You can disable this behavior and use the regular, slower download method (which does not require additionnal
+        rights) by passing the argument `create_bqstorage_client=False`.
 
         >>> df = __get_test_df()
         >>> import tabulate
@@ -549,7 +559,7 @@ class DataFrame:
         2   3   Venusaur
 
         """
-        return self.collect_iterator().to_dataframe()
+        return self.collect_iterator().to_dataframe(**kwargs)
 
     def treeString(self):
         """Generates a string representing the schema in tree format"""

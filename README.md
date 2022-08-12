@@ -199,8 +199,14 @@ would immediately allow all the project based on it to support this new platform
 **I would be very interested if someone could make a similar POC with, 
 RedShift, Postgres, Azure Synapse, or any other SQL engines 
 (aside from Spark-SQL and Snowpark, of course :-p).**
+
+
 ## Release Notes
 
 ### 0.3
 
 - Dropped support for Python 3.6
+- Bumped dependencies versions
+- DataFrame.toPandas() now requires extra permissions by default
+  (the BigQuery ReadSession User role), but downloads data faster.
+
