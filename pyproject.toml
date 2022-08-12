@@ -20,6 +20,9 @@ tqdm = "^4.64.0"
 black = "^22.6.0"
 isort = "^5.10.1"
 flake8 = "^5.0.4"
+mypy = "^0.971"
+bandit = "^1.7.4"
+safety = "^2.1.1"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 pipdeptree = "2.2.1"
@@ -40,6 +43,7 @@ line-length = 120
 [tool.isort]
 profile = "black"
 known_first_party = "bigquery_frame"
+
 
 [tool.pytest.ini_options]
 addopts = [
