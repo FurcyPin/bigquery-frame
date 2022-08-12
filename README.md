@@ -213,6 +213,7 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 #### Features
 - Added `functions.cast` method
+- We now print the whole query in the error message when it fails
 
 #### Bugfixes
 - Fix DataFrame deps being lost when using `df.alias()`

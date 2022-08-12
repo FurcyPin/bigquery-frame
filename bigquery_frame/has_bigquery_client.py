@@ -1,8 +1,11 @@
 from typing import Optional
 
+from google.api_core.exceptions import BadRequest
 from google.cloud.bigquery import ConnectionProperty, QueryJobConfig
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.table import RowIterator
+
+from bigquery_frame.utils import number_lines
 
 
 class HasBigQueryClient:
@@ -37,7 +40,11 @@ class HasBigQueryClient:
         job = self.__client.query(query=query, job_config=job_config)
 
         if job.error_result:
-            return job.result()
+            try:
+                return job.result()
+            except BadRequest as e:
+                e.message += "\nQuery:\n" + number_lines(query, 1)
+                raise e
 
         if self.__use_session and self.__session_id is None:
             self.__session_id = job.session_info.session_id
