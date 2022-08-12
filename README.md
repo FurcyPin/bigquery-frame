@@ -156,14 +156,16 @@ Here is a list of other known limitations, please also see the
   - I kept the same name as Spark for consistency, but it does not create an actual view on BigQuery, it just emulates 
     Spark's behaviour by using a CTE. Because of this, if you replace a temp view that already exists, the new view
     can not derive from the old view (while in Spark it is possible). 
+- `DataFrame.join`:
+  - When doing a select after a join, table prefixes MUST always be used on column names.
+    For this reason, users SHOULD always make sure the DataFrames they are joining on are properly aliased
+  - When chaining multiple joins, the name of the first DataFrame is not available in the select clause
 
 ## Further developments
 
 Functions not supported yet :
 
-- `DataFrame.join`
 - `DataFrame.groupBy`
-- `DataFrame.printSchema`
 
 Also, it would be cool to expand this to other SQL engines than BigQuery 
 (contributors are welcome ;-) ).
@@ -214,6 +216,8 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 #### Features
 - Added `functions.cast` method
 - We now print the whole query in the error message when it fails
+- Added `DataFrame.join()`. This is a first implementation which
+  is a little clumsy.
 
 #### Bugfixes
 - Fix DataFrame deps being lost when using `df.alias()`

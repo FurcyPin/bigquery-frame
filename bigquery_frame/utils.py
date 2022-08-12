@@ -78,3 +78,22 @@ def number_lines(string: str, starting_index: int = 0) -> str:
     numbered_lines = [str(index + starting_index).zfill(nb_zeroes) + ": " + line for index, line in enumerate(lines)]
     return "\n".join(numbered_lines)
 
+
+def assert_true(assertion: bool, error_message: str = None) -> None:
+    """Raise a ValueError with the given error_message if the assertion passed is false
+
+    >>> assert_true(3==4, "3 <> 4")
+    Traceback (most recent call last):
+    ...
+    ValueError: 3 <> 4
+
+    >>> assert_true(3==3, "3 <> 4")
+
+    :param assertion: assertion that will be checked
+    :param error_message: error message to display if the assertion is false
+    """
+    if not assertion:
+        if error_message is None:
+            raise ValueError()
+        else:
+            raise ValueError(error_message)
