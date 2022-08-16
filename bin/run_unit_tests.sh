@@ -4,5 +4,4 @@ set -e
 export GCP_CREDENTIALS_PATH="gcp-credentials.json"
 poetry run pytest "$@"
 
-poetry run coverage html
-
+poetry run coverage xml

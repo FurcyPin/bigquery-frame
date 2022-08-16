@@ -1,0 +1,70 @@
+name: Build and Validate
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  Build-and-Validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        poetry-version: ["1.1.14"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run image
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Poetry lock
+        run: poetry lock
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'poetry'
+      - name: Install project
+        run: poetry install
+
+      - name: Linter black
+        run: poetry run black --diff --check .
+      - name: Linter isort
+        run: poetry run isort --check-only bigquery_frame tests
+      - name: Linter flake8
+        run: poetry run flake8 bigquery_frame tests
+      - name: Linter mypy
+        run: poetry run mypy bigquery_frame tests
+        # We run mypy but ignore the results as there are too many things to fix for now.
+        continue-on-error: true
+      - name: Security bandit
+        run: poetry run bandit .
+      - name: Security safety
+        run: poetry run safety check
+        # We run safety but ignore the warning as some require to drop support for Python 3.7.
+        continue-on-error: true
+
+      - name: Run Unit Tests
+        env:
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+        run: poetry run pytest
+      - name: Create coverage.xml
+        run: poetry run coverage xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10' && matrix.poetry-version == '1.1.14'

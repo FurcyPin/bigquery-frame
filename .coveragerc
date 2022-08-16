@@ -5,3 +5,6 @@ omit =
 
 [html]
 directory = htmlcov
+
+[xml]
+output = coverage.xml

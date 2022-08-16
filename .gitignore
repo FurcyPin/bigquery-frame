@@ -10,6 +10,7 @@ gcp-credentials.json
 
 # Unit Testing
 .coverage
+coverage.xml
 htmlcov/
 
 # Python Poetry
