@@ -5,5 +5,9 @@
 GCP_PROJECT = "Name of your BigQuery project"
 
 
-# Method 2. Set this variable here or set it as an environment variable
+# Method 2.A Set this variable here or set it as an environment variable
 GCP_CREDENTIALS_PATH = "Path to your service account credentials json file"
+
+
+# Method 2.B Set this variable here or set it as an environment variable
+GCP_CREDENTIALS = "Content of your credentials json file"

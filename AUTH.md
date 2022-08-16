@@ -106,9 +106,18 @@ computer.
 _(If you have forked this repo and stored the credentials inside, 
 be careful not to commit it accidentally, use `.gitignore`)_ 
 
-### Step 3. Pass the path to this file to bigquery-frame
+### Step 3. Pass the json key to bigquery-frame
 
-#### Option A. Update bigquery-frame's configuration directly in your client code
+There are two possible variants here:
+- Method 2.A: pass the path to the json file to bigquery-frame
+- Method 2.B: pass directly the content of the json file to bigquery-frame
+
+The first method is generally simpler to set up a local development environment, while the second method 
+is generally easier for setting up automated CI pipelines.
+
+#### Method 2.A: pass the path to the json file to bigquery-frame
+
+##### Option 2.A.1: Update bigquery-frame's configuration directly in your client code
 
 ```python
 import bigquery_frame
@@ -116,12 +125,33 @@ import bigquery_frame
 bigquery_frame.conf.GCP_CREDENTIALS_PATH = "Path to your service account credentials json file"
 ```
 
-#### _OR_
+##### _OR_
 
-#### Option B. Set it as a variable in your environment
+##### Option 2.A.2: Set it as a variable in your environment
 
 ```shell
 export GCP_CREDENTIALS_PATH="Path to your service account credentials json file"
+```
+
+#### Method 2.B: pass the content of the json file to bigquery-frame
+
+When using this method, be careful to not accidentally get escaped newline characters `"\n"`
+in your json content.
+
+##### Option 2.B.1: Update bigquery-frame's configuration directly in your client code
+
+```python
+import bigquery_frame
+
+bigquery_frame.conf.GCP_CREDENTIALS = "Content of your credentials json file"
+```
+
+##### _OR_
+
+##### Option 2.B.2: Set it as a variable in your environment
+
+```shell
+export GCP_CREDENTIALS="Content of your credentials json file"
 ```
 
 
