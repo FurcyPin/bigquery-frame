@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Tuple, TypeVar, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import Client, Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
@@ -11,8 +11,6 @@ from bigquery_frame.utils import assert_true, indent, quote, strip_margin
 
 A = TypeVar("A")
 B = TypeVar("B")
-
-Column = Union[str, Column]
 
 DEFAULT_ALIAS_NAME = "_default_alias_{num}"
 DEFAULT_TEMP_TABLE_NAME = "_default_temp_table_{num}"
@@ -206,6 +204,54 @@ class DataFrame:
 
     def __repr__(self):
         return f"""DataFrame('{self.query}) as {self._alias}')"""
+
+    def __getitem__(self, item: Union[StringOrColumn, Iterable[StringOrColumn], int]):
+        """Returns the column as a :class:`Column`.
+
+        Examples
+        --------
+        >>> df = __get_test_df()
+        >>> df.select(df['id']).show()
+        +----+
+        | id |
+        +----+
+        |  1 |
+        |  2 |
+        |  3 |
+        +----+
+        >>> df[["id", "name"]].show()
+        +----+-----------+
+        | id |      name |
+        +----+-----------+
+        |  1 | Bulbasaur |
+        |  2 |   Ivysaur |
+        |  3 |  Venusaur |
+        +----+-----------+
+        >>> df[ df["id"] > 1 ].show()
+        +----+----------+
+        | id |     name |
+        +----+----------+
+        |  2 |  Ivysaur |
+        |  3 | Venusaur |
+        +----+----------+
+        >>> df[df[0] > 1].show()
+        +----+----------+
+        | id |     name |
+        +----+----------+
+        |  2 |  Ivysaur |
+        |  3 | Venusaur |
+        +----+----------+
+        """
+        if isinstance(item, str):
+            return Column(f"{quote(self._alias)}.{quote(item)}")
+        elif isinstance(item, Column):
+            return self.filter(item)
+        elif isinstance(item, Iterable):
+            return self.select(*item)
+        elif isinstance(item, int):
+            return Column(f"{quote(self._alias)}.{quote(self.schema[item].name)}")
+        else:
+            raise TypeError("unexpected item type: %s" % type(item))
 
     def _apply_query(self, query: str, deps: Optional[List["DataFrame"]] = None) -> "DataFrame":
         if deps is None:
