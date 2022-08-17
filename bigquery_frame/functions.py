@@ -7,7 +7,36 @@ from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col
 
 
-def cast(column: StringOrColumn, tpe: str) -> Column:
+def approx_count_distinct(col: StringOrColumn) -> Column:
+    """Aggregate function: returns a new :class:`bigquery_frame.column.Column` for approximate distinct count
+    of column `col`.
+
+    >>> df = _get_test_df_1()
+    >>> df.show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(
+    ...   f.approx_count_distinct('col1').alias('count_distinct_col1'),
+    ...   f.approx_count_distinct('col2').alias('count_distinct_col2'),
+    ... ).show()
+    +---------------------+---------------------+
+    | count_distinct_col1 | count_distinct_col2 |
+    +---------------------+---------------------+
+    |                   2 |                   2 |
+    +---------------------+---------------------+
+
+    """
+    col = str_to_col(col)
+    return Column(f"APPROX_COUNT_DISTINCT({col.expr})")
+
+
+def cast(col: StringOrColumn, tpe: str) -> Column:
     """Converts a column to the specified type.
 
     Available types are listed here:
@@ -33,7 +62,7 @@ def cast(column: StringOrColumn, tpe: str) -> Column:
     +------+------+
 
     """
-    column = str_to_col(column)
+    column = str_to_col(col)
     return Column(f"CAST({column.expr} as {tpe.upper()})")
 
 
