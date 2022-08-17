@@ -353,13 +353,13 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def filter(self, expr: str) -> "DataFrame":
+    def filter(self, condition: StringOrColumn) -> "DataFrame":
         """Filters rows using the given condition."""
         query = strip_margin(
             f"""
             |SELECT *
             |FROM {quote(self._alias)}
-            |WHERE {expr}"""
+            |WHERE {str(condition)}"""
         )
         return self._apply_query(query)
 
