@@ -38,6 +38,11 @@ def quote(str) -> str:
     return ".".join(["`" + s + "`" if s != "*" else "*" for s in str.replace("`", "").split(".")])
 
 
+def quote_columns(columns: List[str]) -> List[str]:
+    """Puts every column name of the given list into quotes."""
+    return [quote(col) for col in columns]
+
+
 def str_to_col(args: Union[Iterable["StringOrColumn"], "StringOrColumn"]) -> Union[List["Column"], "Column"]:
     """Converts string or Column arguments to Column types
 
@@ -58,7 +63,7 @@ def str_to_col(args: Union[Iterable["StringOrColumn"], "StringOrColumn"]) -> Uni
 
     if isinstance(args, str):
         return f.col(args)
-    elif isinstance(args, list):
+    elif isinstance(args, Iterable):
         return [str_to_col(arg) for arg in args]
     else:
         return args

@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.utils import indent, strip_margin
@@ -7,7 +7,7 @@ LitOrColumn = Union[object, "Column"]
 StringOrColumn = Union[str, "Column"]
 
 
-def cols_to_str(cols: List[StringOrColumn], indentation: Optional[int] = None, sep: str = ",") -> str:
+def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = None, sep: str = ",") -> str:
     cols = [str(col) for col in cols]
     if indentation is not None:
         return indent(f"{sep}\n".join(cols), indentation)
