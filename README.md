@@ -1,5 +1,14 @@
 # Bigquery-frame
 
+[![PyPI version](https://badge.fury.io/py/bigquery-frame.svg)](https://badge.fury.io/py/bigquery-frame)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/bigquery-frame.svg)](https://pypi.org/project/bigquery-frame/)
+[![GitHub Build](https://img.shields.io/github/workflow/status/FurcyPin/bigquery-frame/Build%20and%20Validate)](https://github.com/FurcyPin/bigquery-frame/actions)
+[![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=coverage)](https://sonarcloud.io/component_measures?id=FurcyPin_bigquery-frame&metric=coverage&view=list)
+[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=bugs)](https://sonarcloud.io/component_measures?metric=reliability_rating&view=list&id=FurcyPin_bigquery-frame)
+[![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=vulnerabilities)](https://sonarcloud.io/component_measures?metric=security_rating&view=list&id=FurcyPin_bigquery-frame)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/bigquery-frame)](https://pypi.org/project/bigquery-frame/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 ## What is it ?
 
 This project is a POC that aims to showcase the wonders
