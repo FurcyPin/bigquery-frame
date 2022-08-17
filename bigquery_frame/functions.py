@@ -7,6 +7,12 @@ from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col
 
 
+def _invoke_function_over_column(function_name: str, col: StringOrColumn):
+    """Invoke a SQL function with 1 argument"""
+    col = str_to_col(col)
+    return Column(f"{function_name}({col.expr})")
+
+
 def approx_count_distinct(col: StringOrColumn) -> Column:
     """Aggregate function: returns a new :class:`bigquery_frame.column.Column` for approximate distinct count
     of column `col`.
@@ -32,8 +38,7 @@ def approx_count_distinct(col: StringOrColumn) -> Column:
     +---------------------+---------------------+
 
     """
-    col = str_to_col(col)
-    return Column(f"APPROX_COUNT_DISTINCT({col.expr})")
+    return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
 
 
 def cast(col: StringOrColumn, tpe: str) -> Column:
@@ -96,8 +101,7 @@ def count(col: StringOrColumn) -> Column:
     +---------+------------+------------+------------+
 
     """
-    col = str_to_col(col)
-    return Column(f"COUNT({col.expr})")
+    return _invoke_function_over_column("COUNT", col)
 
 
 def count_distinct(col: StringOrColumn) -> Column:
@@ -198,8 +202,7 @@ def min(col: StringOrColumn) -> Column:
     +----------+----------+
 
     """
-    col = str_to_col(col)
-    return Column(f"MIN({col.expr})")
+    return _invoke_function_over_column("MIN", col)
 
 
 def max(col: StringOrColumn) -> Column:
@@ -226,8 +229,33 @@ def max(col: StringOrColumn) -> Column:
     +----------+----------+
 
     """
-    col = str_to_col(col)
-    return Column(f"MAX({col.expr})")
+    return _invoke_function_over_column("MAX", col)
+
+
+def sum(col: StringOrColumn) -> Column:
+    """Aggregate function: returns the number of rows where the specified column is not null
+
+    >>> df = _get_test_df_1()
+    >>> df.show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(
+    ...   f.sum('col1').alias('sum_col1'),
+    ... ).show()
+    +----------+
+    | sum_col1 |
+    +----------+
+    |        4 |
+    +----------+
+
+    """
+    return _invoke_function_over_column("SUM", col)
 
 
 def struct(*cols: StringOrColumn) -> Column:
