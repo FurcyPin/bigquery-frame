@@ -223,10 +223,9 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
   (the BigQuery ReadSession User role), but downloads data faster.
 
 #### Features
-- Added `functions.cast` method
+- Added `functions.cast()` method
 - We now print the whole query in the error message when it fails
-- Added `DataFrame.join()`. This is a first implementation which
-  is a little clumsy.
+- Added `DataFrame.join()`. This is a first implementation which is a little clumsy.
 
 #### Bugfixes
 - Fix DataFrame deps being lost when using `df.alias()`
