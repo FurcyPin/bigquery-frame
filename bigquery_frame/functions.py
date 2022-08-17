@@ -71,6 +71,36 @@ def cast(col: StringOrColumn, tpe: str) -> Column:
     return Column(f"CAST({column.expr} as {tpe.upper()})")
 
 
+def coalesce(*cols: StringOrColumn) -> Column:
+    """Returns the first column that is not null.
+
+    Available types are listed here:
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions
+
+    >>> df = _get_test_df_2()
+    >>> df.show()
+    +------+------+
+    |    a |    b |
+    +------+------+
+    | null | null |
+    |    1 | null |
+    | null |    2 |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.withColumn("coalesce", f.coalesce("a", "b")).show()
+    +------+------+----------+
+    |    a |    b | coalesce |
+    +------+------+----------+
+    | null | null |     null |
+    |    1 | null |        1 |
+    | null |    2 |        2 |
+    +------+------+----------+
+
+    """
+    cols = [col.expr for col in str_to_col(cols)]
+    return Column(f"COALESCE({cols_to_str(cols)})")
+
+
 def col(expr: str) -> Column:
     return Column(expr=quote(expr))
 
@@ -295,6 +325,18 @@ def _get_test_df_1() -> DataFrame:
             STRUCT(1 as col1, "a" as col2),
             STRUCT(1 as col1, "b" as col2),
             STRUCT(2 as col1, NULL as col2)
+       ])
+    """
+    return bq.sql(query)
+
+
+def _get_test_df_2() -> DataFrame:
+    bq = BigQueryBuilder(get_bq_client())
+    query = """
+        SELECT * FROM UNNEST ([
+            STRUCT(NULL as a, NULL as b),
+            STRUCT(1 as a, NULL as b),
+            STRUCT(NULL as a, 2 as b)
        ])
     """
     return bq.sql(query)
