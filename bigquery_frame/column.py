@@ -107,12 +107,6 @@ class Column:
             "'~' for 'not' when building DataFrame boolean expressions."
         )
 
-    def alias(self, alias: str) -> "Column":
-        return self._copy(alias=alias)
-
-    def asType(self, col_type: str) -> "Column":
-        return Column(expr=f"CAST({self.expr} as {col_type})", alias=self._alias)
-
     def _copy(
         self,
         alias: Optional[str] = None,
@@ -133,6 +127,40 @@ class Column:
         else:
             c._when_default = self._when_default
         return c
+
+    def alias(self, alias: str) -> "Column":
+        return self._copy(alias=alias)
+
+    def asType(self, col_type: str) -> "Column":
+        return Column(expr=f"CAST({self.expr} as {col_type})", alias=self._alias)
+
+    def cast(self, tpe: str):
+        """Casts the column into the specified type
+
+        Examples
+        --------
+        >>> from bigquery_frame import functions as f
+        >>> df = f._get_test_df_1()
+        >>> df.show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        |    1 |    a |
+        |    1 |    b |
+        |    2 | null |
+        +------+------+
+        >>> df.select(df['col1'].cast('float64').alias("col1_float"), 'col2').show()
+        +------------+------+
+        | col1_float | col2 |
+        +------------+------+
+        |        1.0 |    a |
+        |        1.0 |    b |
+        |        2.0 | null |
+        +------------+------+
+
+        :return: a :class:`Column` expression.
+        """
+        return Column(f"CAST({self.expr} as {tpe.upper()})")
 
     def eqNullSafe(self, other: LitOrColumn) -> "Column":
         """Equality test that is safe for null values.
