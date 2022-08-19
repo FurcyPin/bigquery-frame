@@ -288,6 +288,7 @@ def sum(col: StringOrColumn) -> Column:
 
 
 def struct(*cols: StringOrColumn) -> Column:
+    # Unlike other functions (e.g. coalesce) we keep the column aliases here.
     return Column(f"STRUCT({cols_to_str(cols)})")
 
 

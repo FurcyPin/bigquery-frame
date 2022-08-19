@@ -14,6 +14,35 @@ class TestColumn(unittest.TestCase):
     def tearDown(self) -> None:
         self.bigquery.close()
 
+    def test_when_otherwise(self):
+        df = self.bigquery.sql(
+            """
+            SELECT
+                *
+            FROM UNNEST ([
+                STRUCT(false as a),
+                STRUCT(true as a),
+                STRUCT(null as a)
+            ])
+        """
+        )
+        expected = strip_margin(
+            """
+            |+-------+---+
+            ||     a | b |
+            |+-------+---+
+            || False | 1 |
+            ||  True | 1 |
+            ||  null | 0 |
+            |+-------+---+
+            |"""
+        )
+        with captured_output() as (stdout, stderr):
+            a = f.col("a").alias("a")
+            # Operators must be compatible with literals, hence the "True & a"
+            df.withColumn("b", f.when(a.isNull(), f.lit(0)).otherwise(f.lit(1)).cast("STRING")).show()
+            self.assertEqual(expected, stdout.getvalue())
+
     def test_and(self):
         df = self.bigquery.sql(
             """
@@ -50,8 +79,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "True & a"
             df.withColumn("c", True & a & b & True).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -92,8 +121,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "False | a"
             df.withColumn("c", False | a | b | False).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -122,7 +151,7 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
+            a = f.col("a").alias("a")
             # Operators must be compatible with literals, hence the "False | a"
             df.withColumn("b", ~a).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -151,8 +180,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "0 + a"
             df.withColumn("c", 0 + a + b + 0).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -181,8 +210,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "0 + a"
             df.withColumn("c", -(1 - (a - b) - 1)).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -211,8 +240,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "1 * a"
             df.withColumn("c", 1 * a * b * 1).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -241,8 +270,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "1 * a"
             df.withColumn("c", 1 / (a / b / 1)).show()
             self.assertEqual(expected, stdout.getvalue())
@@ -273,12 +302,12 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a == b).withColumn("d", "a" == b).withColumn("e", b == "a").show()
             self.assertEqual(expected, stdout.getvalue())
         with self.assertRaises(ValueError):
-            a = f.col("a")
+            a = f.col("a").alias("a")
             print(a == a == a)
 
     def test_neq(self):
@@ -307,8 +336,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a != b).withColumn("d", "a" != b).withColumn("e", b != "a").show()
             self.assertEqual(expected, stdout.getvalue())
 
@@ -340,8 +369,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a < b).withColumn("d", a < 2).withColumn("e", 2 < a).show()
             self.assertEqual(expected, stdout.getvalue())
 
@@ -373,8 +402,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a <= b).withColumn("d", a <= 2).withColumn("e", 2 <= a).show()
             self.assertEqual(expected, stdout.getvalue())
 
@@ -406,8 +435,8 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a > b).withColumn("d", a > 2).withColumn("e", 2 > a).show()
             self.assertEqual(expected, stdout.getvalue())
 
@@ -439,7 +468,7 @@ class TestColumn(unittest.TestCase):
             |"""
         )
         with captured_output() as (stdout, stderr):
-            a = f.col("a")
-            b = f.col("b")
+            a = f.col("a").alias("a")
+            b = f.col("b").alias("b")
             df.withColumn("c", a >= b).withColumn("d", a >= 2).withColumn("e", 2 >= a).show()
             self.assertEqual(expected, stdout.getvalue())
