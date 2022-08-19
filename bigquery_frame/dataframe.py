@@ -674,7 +674,7 @@ class DataFrame:
         """
         print(self.compile())
 
-    def select(self, *columns: Union[List[Column], Column]) -> "DataFrame":
+    def select(self, *columns: Union[List[StringOrColumn], StringOrColumn]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
         if isinstance(columns[0], list):
             if len(columns) == 1:

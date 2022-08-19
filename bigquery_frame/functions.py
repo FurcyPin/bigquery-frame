@@ -196,7 +196,6 @@ def hash(*cols: Union[str, Column]) -> Column:
     |    2 | null |  1951453458346972811 |
     +------+------+----------------------+
     """
-
     cols = str_to_col(cols)
     return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(cols)})))")
 
