@@ -51,13 +51,14 @@ def _func_op(op: str) -> Callable[["Column"], "Column"]:
 
 
 class Column:
-    def __init__(self, expr: str, alias: Optional[str] = None):
-        self.expr = expr
-        self._alias = alias
+    def __init__(self, expr: str):
+        self._expr = expr
+        self._alias: Optional[str] = None
         self._when_condition: Optional[List[Tuple["Column", "Column"]]] = None
         self._when_default: Optional["Column"] = None
 
-    def __str__(self):
+    @property
+    def expr(self):
         if self._when_condition is not None:
             conditions_str = [f"WHEN {condition} THEN {value}" for condition, value in self._when_condition]
             if self._when_default is not None:
@@ -71,7 +72,11 @@ class Column:
                 |END"""
             )
         else:
-            res = self.expr
+            res = self._expr
+        return res
+
+    def __str__(self):
+        res = self.expr
         if self._alias is not None:
             res += f" as {self._alias}"
         return res
@@ -92,7 +97,7 @@ class Column:
     __rand__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
     __or__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
     __ror__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
-    __invert__ = _func_op('NOT')
+    __invert__ = _func_op("NOT")
 
     # logistic operators
     __eq__: Callable[[LitOrColumn], "Column"] = _bin_op("=")
@@ -132,11 +137,9 @@ class Column:
     def alias(self, alias: str) -> "Column":
         return self._copy(alias=alias)
 
-    def asType(self, col_type: str) -> "Column":
-        return Column(expr=f"CAST({self.expr} as {col_type})", alias=self._alias)
-
-    def cast(self, tpe: str):
-        """Casts the column into the specified type
+    def cast(self, col_type: str):
+        """Casts the column into the specified
+        `BigQuery type <https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules>`_
 
         Examples
         --------
@@ -159,9 +162,10 @@ class Column:
         |        2.0 | null |
         +------------+------+
 
+        :param col_type: a string representing a BigQuery type
         :return: a :class:`Column` expression.
         """
-        return Column(f"CAST({self.expr} as {tpe.upper()})")
+        return Column(f"CAST({self.expr} as {col_type.upper()})").alias(self._alias)
 
     def eqNullSafe(self, other: LitOrColumn) -> "Column":
         """Equality test that is safe for null values.
@@ -362,3 +366,5 @@ class Column:
             )
         else:
             return self._copy(when_default=value)
+
+    asType = cast
