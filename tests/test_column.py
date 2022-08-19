@@ -98,6 +98,35 @@ class TestColumn(unittest.TestCase):
             df.withColumn("c", False | a | b | False).show()
             self.assertEqual(expected, stdout.getvalue())
 
+    def test_invert(self):
+        df = self.bigquery.sql(
+            """
+            SELECT
+                *
+            FROM UNNEST ([
+                STRUCT(false as a),
+                STRUCT(true as a),
+                STRUCT(null as a)
+            ])
+        """
+        )
+        expected = strip_margin(
+            """
+            |+-------+-------+
+            ||     a |     b |
+            |+-------+-------+
+            || False |  True |
+            ||  True | False |
+            ||  null |  null |
+            |+-------+-------+
+            |"""
+        )
+        with captured_output() as (stdout, stderr):
+            a = f.col("a")
+            # Operators must be compatible with literals, hence the "False | a"
+            df.withColumn("b", ~a).show()
+            self.assertEqual(expected, stdout.getvalue())
+
     def test_add(self):
         df = self.bigquery.sql(
             """

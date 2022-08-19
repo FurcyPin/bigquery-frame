@@ -92,6 +92,7 @@ class Column:
     __rand__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
     __or__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
     __ror__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
+    __invert__ = _func_op('NOT')
 
     # logistic operators
     __eq__: Callable[[LitOrColumn], "Column"] = _bin_op("=")
