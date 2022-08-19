@@ -134,6 +134,145 @@ class Column:
             c._when_default = self._when_default
         return c
 
+    def eqNullSafe(self, other: LitOrColumn) -> "Column":
+        """Equality test that is safe for null values.
+
+        Examples
+        --------
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''
+        ...     SELECT * FROM UNNEST ([
+        ...         STRUCT("a" as col1, "a" as col2),
+        ...         STRUCT("a" as col1, "b" as col2),
+        ...         STRUCT("a" as col1, NULL as col2),
+        ...         STRUCT(NULL as col1, "c" as col2),
+        ...         STRUCT(NULL as col1, NULL as col2)
+        ...    ])
+        ... ''')
+        >>> df.show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        |    a |    a |
+        |    a |    b |
+        |    a | null |
+        | null |    c |
+        | null | null |
+        +------+------+
+        >>> (df.withColumn("equality", f.col('col1') == f.col('col2'))
+        ...    .withColumn("eqNullSafe", f.col('col1').eqNullSafe(f.col('col2')))).show()
+        +------+------+----------+------------+
+        | col1 | col2 | equality | eqNullSafe |
+        +------+------+----------+------------+
+        |    a |    a |     True |       True |
+        |    a |    b |    False |      False |
+        |    a | null |     null |       null |
+        | null |    c |     null |       null |
+        | null | null |     null |       True |
+        +------+------+----------+------------+
+
+        Warning: literals are converted to strings
+        >>> (df.withColumn("lit", f.col('col1').eqNullSafe('col2'))
+        ...    .withColumn("col", f.col('col1').eqNullSafe(f.col('col2')))).show()
+        +------+------+-------+-------+
+        | col1 | col2 |   lit |   col |
+        +------+------+-------+-------+
+        |    a |    a | False |  True |
+        |    a |    b | False | False |
+        |    a | null | False |  null |
+        | null |    c |  null |  null |
+        | null | null |  null |  True |
+        +------+------+-------+-------+
+
+        :param other: a :class:`Column` expression or a literal.
+        :return: a :class:`Column` expression.
+        """
+        if not isinstance(other, Column):
+            other = literal_col(other)
+        return (self.isNull() & other.isNull()) | (self == other)
+
+    def isNull(self) -> "Column":
+        """True if the current expression is null.
+
+        Examples
+        --------
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''
+        ...     SELECT * FROM UNNEST ([
+        ...         STRUCT("a" as col1, "a" as col2),
+        ...         STRUCT("a" as col1, "b" as col2),
+        ...         STRUCT("a" as col1, NULL as col2),
+        ...         STRUCT(NULL as col1, "c" as col2),
+        ...         STRUCT(NULL as col1, NULL as col2)
+        ...    ])
+        ... ''')
+        >>> df.show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        |    a |    a |
+        |    a |    b |
+        |    a | null |
+        | null |    c |
+        | null | null |
+        +------+------+
+        >>> df.filter(df["col1"].isNull()).show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        | null |    c |
+        | null | null |
+        +------+------+
+
+        :return: a :class:`Column` expression.
+        """
+        return Column(f"(({self.expr}) IS NULL)")
+
+    def isNotNull(self) -> "Column":
+        """True if the current expression is NOT null.
+
+        Examples
+        --------
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''
+        ...     SELECT * FROM UNNEST ([
+        ...         STRUCT("a" as col1, "a" as col2),
+        ...         STRUCT("a" as col1, "b" as col2),
+        ...         STRUCT("a" as col1, NULL as col2),
+        ...         STRUCT(NULL as col1, "c" as col2),
+        ...         STRUCT(NULL as col1, NULL as col2)
+        ...    ])
+        ... ''')
+        >>> df.show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        |    a |    a |
+        |    a |    b |
+        |    a | null |
+        | null |    c |
+        | null | null |
+        +------+------+
+        >>> df.filter(df["col1"].isNotNull()).show()
+        +------+------+
+        | col1 | col2 |
+        +------+------+
+        |    a |    a |
+        |    a |    b |
+        |    a | null |
+        +------+------+
+
+        :return: a :class:`Column` expression.
+        """
+        return Column(f"(({self.expr}) IS NOT NULL)")
+
     def when(self, condition: "Column", value: "Column") -> "Column":
         """Evaluates a list of conditions and returns one of multiple possible result expressions.
         If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
