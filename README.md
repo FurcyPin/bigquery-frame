@@ -214,7 +214,21 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
-### 0.3
+### 0.3.2
+
+#### Breaking changes
+
+- `Column` constructor no longer accept `alias` as argument. Use `Column.alias()` instead.
+
+#### Features
+
+- Add various Column methods: `cast`, `~`, `isNull`, `isNotNull`, `eqNullSafe`
+- Add various functions methods: `concat`, `length`, `sort_array`, `substring`
+
+#### Bugfixes
+- Fix broken `Column.when().otherwise().alias()` 
+
+### 0.3.1
 
 #### Breaking changes
 - Dropped support for Python 3.6
