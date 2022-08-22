@@ -1,8 +1,14 @@
-from typing import Union
+from typing import Optional, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column, StringOrColumn, cols_to_str, literal_col
+from bigquery_frame.column import (
+    Column,
+    LitOrColumn,
+    StringOrColumn,
+    cols_to_str,
+    literal_col,
+)
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col
 
@@ -341,6 +347,48 @@ def sort_array(col: StringOrColumn, asc: bool = True) -> Column:
     if not asc:
         desc_str = " DESC"
     return Column(f"ARRAY(SELECT elem FROM UNNEST({col.expr}) elem ORDER BY elem{desc_str})")
+
+
+def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] = None) -> Column:
+    """Return the substring that starts at `pos` and is of length `len`.
+    If `len` is not specified, returns the substring that starts at `pos` until the end of the string
+
+    Notes
+    -----
+    The position is not zero based, but 1 based index.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = bq.sql("SELECT 'abcd' as s")
+    >>> df.select(substring(df['s'], 1, 2).alias('s')).show()
+    +----+
+    |  s |
+    +----+
+    | ab |
+    +----+
+    >>> df.select(substring(df['s'], 3).alias('s')).show()
+    +----+
+    |  s |
+    +----+
+    | cd |
+    +----+
+
+    :param col: `Column` or str name of column of type STRING or BYTES
+    :param pos: starting position of the substring (1-based index)
+    :param len: optional, the length of the substring if specified.
+        If not, the substring runs until the end of the input string.
+    :return: a column of same type
+    """
+    col = str_to_col(col)
+    if not isinstance(pos, Column):
+        pos = lit(pos)
+    if len is not None:
+        if not isinstance(len, Column):
+            len = lit(len)
+        return Column(f"SUBSTRING({col.expr}, {pos.expr}, {len.expr})")
+    else:
+        return Column(f"SUBSTRING({col.expr}, {pos.expr})")
 
 
 def sum(col: StringOrColumn) -> Column:
