@@ -105,6 +105,28 @@ def col(expr: str) -> Column:
     return Column(expr=quote(expr))
 
 
+def concat(*cols: StringOrColumn) -> Column:
+    """Concatenates one or more values into a single result. All values must be BYTES or data types
+    that can be cast to STRING. The function returns NULL if any input argument is NULL.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = bq.sql("SELECT 'abcd' as s, '123' as d")
+    >>> df.select(concat(df['s'], df['d']).alias('s')).show()
+    +---------+
+    |       s |
+    +---------+
+    | abcd123 |
+    +---------+
+
+    :param cols:
+    :return:
+    """
+    cols = [col.expr for col in str_to_col(cols)]
+    return Column(f"CONCAT({cols_to_str(cols)})")
+
+
 def count(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
