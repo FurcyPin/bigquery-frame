@@ -302,6 +302,47 @@ def max(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("MAX", col)
 
 
+def sort_array(col: StringOrColumn, asc: bool = True) -> Column:
+    """Collection function: sorts the input array in ascending or descending order according to the natural ordering
+    of the array elements. Unlike in Spark, arrays cannot contain NULL element when they are serialized.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = bq.sql('''
+    ...     SELECT data FROM UNNEST ([
+    ...         STRUCT([2, 1, 3] as data),
+    ...         STRUCT([1] as data),
+    ...         STRUCT([] as data)])
+    ... ''')
+    >>> df.select(sort_array(df['data']).alias('r')).show()
+    +-----------+
+    |         r |
+    +-----------+
+    | [1, 2, 3] |
+    |       [1] |
+    |        [] |
+    +-----------+
+    >>> df.select(sort_array(df['data'], asc=False).alias('r')).show()
+    +-----------+
+    |         r |
+    +-----------+
+    | [3, 2, 1] |
+    |       [1] |
+    |        [] |
+    +-----------+
+
+    :param col: `Column` or str name of column
+    :param asc: bool, optional
+    :return:
+    """
+    col = str_to_col(col)
+    desc_str = ""
+    if not asc:
+        desc_str = " DESC"
+    return Column(f"ARRAY(SELECT elem FROM UNNEST({col.expr}) elem ORDER BY elem{desc_str})")
+
+
 def sum(col: StringOrColumn) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
