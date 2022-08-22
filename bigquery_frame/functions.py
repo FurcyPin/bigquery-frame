@@ -226,6 +226,25 @@ def isnull(col: StringOrColumn) -> Column:
     return Column(f"{col.expr} IS NULL")
 
 
+def length(col: StringOrColumn) -> Column:
+    """Computes the character length of string data or number of bytes of binary data.
+    The length of character data includes the trailing spaces. The length of binary data
+    includes binary zeros.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq.sql("SELECT 'ABC ' as a").select(length('a').alias('length')).show()
+    +--------+
+    | length |
+    +--------+
+    |      4 |
+    +--------+
+    """
+
+    return _invoke_function_over_column("LENGTH", col)
+
+
 lit = literal_col
 
 
