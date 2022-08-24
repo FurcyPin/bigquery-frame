@@ -39,17 +39,14 @@ class HasBigQueryClient:
 
         job = self.__client.query(query=query, job_config=job_config)
 
-        if job.error_result:
-            try:
-                return job.result()
-            except BadRequest as e:
-                e.message += "\nQuery:\n" + number_lines(query, 1)
-                raise e
-
-        if self.__use_session and self.__session_id is None:
+        if self.__use_session and self.__session_id is None and job.session_info is not None:
             self.__session_id = job.session_info.session_id
 
-        return job.result()
+        try:
+            return job.result()
+        except BadRequest as e:
+            e.message += "\nQuery:\n" + number_lines(query, 1)
+            raise e
 
     def close(self):
         self.__client.close()
