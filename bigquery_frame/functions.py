@@ -308,6 +308,50 @@ def max(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("MAX", col)
 
 
+def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_value: LitOrColumn) -> Column:
+    """Replaces all occurrences of `from_value` with `to_value` in `original_value`.
+    If `from_value` is empty, no replacement is made.
+
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = bq.sql("SELECT 'a.b.c.d' as s, '.' as dot, '/' as slash")
+    >>> df.select(replace('s', ".", "/").alias('s')).show()
+    +---------+
+    |       s |
+    +---------+
+    | a/b/c/d |
+    +---------+
+    >>> df.select(replace(df['s'], lit("."), lit("/")).alias('s')).show()
+    +---------+
+    |       s |
+    +---------+
+    | a/b/c/d |
+    +---------+
+    >>> df.select(replace(col("s"), col("dot"), col("slash")).alias('s')).show()
+    +---------+
+    |       s |
+    +---------+
+    | a/b/c/d |
+    +---------+
+    >>> df.select(replace("s", "dot", "slash").alias('s')).show()
+    +---------+
+    |       s |
+    +---------+
+    | a.b.c.d |
+    +---------+
+
+    :param original_value: a :class:`Column` expression or a string column name
+    :param from_value: a :class:`Column` expression or a string literal
+    :param replace_value: a :class:`Column` expression or a string literal
+    :return: a :class:`Column` expression
+    """
+    original_value = str_to_col(original_value)
+    if not isinstance(from_value, Column):
+        from_value = lit(from_value)
+    if not isinstance(replace_value, Column):
+        replace_value = lit(replace_value)
+    return Column(f"REPLACE({original_value.expr}, {from_value.expr}, {replace_value.expr})")
+
+
 def sort_array(col: StringOrColumn, asc: bool = True) -> Column:
     """Collection function: sorts the input array in ascending or descending order according to the natural ordering
     of the array elements. Unlike in Spark, arrays cannot contain NULL element when they are serialized.
