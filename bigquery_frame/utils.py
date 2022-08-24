@@ -69,17 +69,17 @@ def str_to_col(args: Union[Iterable["StringOrColumn"], "StringOrColumn"]) -> Uni
         return args
 
 
-def number_lines(string: str, starting_index: int = 0) -> str:
+def number_lines(string: str, starting_index: int = 1) -> str:
     """Given a multi-line string, return a new string where each line is prepended with its number
 
     Example:
     >>> print(number_lines('Hello\\nWorld!'))
-    0: Hello
-    1: World!
+    1: Hello
+    2: World!
     """
     lines = string.split("\n")
-    max_index = starting_index + len(lines)
-    nb_zeroes = int(math.log10(max_index))
+    max_index = starting_index + len(lines) - 1
+    nb_zeroes = int(math.log10(max_index)) + 1
     numbered_lines = [str(index + starting_index).zfill(nb_zeroes) + ": " + line for index, line in enumerate(lines)]
     return "\n".join(numbered_lines)
 
