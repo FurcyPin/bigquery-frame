@@ -202,8 +202,8 @@ class Column:
         +------+------+----------+------------+
         |    a |    a |     True |       True |
         |    a |    b |    False |      False |
-        |    a | null |     null |       null |
-        | null |    c |     null |       null |
+        |    a | null |     null |      False |
+        | null |    c |     null |      False |
         | null | null |     null |       True |
         +------+------+----------+------------+
 
@@ -215,9 +215,9 @@ class Column:
         +------+------+-------+-------+
         |    a |    a | False |  True |
         |    a |    b | False | False |
-        |    a | null | False |  null |
-        | null |    c |  null |  null |
-        | null | null |  null |  True |
+        |    a | null | False | False |
+        | null |    c | False | False |
+        | null | null | False |  True |
         +------+------+-------+-------+
 
         :param other: a :class:`Column` expression or a literal.
@@ -225,7 +225,7 @@ class Column:
         """
         if not isinstance(other, Column):
             other = literal_col(other)
-        return (self.isNull() & other.isNull()) | (self == other)
+        return (self.isNull() & other.isNull()) | (self.isNotNull() & other.isNotNull() & (self == other))
 
     def isNull(self) -> "Column":
         """True if the current expression is null.
