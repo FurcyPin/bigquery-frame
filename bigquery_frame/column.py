@@ -1,7 +1,7 @@
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
-from bigquery_frame.utils import indent, strip_margin
+from bigquery_frame.utils import indent, quote, strip_margin
 
 LitOrColumn = Union[object, "Column"]
 StringOrColumn = Union[str, "Column"]
@@ -135,6 +135,8 @@ class Column:
         return c
 
     def alias(self, alias: str) -> "Column":
+        if alias is not None:
+            alias = quote(alias)
         return self._copy(alias=alias)
 
     def cast(self, col_type: str):

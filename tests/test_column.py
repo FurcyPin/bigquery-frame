@@ -43,6 +43,26 @@ class TestColumn(unittest.TestCase):
             df.withColumn("b", f.when(a.isNull(), f.lit(0)).otherwise(f.lit(1)).cast("STRING")).show()
             self.assertEqual(expected, stdout.getvalue())
 
+    def test_alias_with_keyword(self):
+        """
+        GIVEN a column
+        WHEN we alias is with a name which is a reserved SQL keyword
+        THEN the query should remain valid
+        """
+        df = self.bigquery.sql("SELECT 1 as a")
+        expected = strip_margin(
+            """
+            |+-------+
+            || group |
+            |+-------+
+            ||     1 |
+            |+-------+
+            |"""
+        )
+        with captured_output() as (stdout, stderr):
+            df.select(f.col("a").alias("group")).show()
+            self.assertEqual(expected, stdout.getvalue())
+
     def test_and(self):
         df = self.bigquery.sql(
             """
