@@ -59,7 +59,8 @@ def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]
     Examples
     --------
     >>> df = _get_test_df_1()
-    >>> df.select(array(lit(0), 'col1').alias("struct")).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.array(lit(0), 'col1').alias("struct")).show()
     +--------+
     | struct |
     +--------+
@@ -67,7 +68,7 @@ def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]
     | [0, 1] |
     | [0, 2] |
     +--------+
-    >>> df.select(array([df['col1'], df['col1']]).alias("struct")).show()
+    >>> df.select(f.array([df['col1'], df['col1']]).alias("struct")).show()
     +--------+
     | struct |
     +--------+
@@ -183,7 +184,8 @@ def concat(*cols: StringOrColumn) -> Column:
     --------
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql("SELECT 'abcd' as s, '123' as d")
-    >>> df.select(concat(df['s'], df['d']).alias('s')).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.concat(df['s'], df['d']).alias('s')).show()
     +---------+
     |       s |
     +---------+
@@ -267,7 +269,8 @@ def desc(col: StringOrColumn) -> Column:
     | null |
     |    3 |
     +------+
-    >>> df.sort(desc("col1")).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.sort(f.desc("col1")).show()
     +------+
     | col1 |
     +------+
@@ -283,8 +286,8 @@ def desc(col: StringOrColumn) -> Column:
 def expr(expr: str) -> Column:
     """Parses the expression string into the column that it represents.
 
-    >>> from bigquery_frame import functions as f
     >>> df = _get_test_df_1()
+    >>> from bigquery_frame import functions as f
     >>> df.select("col1", "col2", f.expr('COALESCE(col2, CAST(col1 as STRING)) as new_col')).show()
     +------+------+---------+
     | col1 | col2 | new_col |
@@ -303,9 +306,9 @@ def hash(*cols: Union[str, Column]) -> Column:
 
     Examples
     --------
+    >>> df = _get_test_df_1()
     >>> from bigquery_frame import functions as f
-    >>> df = _get_test_df_1().withColumn('hash_col', f.hash('col1', 'col2'))
-    >>> df.show()
+    >>> df.withColumn('hash_col', f.hash('col1', 'col2')).show()
     +------+------+----------------------+
     | col1 | col2 |             hash_col |
     +------+------+----------------------+
@@ -319,7 +322,20 @@ def hash(*cols: Union[str, Column]) -> Column:
 
 
 def isnull(col: StringOrColumn) -> Column:
-    return Column(f"{col.expr} IS NULL")
+    """An expression that returns true iff the column is null.
+
+    >>> df = _get_test_df_1()
+    >>> from bigquery_frame import functions as f
+    >>> df.select('col2', f.isnull('col2').alias('is_null')).show()
+    +------+---------+
+    | col2 | is_null |
+    +------+---------+
+    |    a |   False |
+    |    b |   False |
+    | null |    True |
+    +------+---------+
+    """
+    return Column(f"{str_to_col(col).expr} IS NULL")
 
 
 def length(col: StringOrColumn) -> Column:
@@ -330,7 +346,8 @@ def length(col: StringOrColumn) -> Column:
     Examples
     --------
     >>> bq = BigQueryBuilder(get_bq_client())
-    >>> bq.sql("SELECT 'ABC ' as a").select(length('a').alias('length')).show()
+    >>> from bigquery_frame import functions as f
+    >>> bq.sql("SELECT 'ABC ' as a").select(f.length('a').alias('length')).show()
     +--------+
     | length |
     +--------+
@@ -404,25 +421,26 @@ def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_val
 
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql("SELECT 'a.b.c.d' as s, '.' as dot, '/' as slash")
-    >>> df.select(replace('s', ".", "/").alias('s')).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.replace('s', ".", "/").alias('s')).show()
     +---------+
     |       s |
     +---------+
     | a/b/c/d |
     +---------+
-    >>> df.select(replace(df['s'], lit("."), lit("/")).alias('s')).show()
+    >>> df.select(f.replace(df['s'], f.lit("."), f.lit("/")).alias('s')).show()
     +---------+
     |       s |
     +---------+
     | a/b/c/d |
     +---------+
-    >>> df.select(replace(col("s"), col("dot"), col("slash")).alias('s')).show()
+    >>> df.select(f.replace(col("s"), f.col("dot"), f.col("slash")).alias('s')).show()
     +---------+
     |       s |
     +---------+
     | a/b/c/d |
     +---------+
-    >>> df.select(replace("s", "dot", "slash").alias('s')).show()
+    >>> df.select(f.replace("s", "dot", "slash").alias('s')).show()
     +---------+
     |       s |
     +---------+
@@ -455,7 +473,8 @@ def sort_array(col: StringOrColumn, asc: bool = True) -> Column:
     ...         STRUCT([1] as data),
     ...         STRUCT([] as data)])
     ... ''')
-    >>> df.select(sort_array(df['data']).alias('r')).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.sort_array(df['data']).alias('r')).show()
     +-----------+
     |         r |
     +-----------+
@@ -463,7 +482,7 @@ def sort_array(col: StringOrColumn, asc: bool = True) -> Column:
     |       [1] |
     |        [] |
     +-----------+
-    >>> df.select(sort_array(df['data'], asc=False).alias('r')).show()
+    >>> df.select(f.sort_array(df['data'], asc=False).alias('r')).show()
     +-----------+
     |         r |
     +-----------+
@@ -495,13 +514,14 @@ def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] 
     --------
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql("SELECT 'abcd' as s")
-    >>> df.select(substring(df['s'], 1, 2).alias('s')).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.substring(df['s'], 1, 2).alias('s')).show()
     +----+
     |  s |
     +----+
     | ab |
     +----+
-    >>> df.select(substring(df['s'], 3).alias('s')).show()
+    >>> df.select(f.substring(df['s'], 3).alias('s')).show()
     +----+
     |  s |
     +----+
@@ -557,7 +577,8 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     Examples
     --------
     >>> df = _get_test_df_1()
-    >>> df.select(struct('col1', 'col2').alias("struct")).show()
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.struct('col1', 'col2').alias("struct")).show()
     +---------------------------+
     |                    struct |
     +---------------------------+
@@ -565,7 +586,7 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     |  {'col1': 1, 'col2': 'b'} |
     | {'col1': 2, 'col2': None} |
     +---------------------------+
-    >>> df.select(struct([df['col1'], df['col2']]).alias("struct")).show()
+    >>> df.select(f.struct([df['col1'], df['col2']]).alias("struct")).show()
     +---------------------------+
     |                    struct |
     +---------------------------+
@@ -589,8 +610,8 @@ def when(condition: Column, value: Column) -> Column:
 
     Examples
     --------
-    >>> from bigquery_frame import functions as f
     >>> df = _get_test_df_1()
+    >>> from bigquery_frame import functions as f
     >>> df.select("col1", f.when(f.col("col1") > f.lit(1), f.lit("yes")).otherwise(f.lit("no"))).show()
     +------+-----+
     | col1 | f0_ |
