@@ -85,6 +85,32 @@ def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]
     return Column(f"[{cols_to_str(cols)}]")
 
 
+def asc(col: StringOrColumn) -> Column:
+    """Returns a sort expression based on the ascending order of the given column.
+
+    >>> df = _get_test_df_3()
+    >>> df.show()
+    +------+
+    | col1 |
+    +------+
+    |    2 |
+    |    1 |
+    | null |
+    |    3 |
+    +------+
+    >>> df.sort(asc("col1")).show()
+    +------+
+    | col1 |
+    +------+
+    | null |
+    |    1 |
+    |    2 |
+    |    3 |
+    +------+
+    """
+    return Column(f"{str_to_col(col).expr} ASC")
+
+
 def cast(col: StringOrColumn, tpe: str) -> Column:
     """Converts a column to the specified type.
 
@@ -226,6 +252,32 @@ def count_distinct(col: StringOrColumn) -> Column:
     """
     col = str_to_col(col)
     return Column(f"COUNT(DISTINCT {col.expr})")
+
+
+def desc(col: StringOrColumn) -> Column:
+    """Returns a sort expression based on the descending order of the given column.
+
+    >>> df = _get_test_df_3()
+    >>> df.show()
+    +------+
+    | col1 |
+    +------+
+    |    2 |
+    |    1 |
+    | null |
+    |    3 |
+    +------+
+    >>> df.sort(desc("col1")).show()
+    +------+
+    | col1 |
+    +------+
+    |    3 |
+    |    2 |
+    |    1 |
+    | null |
+    +------+
+    """
+    return Column(f"{str_to_col(col).expr} DESC")
 
 
 def expr(expr: str) -> Column:
@@ -576,6 +628,19 @@ def _get_test_df_2() -> DataFrame:
             STRUCT(NULL as a, NULL as b),
             STRUCT(1 as a, NULL as b),
             STRUCT(NULL as a, 2 as b)
+       ])
+    """
+    return bq.sql(query)
+
+
+def _get_test_df_3() -> DataFrame:
+    bq = BigQueryBuilder(get_bq_client())
+    query = """
+        SELECT * FROM UNNEST ([
+            STRUCT(2 as col1),
+            STRUCT(1 as col1),
+            STRUCT(NULL as col1),
+            STRUCT(3 as col1)
        ])
     """
     return bq.sql(query)
