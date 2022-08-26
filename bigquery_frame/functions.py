@@ -499,7 +499,34 @@ def sum(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("SUM", col)
 
 
-def struct(*cols: StringOrColumn) -> Column:
+def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]]) -> Column:
+    """Creates a new struct column.
+
+    Examples
+    --------
+    >>> df = _get_test_df_1()
+    >>> df.select(struct('col1', 'col2').alias("struct")).show()
+    +---------------------------+
+    |                    struct |
+    +---------------------------+
+    |  {'col1': 1, 'col2': 'a'} |
+    |  {'col1': 1, 'col2': 'b'} |
+    | {'col1': 2, 'col2': None} |
+    +---------------------------+
+    >>> df.select(struct([df['col1'], df['col2']]).alias("struct")).show()
+    +---------------------------+
+    |                    struct |
+    +---------------------------+
+    |  {'col1': 1, 'col2': 'a'} |
+    |  {'col1': 1, 'col2': 'b'} |
+    | {'col1': 2, 'col2': None} |
+    +---------------------------+
+
+    :param cols: a list or set of str (column names) or :class:`Column` to be added to the output struct.
+    :return:
+    """
+    if len(cols) == 1 and isinstance(cols[0], (list, set)):
+        cols = cols[0]
     # Unlike other functions (e.g. coalesce) we keep the column aliases here.
     return Column(f"STRUCT({cols_to_str(cols)})")
 
