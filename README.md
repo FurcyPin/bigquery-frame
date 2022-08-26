@@ -214,6 +214,25 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
+### 0.3.3
+
+#### Breaking changes
+
+- The `bigquery_frame.transformations.analyze` now return one extra column named `column_number`
+
+#### Features
+
+- Add various Column methods: `asc`, `desc`
+- Add various functions methods: `replace`, `array`, 
+
+#### Bugfixes
+
+- `Dataframe.sort` now works on aliased columns
+- `Column.alias` now works on sql keywords
+- `functions.eqNullSafe` now never returns NULL
+- fix incorrect line numbering when query was displayed on error
+
+
 ### 0.3.2
 
 #### Breaking changes
