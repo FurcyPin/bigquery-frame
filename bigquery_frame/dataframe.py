@@ -7,7 +7,7 @@ from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.printing import print_results
-from bigquery_frame.utils import assert_true, indent, quote, strip_margin
+from bigquery_frame.utils import assert_true, indent, quote, str_to_col, strip_margin
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -467,7 +467,7 @@ class DataFrame:
         +------+--------+-------+
         >>> (df1.join(df2, f.col("df1.name") == f.col("df2.name"), "left")
         ...      .select(f.col("df1.name"), f.col("df2.height"))
-        ...      .sort("name DESC")).show()
+        ...      .sort(f.desc("name"))).show()
         +-------+--------+
         |  name | height |
         +-------+--------+
@@ -716,12 +716,40 @@ class DataFrame:
         res = self.limit(n + 1).collect_iterator()
         print_results(res, format_args, limit=n)
 
-    def sort(self, *cols: str):
+    def sort(self, *cols: StringOrColumn):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
+
+        >>> df = __get_test_df_2()
+        >>> df.show()
+        +------+-------------+
+        | name | nb_children |
+        +------+-------------+
+        | John |           0 |
+        | Mary |           1 |
+        | Jack |           1 |
+        +------+-------------+
+        >>> from bigquery_frame import functions as f
+        >>> df.sort("name").show()
+        +------+-------------+
+        | name | nb_children |
+        +------+-------------+
+        | Jack |           1 |
+        | John |           0 |
+        | Mary |           1 |
+        +------+-------------+
+        >>> df.sort("nb_children", df["name"]).show()
+        +------+-------------+
+        | name | nb_children |
+        +------+-------------+
+        | John |           0 |
+        | Jack |           1 |
+        | Mary |           1 |
+        +------+-------------+
 
         :param cols:
         :return:
         """
+        cols = [col.expr for col in str_to_col(cols)]
         query = strip_margin(
             f"""
             |SELECT *
@@ -952,3 +980,17 @@ def __get_test_dfs() -> Tuple[DataFrame, ...]:
         )
     )
     return df1, df2, df3, df4
+
+
+def __get_test_df_2() -> DataFrame:
+    bq = BigQueryBuilder(get_bq_client())
+    query = """
+        SELECT
+            *
+        FROM UNNEST ([
+            STRUCT("John" as name, 0 as nb_children),
+            STRUCT("Mary" as name, 1 as nb_children),
+            STRUCT("Jack" as name, 1 as nb_children)
+        ])
+    """
+    return bq.sql(query)
