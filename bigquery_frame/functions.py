@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Set, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
@@ -45,6 +45,44 @@ def approx_count_distinct(col: StringOrColumn) -> Column:
 
     """
     return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
+
+
+def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]]) -> Column:
+    """Creates a new array column.
+
+    Limitations
+    -----------
+    In BigQuery, arrays may not contain NULL values **when they are serialized**.
+    This means that arrays may contain NULL values during the query computation for intermediary results, but
+    when the query result is returned or written, an exception will occur if an array contains a NULL value.
+
+    Examples
+    --------
+    >>> df = _get_test_df_1()
+    >>> df.select(array(lit(0), 'col1').alias("struct")).show()
+    +--------+
+    | struct |
+    +--------+
+    | [0, 1] |
+    | [0, 1] |
+    | [0, 2] |
+    +--------+
+    >>> df.select(array([df['col1'], df['col1']]).alias("struct")).show()
+    +--------+
+    | struct |
+    +--------+
+    | [1, 1] |
+    | [1, 1] |
+    | [2, 2] |
+    +--------+
+
+    :param cols: a list or set of str (column names) or :class:`Column` that have the same data type.
+    :return:
+    """
+    if len(cols) == 1 and isinstance(cols[0], (list, set)):
+        cols = cols[0]
+    cols = [col.expr for col in str_to_col(cols)]
+    return Column(f"[{cols_to_str(cols)}]")
 
 
 def cast(col: StringOrColumn, tpe: str) -> Column:
