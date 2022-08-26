@@ -136,6 +136,28 @@ class TestDataFrame(unittest.TestCase):
         expected = 2
         self.assertEqual(df.count(), expected)
 
+    def test_sort_with_aliased_column(self):
+        """
+        GIVEN a DataFrame
+        WHEN we sort it on an aliased column
+        THEN the query should be valid
+        """
+        df = self.bigquery.sql("""SELECT id FROM UNNEST([3, 2, 1]) as id""")
+        with captured_output() as (stdout, stderr):
+            df.sort(df["id"].alias("_")).show()
+            expected = strip_margin(
+                """
+                |+----+
+                || id |
+                |+----+
+                ||  1 |
+                ||  2 |
+                ||  3 |
+                |+----+
+                |"""
+            )
+            self.assertEqual(expected, stdout.getvalue())
+
     def test_take(self):
         df = self.bigquery.sql("""SELECT id FROM UNNEST(GENERATE_ARRAY(1, 10, 1)) as id""")
         expected = 5
