@@ -474,7 +474,7 @@ class DataFrame:
         |   Bob |     85 |
         | Alice |   null |
         +-------+--------+
-        >>> df1.join(df2, "name", "left").select(f.col("df1.name"), f.col("df2.height")).sort("name DESC").show()
+        >>> df1.join(df2, "name", "left").select(f.col("df1.name"), f.col("df2.height")).sort(f.desc("name")).show()
         +-------+--------+
         |  name | height |
         +-------+--------+
@@ -482,7 +482,7 @@ class DataFrame:
         | Alice |   null |
         +-------+--------+
 
-        >>> df1.join(df2, 'name', 'outer').select('df1.name', 'df2.height').sort("name DESC").show()
+        >>> df1.join(df2, 'name', 'outer').select('df1.name', 'df2.height').sort(f.desc("name")).show()
         +-------+--------+
         |  name | height |
         +-------+--------+
@@ -491,7 +491,7 @@ class DataFrame:
         |  null |     80 |
         +-------+--------+
 
-        >>> df1.join(df2, 'name', 'semi').select('df1.name').sort("name DESC").show()
+        >>> df1.join(df2, 'name', 'semi').select('df1.name').sort(f.desc("name")).show()
         +-------+
         |  name |
         +-------+
@@ -499,7 +499,7 @@ class DataFrame:
         | Alice |
         +-------+
 
-        >>> df1.join(df2, 'name', 'anti').select('df1.name').sort("name DESC").show()
+        >>> df1.join(df2, 'name', 'anti').select('df1.name').sort(f.desc("name")).show()
         +-------+
         |  name |
         +-------+

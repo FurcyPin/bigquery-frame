@@ -139,6 +139,32 @@ class Column:
             alias = quote(alias)
         return self._copy(alias=alias)
 
+    def asc(self) -> "Column":
+        """Returns a sort expression based on the ascending order of the given column.
+
+        >>> from bigquery_frame.functions import _get_test_df_3
+        >>> df = _get_test_df_3()
+        >>> df.show()
+        +------+
+        | col1 |
+        +------+
+        |    2 |
+        |    1 |
+        | null |
+        |    3 |
+        +------+
+        >>> df.sort(df["col1"].asc()).show()
+        +------+
+        | col1 |
+        +------+
+        | null |
+        |    1 |
+        |    2 |
+        |    3 |
+        +------+
+        """
+        return Column(f"{self.expr} ASC").alias(self._alias)
+
     def cast(self, col_type: str):
         """Casts the column into the specified
         `BigQuery type <https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules>`_
@@ -168,6 +194,32 @@ class Column:
         :return: a :class:`Column` expression.
         """
         return Column(f"CAST({self.expr} as {col_type.upper()})").alias(self._alias)
+
+    def desc(self) -> "Column":
+        """Returns a sort expression based on the descending order of the given column.
+
+        >>> from bigquery_frame.functions import _get_test_df_3
+        >>> df = _get_test_df_3()
+        >>> df.show()
+        +------+
+        | col1 |
+        +------+
+        |    2 |
+        |    1 |
+        | null |
+        |    3 |
+        +------+
+        >>> df.sort(df["col1"].desc()).show()
+        +------+
+        | col1 |
+        +------+
+        |    3 |
+        |    2 |
+        |    1 |
+        | null |
+        +------+
+        """
+        return Column(f"{self.expr} DESC").alias(self._alias)
 
     def eqNullSafe(self, other: LitOrColumn) -> "Column":
         """Equality test that is safe for null values.
