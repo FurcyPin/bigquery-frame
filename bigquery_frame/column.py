@@ -113,6 +113,42 @@ class Column:
             "'~' for 'not' when building DataFrame boolean expressions."
         )
 
+    def __getitem__(self, item: Union[str, int]):
+        """Returns the column as a :class:`Column`.
+
+        Examples
+        --------
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('SELECT STRUCT([1, 2, 3] as a, "x" as b) s')
+        >>> df.show()
+        +----------------------------+
+        |                          s |
+        +----------------------------+
+        | {'a': [1, 2, 3], 'b': 'x'} |
+        +----------------------------+
+        >>> df.select(df["s"]["b"]).show()
+        +---+
+        | b |
+        +---+
+        | x |
+        +---+
+
+        >>> df.select(df["s"]["a"][0].alias("a_0")).show()
+        +-----+
+        | a_0 |
+        +-----+
+        |   1 |
+        +-----+
+        """
+        if isinstance(item, str):
+            return Column(f"{self.expr}.{quote(item)}")
+        elif isinstance(item, int):
+            return Column(f"{self.expr}[OFFSET({item})]")
+        else:
+            raise TypeError("unexpected item type: %s" % type(item))
+
     def _copy(
         self,
         alias: Optional[str] = None,
