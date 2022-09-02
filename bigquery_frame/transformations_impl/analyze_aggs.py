@@ -4,6 +4,13 @@ from bigquery_frame import functions as f
 from bigquery_frame.column import Column
 
 
+def _to_string(col: Column, field_type: str):
+    if field_type == "BYTES":
+        return f.expr(f"TO_BASE64({col.expr})")
+    else:
+        return col.cast("STRING")
+
+
 def column_number(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
     return f.lit(col_num).alias("column_number")
 
@@ -29,13 +36,13 @@ def count_null(col: str, schema_field: SchemaField, col_num: int) -> Column:  # 
 
 
 def min(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
-    return f.min(col).cast("STRING").alias("min")
+    return _to_string(f.min(col), schema_field.field_type).alias("min")
 
 
 def max(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
-    return f.max(col).cast("STRING").alias("max")
+    return _to_string(f.max(col), schema_field.field_type).alias("max")
 
 
 def approx_top_100(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
-    col = f.coalesce(f.col(col).asType("string"), f.lit("NULL"))
+    col = f.coalesce(_to_string(f.col(col), schema_field.field_type), f.lit("NULL"))
     return f.expr(f"APPROX_TOP_COUNT({col.expr}, 100)").alias("approx_top_100")

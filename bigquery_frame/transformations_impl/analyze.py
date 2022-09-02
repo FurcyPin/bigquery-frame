@@ -124,17 +124,23 @@ def _select_group_by(
 
 def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int, group_by: List[str], aggs: List[Callable]):
     col = schema_field.name
-    if "!" in col:
+    is_repeated = "!" in col
+
+    group_alias = df._alias
+    if is_repeated:
         if col[-1] == "!":
-            col = col.split("!")[-2]
+            col = col.split("!")[-2].replace(".", "")
         else:
             col = col.split(".")[-1]
-    df = _unnest_column(df, schema_field.name, extra_cols=group_by)
-    group_select = []
-    if len(group_by) > 0:
-        group_select = [f.struct(*group_by).alias(quote("group"))]
+        group_alias = quote("__group1__")
+        group_by_1 = [df[col] for col in group_by]
+        group_select_1 = [f.struct(*group_by_1).alias(group_alias)] if len(group_by) > 0 else []
+        df = _unnest_column(df, schema_field.name, extra_cols=group_select_1)
 
-    res = _select_group_by(df, *group_select, *[agg(col, schema_field, col_num) for agg in aggs], group_by=group_by)
+    group_by_2 = [f.expr(f"{group_alias}.{quote(col)}") for col in group_by]
+    group_select_2 = [f.struct(*group_by_2).alias(quote("group"))] if len(group_by) > 0 else []
+
+    res = _select_group_by(df, *group_select_2, *[agg(col, schema_field, col_num) for agg in aggs], group_by=group_by_2)
     return res
 
 
@@ -273,7 +279,7 @@ def analyze(
     ...     analyze_aggs.count_null,
     ... ]
     >>> analyzed_df = analyze(df, group_by="main_type", _aggs=aggs)
-    Analyzing 6 columns ...
+    Analyzing 5 columns ...
     >>> analyzed_df.orderBy("`group`.main_type", "column_number").show()
     +------------------------+---------------+------------------------+-------+----------------+------------+
     |                  group | column_number |            column_name | count | count_distinct | count_null |
@@ -283,19 +289,16 @@ def analyze(
     |  {'main_type': 'Fire'} |             2 |                 types! |     4 |              2 |          0 |
     |  {'main_type': 'Fire'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
     |  {'main_type': 'Fire'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    |  {'main_type': 'Fire'} |             5 |              main_type |     3 |              1 |          0 |
     | {'main_type': 'Grass'} |             0 |                     id |     3 |              3 |          0 |
     | {'main_type': 'Grass'} |             1 |                   name |     3 |              3 |          0 |
     | {'main_type': 'Grass'} |             2 |                 types! |     6 |              2 |          0 |
     | {'main_type': 'Grass'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
     | {'main_type': 'Grass'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    | {'main_type': 'Grass'} |             5 |              main_type |     3 |              1 |          0 |
     | {'main_type': 'Water'} |             0 |                     id |     3 |              3 |          0 |
     | {'main_type': 'Water'} |             1 |                   name |     3 |              3 |          0 |
     | {'main_type': 'Water'} |             2 |                 types! |     3 |              1 |          0 |
     | {'main_type': 'Water'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
     | {'main_type': 'Water'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    | {'main_type': 'Water'} |             5 |              main_type |     3 |              1 |          0 |
     +------------------------+---------------+------------------------+-------+----------------+------------+
 
     :param df: a DataFrame
@@ -312,7 +315,11 @@ def analyze(
     if isinstance(group_by, str):
         group_by = [group_by]
     flat_schema = flatten_schema(df.schema, explode=True)
-    col_dfs = [_analyze_column(df, schema_field, num, group_by, _aggs) for num, schema_field in enumerate(flat_schema)]
+    col_dfs = [
+        _analyze_column(df, schema_field, num, group_by, _aggs)
+        for num, schema_field in enumerate(flat_schema)
+        if schema_field.name not in group_by
+    ]
 
     nb_cols = len(col_dfs)
     print(f"Analyzing {nb_cols} columns ...")
