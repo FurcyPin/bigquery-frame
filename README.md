@@ -214,6 +214,19 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
+### 0.3.4
+
+#### Features
+
+    - added `Column[...]` (`__getitem`) that can be used to access struct or array elements.
+
+#### Bugfixes
+    - fixed various bugs in transformations.analyze
+      - Was crashing on ARRAY<STRUCT<ARRAY<...>>>
+      - Was crashing on columns of type BYTES
+      - Columns used in group_by were analyzed, which is useless because the group is constant
+
+
 ### 0.3.3
 
 #### Breaking changes
