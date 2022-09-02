@@ -112,7 +112,7 @@ class TestDataFrame(unittest.TestCase):
         with self.assertRaises(TypeError):
             df.select(["c1"], ["c2"])
 
-    def test_2(self):
+    def test_bare_strings(self):
         df = self.bigquery.sql(
             """SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col"""
         )
