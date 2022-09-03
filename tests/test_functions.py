@@ -7,7 +7,7 @@ from bigquery_frame.dataframe import strip_margin
 from tests.utils import captured_output
 
 
-class TestDataFrame(unittest.TestCase):
+class TestFunctions(unittest.TestCase):
     def setUp(self) -> None:
         self.bigquery = BigQueryBuilder(get_bq_client())
 
@@ -144,3 +144,90 @@ class TestDataFrame(unittest.TestCase):
             # Operators must be compatible with literals, hence the "0 + a"
             df.withColumn("c", f.struct(a, b)).show()
             self.assertEqual(expected, stdout.getvalue())
+
+
+class TestTransform(unittest.TestCase):
+    def setUp(self) -> None:
+        self.bigquery = BigQueryBuilder(get_bq_client())
+
+    def tearDown(self) -> None:
+        self.bigquery.close()
+
+    def test_transform_on_array_of_struct(self):
+        """
+        GIVEN a array of structs
+        WHEN we transform it
+        THEN the compiled expression should be correct
+        """
+        transform_col = f.struct((f.col("a") + f.col("b")).alias("c"), (f.col("a") - f.col("b")).alias("d"))
+        actual = f.transform("s", transform_col)
+        expected = strip_margin(
+            """
+            |ARRAY(
+            |  SELECT
+            |    STRUCT((`a`) + (`b`) as `c`, (`a`) - (`b`) as `d`)
+            |  FROM UNNEST(`s`) as `_`
+            |)"""
+        )
+        self.assertEqual(expected, actual.expr)
+
+    def test_transform_with_sort_array_on_array_of_struct(self):
+        """
+        GIVEN a array of structs
+        WHEN we transform and sort it, in whichever order
+        THEN the compiled expression should be the same
+        """
+        transform_col = f.struct((f.col("a") + f.col("b")).alias("c"), (f.col("a") - f.col("b")).alias("d"))
+        sort_cols = [f.col("a"), f.col("b")]
+        actual_1 = f.sort_array(f.transform("s", transform_col), sort_cols)
+        actual_2 = f.transform(f.sort_array("s", sort_cols), transform_col)
+        expected = strip_margin(
+            """
+            |ARRAY(
+            |  SELECT
+            |    STRUCT((`a`) + (`b`) as `c`, (`a`) - (`b`) as `d`)
+            |  FROM UNNEST(`s`) as `_`
+            |  ORDER BY `a`, `b`
+            |)"""
+        )
+        self.assertEqual(expected, actual_1.expr)
+        self.assertEqual(expected, actual_2.expr)
+
+    def test_transform_on_simple_array(self):
+        """
+        GIVEN a simple array
+        WHEN we transform it
+        THEN the compiled expression should correct
+        """
+        actual = f.transform("s", f.col("_").cast("STRING"))
+        expected = strip_margin(
+            """
+            |ARRAY(
+            |  SELECT
+            |    CAST(`_` as STRING)
+            |  FROM UNNEST(`s`) as `_`
+            |)"""
+        )
+        self.assertEqual(expected, actual.expr)
+
+    def test_transform_with_sort_array_on_simple_array(self):
+        """
+        GIVEN a simple array
+        WHEN we transform and sort it, in whichever order
+        THEN the compiled expression should be the same
+        """
+        transform_col = f.col("_").cast("STRING")
+        sort_cols = f.col("_").desc()
+        actual_1 = f.sort_array(f.transform("s", transform_col), sort_cols)
+        actual_2 = f.transform(f.sort_array("s", sort_cols), transform_col)
+        expected = strip_margin(
+            """
+            |ARRAY(
+            |  SELECT
+            |    CAST(`_` as STRING)
+            |  FROM UNNEST(`s`) as `_`
+            |  ORDER BY `_` DESC
+            |)"""
+        )
+        self.assertEqual(expected, actual_1.expr)
+        self.assertEqual(expected, actual_2.expr)

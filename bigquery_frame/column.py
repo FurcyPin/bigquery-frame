@@ -1,7 +1,8 @@
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
+from bigquery_frame.conf import ELEMENT_COL_NAME
 from bigquery_frame.exceptions import IllegalArgumentException
-from bigquery_frame.utils import indent, lit_to_col, quote, strip_margin
+from bigquery_frame.utils import indent, lit_to_col, quote, str_to_col, strip_margin
 
 LitOrColumn = Union[object, "Column"]
 StringOrColumn = Union[str, "Column"]
@@ -452,3 +453,46 @@ class WhenColumn(Column):
         :return:
         """
         return Column(self._compile(value)).alias(self._alias)
+
+
+class ArrayColumn(Column):
+    def __init__(
+        self, array: Column, transform_col: Column = Column("*"), sort_cols: Optional[Union[List[Column]]] = None
+    ) -> None:
+        super().__init__("")
+        self._array: Column = array
+        self._transform_col: Optional[Column] = transform_col
+        self._sort_cols: Optional[List[Column]] = sort_cols
+
+    def _compile(self):
+        array = str_to_col(self._array)
+        sort_str = ""
+        if self._sort_cols is not None:
+            sort_str = f"\n  ORDER BY {', '.join([col.expr for col in self._sort_cols])}"
+
+        return strip_margin(
+            f"""
+            |ARRAY(
+            |  SELECT
+            |    {self._transform_col}
+            |  FROM UNNEST({array}) as {quote(ELEMENT_COL_NAME)}{sort_str}
+            |)"""
+        )
+
+    def _copy(
+        self, transform_col: Optional[Column] = None, sort_cols: Optional[Union[List[Column]]] = None
+    ) -> "ArrayColumn":
+        c = ArrayColumn(self._array)._copy_from(self)
+        if transform_col is not None:
+            c._transform_col = transform_col
+        else:
+            c._transform_col = self._transform_col
+        if sort_cols is not None:
+            c._sort_cols = sort_cols
+        else:
+            c._sort_cols = self._sort_cols
+        return c
+
+    @property
+    def expr(self):
+        return self._compile()
