@@ -4,7 +4,6 @@ from bigquery_frame import BigQueryBuilder
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
-from bigquery_frame.exceptions import IllegalArgumentException
 from tests.utils import captured_output
 
 
@@ -69,11 +68,11 @@ class TestDataFrame(unittest.TestCase):
             self.assertEqual(expected, stdout.getvalue())
 
     def test_when_without_bootstrap(self):
-        with self.assertRaises(IllegalArgumentException):
+        with self.assertRaises(AttributeError):
             f.col("1").when(f.col("a") > f.lit(1), f.lit("ok"))
 
     def test_when_multiple_otherwise(self):
-        with self.assertRaises(IllegalArgumentException):
+        with self.assertRaises(AttributeError):
             f.when(f.col("a") > f.lit(1), f.lit("ok")).otherwise(f.lit(1)).otherwise(f.lit(2))
 
     def test_coalesce_with_alias(self):
