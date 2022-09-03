@@ -5,8 +5,11 @@ from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
+from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
+from bigquery_frame.nested import resolve_nested_columns
 from bigquery_frame.printing import print_results
+from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 from bigquery_frame.utils import assert_true, indent, quote, str_to_col, strip_margin
 
 A = TypeVar("A")
@@ -688,6 +691,84 @@ class DataFrame:
         )
         return self._apply_query(query)
 
+    def select_nested_columns(self, columns: Dict[str, StringOrColumn]) -> "DataFrame":
+        """Projects a set of expressions and returns a new :class:`DataFrame`.
+        Unlike the :func:`select` method, this method works on repeated elements
+        and records (arrays and arrays of struct).
+
+        The syntax for column names works as follow:
+        - "." is the separator for struct elements
+        - "!" must be appended at the end of fields that are repeated
+        - Corresponding column expressions must use the complete field names for non-repeated structs
+        - Corresponding column expressions must use short field names for repeated structs
+        - Corresponding column expressions must use the name `_` for array elements
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+------------------+
+        | id |                s |
+        +----+------------------+
+        |  1 | {'a': 1, 'b': 2} |
+        +----+------------------+
+        >>> df.select_nested_columns({
+        ...     "id": "id",
+        ...     "s.c": f.col("s.a") + f.col("s.b")
+        ... }).show()
+        +----+----------+
+        | id |        s |
+        +----+----------+
+        |  1 | {'c': 3} |
+        +----+----------+
+
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+--------------------------------------+
+        | id |                                    s |
+        +----+--------------------------------------+
+        |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
+        +----+--------------------------------------+
+        >>> df.select_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
+        +----------------------+
+        |                    s |
+        +----------------------+
+        | [{'c': 3}, {'c': 7}] |
+        +----------------------+
+
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+--------------------+
+        | id |                  s |
+        +----+--------------------+
+        |  1 | [{'e': [1, 2, 3]}] |
+        +----+--------------------+
+        >>> df.select_nested_columns({"s!.e!": f.col("_").cast("FLOAT64")}).show()
+        +--------------------------+
+        |                        s |
+        +--------------------------+
+        | [{'e': [1.0, 2.0, 3.0]}] |
+        +--------------------------+
+
+        :param columns: a Dict[column_alias, column_expression] of columns to select
+        :return:
+        """
+        return self.select(*resolve_nested_columns(columns))
+
     def show(self, n: int = 20, format_args=None) -> None:
         """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
         <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
@@ -924,6 +1005,97 @@ class DataFrame:
         else:
             query = f"SELECT *, {col_expr} AS {col_name} FROM {quote(self._alias)}"
         return self._apply_query(query)
+
+    def with_nested_columns(self, columns: Dict[str, StringOrColumn]) -> "DataFrame":
+        """Returns a new :class:`DataFrame` by adding or replacing (when they already exist) columns.
+
+        Unlike the :func:`withColumn` method, this method works on repeated elements
+        and records (arrays and arrays of struct).
+
+        The syntax for column names works as follow:
+        - "." is the separator for struct elements
+        - "!" must be appended at the end of fields that are repeated
+        - Corresponding column expressions must use the complete field names for non-repeated structs
+        - Corresponding column expressions must use short field names for repeated structs
+        - Corresponding column expressions must use the name `_` for array elements
+
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+------------------+
+        | id |                s |
+        +----+------------------+
+        |  1 | {'a': 1, 'b': 2} |
+        +----+------------------+
+        >>> df.with_nested_columns({
+        ...     "id": "id",
+        ...     "s.c": f.col("s.a") + f.col("s.b")
+        ... }).show()
+        +----+--------------------------+
+        | id |                        s |
+        +----+--------------------------+
+        |  1 | {'a': 1, 'b': 2, 'c': 3} |
+        +----+--------------------------+
+
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+--------------------------------------+
+        | id |                                    s |
+        +----+--------------------------------------+
+        |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
+        +----+--------------------------------------+
+        >>> df.with_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
+        +----+------------------------------------------------------+
+        | id |                                                    s |
+        +----+------------------------------------------------------+
+        |  1 | [{'a': 1, 'b': 2, 'c': 3}, {'a': 3, 'b': 4, 'c': 7}] |
+        +----+------------------------------------------------------+
+
+        >>> df = bq.sql('''
+        ...  SELECT * FROM UNNEST([
+        ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
+        ...  ])
+        ... ''')
+        >>> df.show()
+        +----+--------------------+
+        | id |                  s |
+        +----+--------------------+
+        |  1 | [{'e': [1, 2, 3]}] |
+        +----+--------------------+
+        >>> df.with_nested_columns({"s!.e!": f.col("_").cast("FLOAT64")}).show()
+        +----+--------------------------+
+        | id |                        s |
+        +----+--------------------------+
+        |  1 | [{'e': [1.0, 2.0, 3.0]}] |
+        +----+--------------------------+
+
+        :param columns: a Dict[column_alias, column_expression] of columns to select
+        :return:
+        """
+        schema_flat = flatten_schema(
+            self.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
+        )
+
+        def get_col_short_name(col: str):
+            if col[-1] == REPETITION_MARKER:
+                return ELEMENT_COL_NAME
+            else:
+                return col.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1]
+
+        default_columns = {field.name: get_col_short_name(field.name) for field in schema_flat}
+        columns = {**default_columns, **columns}
+        return self.select(*resolve_nested_columns(columns))
 
     orderBy = sort
 
