@@ -1,7 +1,7 @@
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
-from bigquery_frame.utils import indent, quote, strip_margin
+from bigquery_frame.utils import indent, lit_to_col, quote, strip_margin
 
 LitOrColumn = Union[object, "Column"]
 StringOrColumn = Union[str, "Column"]
@@ -27,8 +27,7 @@ def literal_col(val: LitOrColumn) -> "Column":
 
 def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
     def fun(self, other: LitOrColumn) -> "Column":
-        if not isinstance(other, Column):
-            other = literal_col(other)
+        other = lit_to_col(other)
         return Column(f"({self.expr}) {op} ({other.expr})")
 
     return fun
@@ -36,8 +35,7 @@ def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
 
 def _reverse_bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
     def fun(self, other: LitOrColumn) -> "Column":
-        if not isinstance(other, Column):
-            other = literal_col(other)
+        other = lit_to_col(other)
         return Column(f"({other.expr}) {op} ({self.expr})")
 
     return fun
@@ -82,6 +80,10 @@ class Column:
     __or__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
     __ror__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
     __invert__ = _func_op("NOT")
+
+    def __mod__(self, other: LitOrColumn) -> "Column":
+        other = lit_to_col(other)
+        return Column(f"MOD({self.expr}, {other.expr})")
 
     # logistic operators
     __eq__: Callable[[LitOrColumn], "Column"] = _bin_op("=")

@@ -176,6 +176,34 @@ class TestColumn(unittest.TestCase):
             df.withColumn("b", ~a).show()
             self.assertEqual(expected, stdout.getvalue())
 
+    def test_mod(self):
+        df = self.bigquery.sql(
+            """
+            SELECT
+                *
+            FROM UNNEST ([
+                STRUCT(1 as a),
+                STRUCT(2 as a),
+                STRUCT(3 as a)
+            ])
+        """
+        )
+        expected = strip_margin(
+            """
+            |+---+---+
+            || a | b |
+            |+---+---+
+            || 1 | 1 |
+            || 2 | 0 |
+            || 3 | 1 |
+            |+---+---+
+            |"""
+        )
+        with captured_output() as (stdout, stderr):
+            a = f.col("a").alias("a")
+            df.withColumn("b", a % 2).show()
+            self.assertEqual(expected, stdout.getvalue())
+
     def test_add(self):
         df = self.bigquery.sql(
             """
