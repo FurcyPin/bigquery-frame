@@ -6,6 +6,7 @@ from bigquery_frame.column import (
     Column,
     LitOrColumn,
     StringOrColumn,
+    WhenColumn,
     cols_to_str,
     literal_col,
 )
@@ -604,7 +605,7 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     return Column(f"STRUCT({cols_to_str(cols)})")
 
 
-def when(condition: Column, value: Column) -> Column:
+def when(condition: Column, value: Column) -> WhenColumn:
     """Evaluates a list of conditions and returns one of multiple possible result expressions.
     If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
@@ -625,9 +626,7 @@ def when(condition: Column, value: Column) -> Column:
     :param value: a :class:`Column` expression.
     :return:
     """
-    c = Column("")
-    c._when_condition = [(condition, value)]
-    return c
+    return WhenColumn([(condition, value)])
 
 
 def _get_test_df_1() -> DataFrame:
