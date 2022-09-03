@@ -1,6 +1,10 @@
 # This file may be edited by the user.
 # Please read AUTH.md first before changing anything.
 
+ELEMENT_COL_NAME = "_"
+STRUCT_SEPARATOR = "."
+REPETITION_MARKER = "!"
+
 # Method 1. Set this variable here or set it as an environment variable
 GCP_PROJECT = "Name of your BigQuery project"
 
