@@ -88,7 +88,7 @@ several things that are much harder, or even impossible, in pure-SQL:
 - generic transformations
 - higher level abstraction
 
-But that deserves a blog article (coming soon).
+But that deserves [a blog article](https://towardsdatascience.com/sql-jinja-is-not-enough-why-we-need-dataframes-4d71a191936d).
 
 ## I want to try this POC, how do I use it ?
 
