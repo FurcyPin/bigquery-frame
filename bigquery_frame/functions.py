@@ -609,6 +609,63 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     return Column(f"STRUCT({cols_to_str(cols)})")
 
 
+def to_base32(col: StringOrColumn) -> Column:
+    """Converts a sequence of BYTES into a base32-encoded STRING.
+    To convert a base32-encoded STRING into BYTES, use :func:`from_base32`.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> from bigquery_frame import functions as f
+    >>> df = bq.sql(r"SELECT b'abcde\\xFF' as b")
+    >>> df.select(f.to_base32('b').alias('base32_string')).show()
+    +------------------+
+    |    base32_string |
+    +------------------+
+    | MFRGGZDF74====== |
+    +------------------+
+
+    """
+    return _invoke_function_over_column("TO_BASE32", col)
+
+
+def to_base64(col: StringOrColumn) -> Column:
+    """Converts a sequence of BYTES into a base64-encoded STRING.
+    To convert a base64-encoded STRING into BYTES, use :func:`from_base64`.
+
+    There are several base64 encodings in common use that vary in exactly which alphabet of 65 ASCII characters
+    are used to encode the 64 digits and padding.
+    See `RFC 4648 <https://tools.ietf.org/html/rfc4648#section-4>`_ for details.
+    This function adds padding and uses the alphabet [A-Za-z0-9+/=].
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> from bigquery_frame import functions as f
+    >>> df = bq.sql(r"SELECT b'\\377\\340' as b")
+    >>> df.select(f.to_base64('b').alias('base64_string')).show()
+    +---------------+
+    | base64_string |
+    +---------------+
+    |          /+A= |
+    +---------------+
+
+    To work with an encoding using a different base64 alphabet, you might need to compose TO_BASE64 with the
+    REPLACE function. For instance, the base64url url-safe and filename-safe encoding commonly used in web programming
+    uses -_= as the last characters rather than +/=. To encode a base64url-encoded string,
+    replace + and / with - and _ respectively.
+
+    >>> df.select(f.replace(f.replace(f.to_base64('b'), '+', '-'), '/', '_').alias('websafe_base64')).show()
+    +----------------+
+    | websafe_base64 |
+    +----------------+
+    |           _-A= |
+    +----------------+
+
+    """
+    return _invoke_function_over_column("TO_BASE64", col)
+
+
 def transform(array: StringOrColumn, transform_col: Column) -> Column:
     """Returns an array of elements after applying a transformation to each element in the input array.
 

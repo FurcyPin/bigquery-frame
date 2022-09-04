@@ -6,7 +6,7 @@ from bigquery_frame.column import Column
 
 def _to_string(col: Column, field_type: str):
     if field_type == "BYTES":
-        return f.expr(f"TO_BASE64({col.expr})")
+        return f.to_base64(col)
     else:
         return col.cast("STRING")
 
