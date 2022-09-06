@@ -140,6 +140,32 @@ class TestDataframeComparator(TestCase):
         # We make sure that the displayed column name is 'a.c' and not 'a__DOT__c'
         self.assertEqual("a.c", diff_count_per_col_df.collect()[0].get("column"))
 
+    def test_compare_df_with_struct_and_different_schemas(self):
+        """A bug was happening when dataframes had different schemas"""
+        # fmt: off
+        df_1 = self.bq.sql("""
+            SELECT * FROM UNNEST ([
+                STRUCT(1 as id, STRUCT(1 as a, 1 as b) as s1),
+                STRUCT(2 as id, STRUCT(1 as a, 1 as b) as s1),
+                STRUCT(3 as id, STRUCT(1 as a, 1 as b) as s1)
+           ])
+        """)
+        df_2 = self.bq.sql("""
+            SELECT * FROM UNNEST ([
+                STRUCT(1 as id, STRUCT(1 as a, 1 as c) as s1),
+                STRUCT(2 as id, STRUCT(2 as a, 1 as c) as s1),
+                STRUCT(3 as id, STRUCT(1 as a, 1 as c) as s1)
+           ])
+        """)
+        # fmt: on
+        diff_result: DiffResult = self.df_comparator.compare_df(df_1, df_2, join_cols=["id"])
+        expected_diff_stats = DiffStats(
+            total=3, no_change=2, changed=1, in_left=3, in_right=3, only_in_left=0, only_in_right=0
+        )
+        self.assertFalse(diff_result.same_schema)
+        self.assertFalse(diff_result.is_ok)
+        self.assertEqual(expected_diff_stats, diff_result.diff_stats)
+
     def test_compare_df_with_arrays(self):
         # fmt: off
         df_1 = self.bq.sql("""
