@@ -214,17 +214,51 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
+### 0.4.0
+
+
+#### New exciting features!
+
+Several new features that make working with nested structure easier were added.
+
+- Added `DataFrame.select_nested_columns` and `DataFrame.with_nested_columns`, which 
+  make transformation of nested values much easier
+- Added `functions.transform`, useful to transform arrays
+- Added `transformations.normalize_arrays` which automatically sort all arrays in a DataFrame, including
+  arrays of arrays of arrays...
+- Added `transformations.harmonize_dataframes` which takes two DataFrames and transform them into DataFrames
+  with the same schema.
+- Experimental: Added data_diff capabilities, including a DataFrameComparator which can perform a diff
+  between two DataFrames. Extremely useful for non-regression testing.
+
+
+#### Other features
+
+- Added `functions.to_base32` and `functions.to_base64`. 
+  `from_base_32` and `from_base_64` will be added later, 
+  once a [bug in python-tabulate](https://github.com/astanin/python-tabulate/issues/192) is fixed.
+- Added `Column.__mod__` (e.g. `f.when(c % 2 == 0)`) 
+
+
+#### Breaking changes
+
+- Improved typing of `Column.when.otherwise`. Now `functions.when` returns a `WhenColumn`, a
+  special type of `Column` with two extra methods: `when` and `otherwise`.
+- Changed `functions.sort_arrays`'s signature to make it consistent with `transform`
+
+
 ### 0.3.4
 
 #### Features
 
-    - added `Column[...]` (`__getitem`) that can be used to access struct or array elements.
+- added `Column[...]` (`__getitem`) that can be used to access struct or array elements.
 
 #### Bugfixes
-    - fixed various bugs in transformations.analyze
-      - Was crashing on ARRAY<STRUCT<ARRAY<...>>>
-      - Was crashing on columns of type BYTES
-      - Columns used in group_by were analyzed, which is useless because the group is constant
+
+- fixed various bugs in transformations.analyze
+  - Was crashing on ARRAY<STRUCT<ARRAY<...>>>
+  - Was crashing on columns of type BYTES
+  - Columns used in group_by were analyzed, which is useless because the group is constant
 
 
 ### 0.3.3
