@@ -620,10 +620,10 @@ class DataframeComparator:
         join_cols, self_join_growth_estimate = self._get_join_cols(left_flat, right_flat, join_cols)
         self._check_join_cols(specified_join_cols, join_cols, self_join_growth_estimate)
 
-        left_schema_flat = flatten_schema(left_df.schema, explode=True)
+        left_schema_flat = flatten_schema(left_flat.schema, explode=True)
         if not same_schema:
             # We apply a `limit(0).persist()` to prevent BigQuery from crashing on very large tables
-            right_schema_flat = flatten_schema(right_df.schema, explode=True)
+            right_schema_flat = flatten_schema(right_flat.schema, explode=True)
             common_columns = get_common_columns(left_schema_flat, right_schema_flat)
         else:
             common_columns = [(field.name, None) for field in left_schema_flat]
