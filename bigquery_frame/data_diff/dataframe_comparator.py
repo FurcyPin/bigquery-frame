@@ -58,6 +58,36 @@ class DataframeComparator:
     def _schema_to_string(
         schema: List[SchemaField], include_nullable: bool = False, include_metadata: bool = False
     ) -> List[str]:
+        """Return a list of strings representing the schema
+
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> df_comparator = DataframeComparator()
+        >>> df = bq.sql('''SELECT 1 as id, "a" as c1, 1 as c2''')
+        >>> print('\\n'.join(DataframeComparator()._schema_to_string(df.schema)))
+        id INTEGER
+        c1 STRING
+        c2 INTEGER
+        >>> print('\\n'.join(df_comparator._schema_to_string(df.schema, include_nullable=True)))
+        id INTEGER (nullable)
+        c1 STRING (nullable)
+        c2 INTEGER (nullable)
+        >>> schema = [
+        ...     SchemaField('id', 'INTEGER', 'NULLABLE', 'An id', (), None),
+        ...     SchemaField('c1', 'STRING', 'REQUIRED', 'A string column', (), None),
+        ...     SchemaField('c2', 'INTEGER', 'NULLABLE', 'An int column', (), None)
+        ... ]
+        >>> print('\\n'.join(df_comparator._schema_to_string(schema, include_nullable=True, include_metadata=True)))
+        id INTEGER (nullable) An id
+        c1 STRING (required) A string column
+        c2 INTEGER (nullable) An int column
+
+        :param schema: A DataFrame schema
+        :param include_nullable: (default: False) indicate for each field if it is nullable
+        :param include_metadata: (default: False) add field description
+        :return:
+        """
         res = []
         for field in schema:
             s = f"{field.name} {field.field_type}"

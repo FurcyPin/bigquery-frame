@@ -381,20 +381,17 @@ class WhenColumn(Column):
         self._when_condition: List[Tuple["Column", "Column"]] = when_condition
 
     def _compile(self, when_default: Optional[Column] = None):
-        if self._when_condition is not None:
-            conditions_str = [f"WHEN {condition} THEN {value}" for condition, value in self._when_condition]
-            if when_default is not None:
-                default_str = f"\n  ELSE {when_default}"
-            else:
-                default_str = ""
-            res = strip_margin(
-                f"""
-                |CASE
-                |{cols_to_str(conditions_str, indentation=2, sep="")}{default_str}
-                |END"""
-            )
+        conditions_str = [f"WHEN {condition} THEN {value}" for condition, value in self._when_condition]
+        if when_default is not None:
+            default_str = f"\n  ELSE {when_default}"
         else:
-            res = self._expr
+            default_str = ""
+        res = strip_margin(
+            f"""
+            |CASE
+            |{cols_to_str(conditions_str, indentation=2, sep="")}{default_str}
+            |END"""
+        )
         return res
 
     @property
@@ -417,6 +414,14 @@ class WhenColumn(Column):
         |    1 |  no |
         |    2 | yes |
         +------+-----+
+        >>> df.select("col1", f.when(f.col("col1") > f.lit(1), f.lit("yes"))).show()
+        +------+------+
+        | col1 |  f0_ |
+        +------+------+
+        |    1 | null |
+        |    1 | null |
+        |    2 |  yes |
+        +------+------+
 
         See Also
         --------

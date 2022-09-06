@@ -63,7 +63,7 @@ class TestAnalyze(unittest.TestCase):
     def test_analyze_with_array_struct_array(self):
         """
         GIVEN a DataFrame containing an ARRAY<STRUCT<ARRAY<INT>>>
-        WHEN we analyze
+        WHEN we analyze it
         THEN no crash should occur
         """
         bq = BigQueryBuilder(get_bq_client())
@@ -73,6 +73,23 @@ class TestAnalyze(unittest.TestCase):
         # fmt: off
         expected = [
             Row((0, 'a!.b!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
+        ]
+        # fmt: on
+        self.assertEqual(expected, actual.collect())
+
+    def test_analyze_with_bytes(self):
+        """
+        GIVEN a DataFrame containing a column of type bytes
+        WHEN we analyze it
+        THEN no crash should occur
+        """
+        bq = BigQueryBuilder(get_bq_client())
+        query = r"""SELECT b'\377\340' as s"""
+        df = bq.sql(query)
+        actual = analyze(df)
+        # fmt: off
+        expected = [
+            Row((0, 's', 'BYTES', 1, 1, 0, '/+A=', '/+A=', [{'value': '/+A=', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
         ]
         # fmt: on
         self.assertEqual(expected, actual.collect())
