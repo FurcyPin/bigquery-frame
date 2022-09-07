@@ -3,6 +3,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from google.cloud.bigquery import Client, Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
+import bigquery_frame
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
@@ -135,6 +136,13 @@ class BigQueryBuilder(HasBigQueryClient):
     def sql(self, sql_query) -> "DataFrame":
         """Returns a :class:`DataFrame` representing the result of the given query."""
         return DataFrame(sql_query, None, self)
+
+    def _generate_header(self) -> str:
+        return f"/* This query was generated using bigquery-frame v{bigquery_frame.__version__} */\n"
+
+    def _execute_query(self, query: str, use_query_cache=True, try_count=1) -> RowIterator:
+        query = self._generate_header() + query
+        return super()._execute_query(query, use_query_cache=use_query_cache, try_count=try_count)
 
     def _registerDataFrameAsTempView(self, df: "DataFrame", alias: str) -> None:
         # self._check_alias(alias, [])
