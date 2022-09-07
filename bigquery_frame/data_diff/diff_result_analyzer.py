@@ -388,10 +388,10 @@ class DiffResultAnalyzer:
             if show_examples:
                 self._display_diff_examples(diff_result.diff_df, diff_count_per_col_df, join_cols)
         if diff_stats.only_in_left > 0:
-            left_only_df = self._get_side_diff_df(diff_result.diff_df, "left", join_cols)
+            left_only_df = self._get_side_diff_df(diff_result.diff_df, "left", join_cols).persist()
             print(f"{diff_stats.only_in_left} rows were only found in '{left_df_alias}' :")
             analyze(left_only_df).show(len(left_only_df.schema))
         if diff_stats.only_in_right > 0:
-            right_only_df = self._get_side_diff_df(diff_result.diff_df, "right", join_cols)
+            right_only_df = self._get_side_diff_df(diff_result.diff_df, "right", join_cols).persist()
             print(f"{diff_stats.only_in_right} rows were only found in '{right_df_alias}':")
             analyze(right_only_df).show(len(right_only_df.schema))
