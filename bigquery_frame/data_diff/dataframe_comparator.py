@@ -516,7 +516,17 @@ class DataframeComparator:
         join_cols: List[str],
         same_schema: bool,
     ) -> List[DataFrame]:
-        """TODO
+        """Perform a column-by-column comparison between two DataFrames and return a sharded DataFrame
+        (i.e. a list of DataFrames)
+
+        The two DataFrames must have the same columns with the same ordering.
+        The column `join_col` will be used to join the two DataFrames together.
+        Then we build a new DataFrame with the `join_col` and for each column, a struct with three elements:
+        - `left_value`: the value coming from the `left_df`
+        - `right_value`: the value coming from the `right_df`
+        - `is_equal`: True if both values have the same hash, False otherwise.
+
+        The result is sharded by group of columns in order to avoid hitting BigQuery's query complexity limit
 
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame.auth import get_bq_client
