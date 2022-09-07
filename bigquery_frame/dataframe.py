@@ -147,19 +147,19 @@ class BigQueryBuilder(HasBigQueryClient):
         self._execute_query(query)
         return self.table(alias)
 
-    def _compile_views(self) -> List[str]:
-        return [
-            strip_margin(
+    def _compile_views(self) -> Dict[str, str]:
+        return {
+            alias: strip_margin(
                 f"""{quote(alias)} AS (
                 |{indent(df._compile_with_deps(), 2)}
                 |)"""
             )
             for alias, df in self._views.items()
-        ]
+        }
 
     def _get_alias(self) -> str:
         self._alias_count += 1
-        return DEFAULT_ALIAS_NAME.format(num=self._alias_count)
+        return "{" + DEFAULT_ALIAS_NAME.format(num=self._alias_count) + "}"
 
     def _get_temp_table_alias(self) -> str:
         self._temp_table_count += 1
@@ -265,21 +265,27 @@ class DataFrame:
         df = self.limit(0)
         return df.bigquery._execute_query(df.compile(), use_query_cache=False).schema
 
-    def _compile_deps(self) -> List[str]:
-        return [
-            strip_margin(
+    def _compile_deps(self) -> Dict[str, str]:
+        return {
+            alias: strip_margin(
                 f"""{quote(alias)} AS (
                 |{indent(cte.query, 2)}
                 |)"""
             )
             for (alias, cte) in self._deps
-        ]
+        }
 
-    def _compile_with_ctes(self, ctes: List[str]) -> str:
+    def _compile_with_ctes(self, ctes: Dict[str, str]) -> str:
         if len(ctes) > 0:
-            return "WITH " + "\n, ".join(ctes) + "\n" + self.query
+            query = "WITH " + "\n, ".join(ctes.values()) + "\n" + self.query
         else:
-            return self.query
+            query = self.query
+        deps_replacements = {
+            alias[1:-1]: DEFAULT_ALIAS_NAME.format(num=i + 1)
+            for (i, (alias, _)) in enumerate(ctes.items())
+            if alias[0] == "{" and alias[-1] == "}"
+        }
+        return query.format(**deps_replacements)
 
     def _compile_with_deps(self) -> str:
         ctes = self._compile_deps()
@@ -316,7 +322,7 @@ class DataFrame:
 
     def compile(self) -> str:
         """Returns the sql query that will be executed to materialize this :class:`DataFrame`"""
-        ctes = self.bigquery._compile_views() + self._compile_deps()
+        ctes = {**self.bigquery._compile_views(), **self._compile_deps()}
         return self._compile_with_ctes(ctes)
 
     def createOrReplaceTempTable(self, alias: str) -> "DataFrame":
