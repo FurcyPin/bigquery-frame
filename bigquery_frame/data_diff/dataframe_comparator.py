@@ -244,7 +244,10 @@ class DataframeComparator:
         eligibility_df = df.select(
             [
                 (
-                    f.approx_count_distinct(quote(col)) * f.lit(100.0) / f.count(f.lit(1)) > distinct_count_threshold
+                    f.when(f.count(f.lit(1)) == f.lit(0), f.lit(False)).otherwise(
+                        f.approx_count_distinct(quote(col)) * f.lit(100.0) / f.count(f.lit(1))
+                        > distinct_count_threshold
+                    )
                 ).alias(col)
                 for col in eligible_cols
             ]
