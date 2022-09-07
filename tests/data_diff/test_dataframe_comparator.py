@@ -60,29 +60,29 @@ class TestDataframeComparator(TestCase):
         self.assertTrue(diff_result.is_ok)
         self.assertEqual(expected_diff_stats, diff_result.diff_stats)
 
-    def test_compare_df_with_difference(self):
+    def test_compare_df_with_empty_dataframes(self):
         # fmt: off
         df_1 = self.bq.sql("""
             SELECT * FROM UNNEST ([
                 STRUCT(1 as id, "a" as name),
                 STRUCT(2 as id, "b" as name),
                 STRUCT(3 as id, "c" as name)
-           ])
+           ]) LIMIT 0
         """)
         df_2 = self.bq.sql("""
             SELECT * FROM UNNEST ([
                 STRUCT(1 as id, "a" as name),
                 STRUCT(2 as id, "b" as name),
                 STRUCT(3 as id, "d" as name)
-           ])
+           ]) LIMIT 0
         """)
         # fmt: on
-        diff_result: DiffResult = self.df_comparator.compare_df(df_1, df_2)
+        diff_result: DiffResult = self.df_comparator.compare_df(df_1, df_2, join_cols=["id"])
         expected_diff_stats = DiffStats(
-            total=3, no_change=2, changed=1, in_left=3, in_right=3, only_in_left=0, only_in_right=0
+            total=0, no_change=0, changed=0, in_left=0, in_right=0, only_in_left=0, only_in_right=0
         )
         self.assertTrue(diff_result.same_schema)
-        self.assertFalse(diff_result.is_ok)
+        self.assertTrue(diff_result.is_ok)
         self.assertEqual(expected_diff_stats, diff_result.diff_stats)
 
     def test_compare_df_with_different_keys(self):
