@@ -666,7 +666,7 @@ class DataframeComparator:
         except BadRequest:
             traceback.print_exc()
             print(
-                "An error occurred while displaying the diff results."
+                "An error occurred while displaying the diff results. "
                 "If you are in a Python console and did not assign the result of compare_df() to a value, "
                 "you can retrieve the results by running this command:"
                 "diff_result = _"
