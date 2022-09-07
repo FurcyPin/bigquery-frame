@@ -234,6 +234,7 @@ Several new features that make working with nested structure easier were added.
 
 #### Other features
 
+- Added automatic retry when BigQuery returns an InternalServerError. We now do 3 tries by default.
 - Added `functions.to_base32` and `functions.to_base64`. 
   `from_base_32` and `from_base_64` will be added later, 
   once a [bug in python-tabulate](https://github.com/astanin/python-tabulate/issues/192) is fixed.
