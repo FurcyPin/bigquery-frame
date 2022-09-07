@@ -230,6 +230,9 @@ Several new features that make working with nested structure easier were added.
   with the same schema.
 - Experimental: Added data_diff capabilities, including a DataFrameComparator which can perform a diff
   between two DataFrames. Extremely useful for non-regression testing.
+- Generated queries are now deterministic, this means that if you re-run the
+  same DataFrame code twice, the exact same query will be sent to BigQuery twice,
+  thus leveraging query caching.
 
 
 #### Other features

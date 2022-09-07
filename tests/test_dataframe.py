@@ -4,6 +4,7 @@ from google.api_core.exceptions import BadRequest
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import BigQueryBuilder
+from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
 from tests.utils import captured_output
@@ -192,7 +193,7 @@ class TestDataFrame(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             df.show()
 
-        expected = "400 SELECT * must have a FROM clause at [2:10]"
+        expected = "400 SELECT * must have a FROM clause at"
         self.assertIn(expected, str(context.exception))
 
     def test_show_limit(self):
@@ -242,3 +243,14 @@ class TestDataFrame(unittest.TestCase):
                 |"""
             )
             self.assertEqual(expected, stdout.getvalue())
+
+    def test_determinism(self):
+        df1 = self.bigquery.sql("""SELECT 1 as id""").withColumn("a", f.lit("a"))
+        df2 = self.bigquery.sql("""SELECT 1 as id""").withColumn("a", f.lit("a"))
+        self.assertEqual(df1.compile(), df2.compile())
+
+    def test_determinism_with_temp_view(self):
+        self.bigquery.sql("""SELECT 1 as id""").withColumn("a", f.lit("a")).createOrReplaceTempView("T1")
+        df1 = self.bigquery.sql("""SELECT * FROM T1""").withColumn("b", f.lit("b"))
+        df2 = self.bigquery.sql("""SELECT * FROM T1""").withColumn("b", f.lit("b"))
+        self.assertEqual(df1.compile(), df2.compile())
