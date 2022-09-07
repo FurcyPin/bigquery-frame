@@ -52,7 +52,6 @@ class DataframeComparator:
     ):
         self.diff_format_options = diff_format_options
         self._shard_size = _shard_size
-        pass
 
     @staticmethod
     def _schema_to_string(
