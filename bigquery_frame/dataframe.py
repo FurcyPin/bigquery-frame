@@ -120,8 +120,8 @@ def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
 
 
 class BigQueryBuilder(HasBigQueryClient):
-    def __init__(self, client: Client):
-        super().__init__(client)
+    def __init__(self, client: Client, use_session: bool = True):
+        super().__init__(client, use_session)
         self._alias_count = 0
         self._temp_table_count = 0
         self._views: Dict[str, "DataFrame"] = {}
