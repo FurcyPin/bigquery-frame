@@ -263,7 +263,7 @@ class DataFrame:
 
     def _compute_schema(self):
         df = self.limit(0)
-        return df.bigquery._execute_query(df.compile()).schema
+        return df.bigquery._execute_query(df.compile(), use_query_cache=False).schema
 
     def _compile_deps(self) -> List[str]:
         return [

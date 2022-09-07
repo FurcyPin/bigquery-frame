@@ -26,8 +26,8 @@ class HasBigQueryClient:
         self.__client = client
         self.__session_id: Optional[str] = None
 
-    def _execute_query(self, query: str) -> RowIterator:
-        job_config = QueryJobConfig()
+    def _execute_query(self, query: str, use_query_cache=True) -> RowIterator:
+        job_config = QueryJobConfig(use_query_cache=use_query_cache)
 
         if self.__use_session and self.__session_id is None:
             job_config.create_session = True
