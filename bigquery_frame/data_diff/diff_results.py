@@ -2,14 +2,15 @@ from typing import List, Optional
 
 from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
+from bigquery_frame.column import cols_to_str
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
 from bigquery_frame.data_diff.diff_stats import DiffStats
 from bigquery_frame.data_diff.package import (
     EXISTS_COL_NAME,
     IS_EQUAL_COL_NAME,
     Predicates,
-    join_dataframes,
 )
+from bigquery_frame.utils import quote, str_to_col, strip_margin
 
 
 class DiffResult:
@@ -49,14 +50,16 @@ class DiffResult:
         WARNING: for very wide tables (~1000 columns) using this DataFrame might crash, and it is recommended
         to handle each diff_shard separately"""
         if self._diff_df is None:
-            self._diff_df = join_dataframes(*self.diff_shards, join_cols=self.join_cols)
+            self._diff_df = DiffResult._join_dataframes(*self.diff_shards, join_cols=self.join_cols)
         return self._diff_df
 
     @property
     def changed_df(self) -> DataFrame:
         """The DataFrame containing all rows that were found in both DataFrames but are not equal"""
         if self._changed_df is None:
-            self._changed_df = join_dataframes(*self.changed_df_shards, join_cols=self.join_cols)
+            self._changed_df = self.diff_df.filter(Predicates.present_in_both & Predicates.row_changed).drop(
+                EXISTS_COL_NAME, IS_EQUAL_COL_NAME
+            )
         return self._changed_df
 
     @property
@@ -68,6 +71,50 @@ class DiffResult:
                 for df in self.diff_shards
             ]
         return self._changed_df_shards
+
+    @staticmethod
+    def _join_dataframes(*dfs: DataFrame, join_cols: List[str]) -> DataFrame:
+        """Optimized method that joins multiple DataFrames in on single select statement.
+        Ideally, the default :func:`DataFrame.join` should be optimized to do this directly.
+
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> bq = BigQueryBuilder(get_bq_client())  # noqa: E501
+        >>> df_a = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as a, True as __EXISTS__, TRUE as __IS_EQUAL__')
+        >>> df_b = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as b, True as __EXISTS__, TRUE as __IS_EQUAL__')
+        >>> df_c = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as c, True as __EXISTS__, TRUE as __IS_EQUAL__')
+        >>> DiffResult._join_dataframes(df_a, df_b, df_c, join_cols=['id']).show()
+        +----+-------------------------------------------------------+-------------------------------------------------------+-------------------------------------------------------+------------+--------------+
+        | id |                                                     a |                                                     b |                                                     c | __EXISTS__ | __IS_EQUAL__ |
+        +----+-------------------------------------------------------+-------------------------------------------------------+-------------------------------------------------------+------------+--------------+
+        |  1 | {'left_value': 1, 'right_value': 1, 'is_equal': True} | {'left_value': 1, 'right_value': 1, 'is_equal': True} | {'left_value': 1, 'right_value': 1, 'is_equal': True} |       True |         True |
+        +----+-------------------------------------------------------+-------------------------------------------------------+-------------------------------------------------------+------------+--------------+
+
+        """
+        if len(dfs) == 1:
+            return dfs[0]
+        first_df = dfs[0]
+        other_dfs = dfs[1:]
+        excluded_common_cols = join_cols + [EXISTS_COL_NAME, IS_EQUAL_COL_NAME]
+        is_equal = f.lit(True)
+        for df in dfs:
+            is_equal = is_equal & df[IS_EQUAL_COL_NAME]
+        selected_columns = (
+            str_to_col(join_cols)
+            + [f.expr(f"{df._alias}.* EXCEPT ({cols_to_str(excluded_common_cols)})") for df in dfs]
+            + [first_df[EXISTS_COL_NAME], is_equal.alias(IS_EQUAL_COL_NAME)]
+        )
+        on_str = ", ".join(join_cols)
+        join_str = "\nJOIN ".join([f"{quote(df._alias)} USING ({on_str})" for df in other_dfs])
+
+        query = strip_margin(
+            f"""
+            |SELECT
+            |{cols_to_str(selected_columns, 2)}
+            |FROM {quote(first_df._alias)}
+            |JOIN {join_str}"""
+        )
+        return first_df._apply_query(query, deps=[first_df, *other_dfs])
 
     def _compute_diff_stats(self) -> DiffStats:
         """Given a diff_df and its list of join_cols, return stats about the number of differing or missing rows

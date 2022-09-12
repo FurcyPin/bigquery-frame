@@ -356,3 +356,38 @@ class TestDataframeComparator(TestCase):
         self.assertTrue(diff_result.same_data)
         self.assertTrue(diff_result.is_ok)
         self.assertEqual(expected_diff_stats, diff_result.diff_stats)
+
+    def test_compare_df_with_sharded_array_of_struct(self):
+        """
+        GIVEN a DataFrame with a nested column `s`.`a` and a column `s_a`
+        WHEN we run a diff on it
+        THEN it should not crash
+        """
+        # fmt: off
+        df1 = self.bq.sql("""
+            SELECT * FROM UNNEST ([
+                STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+                STRUCT(2 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+                STRUCT(3 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array)
+           ])
+        """)
+        df2 = self.bq.sql("""
+            SELECT * FROM UNNEST ([
+                STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+                STRUCT(2 as id, [STRUCT(2 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+                STRUCT(4 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array)
+           ])
+        """)
+        # fmt: on
+        df_comparator = DataframeComparator(_shard_size=1)
+        diff_result: DiffResult = df_comparator.compare_df(df1, df2, join_cols=["id"])
+        expected_diff_stats = DiffStats(
+            total=4, no_change=1, changed=1, in_left=3, in_right=3, only_in_left=1, only_in_right=1
+        )
+        self.assertTrue(diff_result.same_schema)
+        self.assertFalse(diff_result.same_data)
+        self.assertFalse(diff_result.is_ok)
+        self.assertEqual(expected_diff_stats, diff_result.diff_stats)
+        analyzer = DiffResultAnalyzer(self.df_comparator.diff_format_options)
+        diff_count_per_col_df = analyzer._get_diff_count_per_col(diff_result.changed_df, join_cols=["id"])
+        self.assertEqual(1, diff_count_per_col_df.count())
