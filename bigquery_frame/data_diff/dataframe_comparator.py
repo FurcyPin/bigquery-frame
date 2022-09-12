@@ -1,6 +1,6 @@
 import difflib
 import traceback
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from google.cloud.bigquery import SchemaField
 from google.cloud.exceptions import BadRequest
@@ -42,6 +42,47 @@ def shard_list(lst: List, n: int):
         # fmt: off
         yield lst[i: i + n]
         # fmt: on
+
+
+def shard_column_list_but_keep_arrays_grouped(
+    columns: List[Tuple[str, str]], n: int
+) -> Generator[List[Tuple[str, str]], None, None]:
+    """
+
+    >>> cols = {"a": None, "b": None, "s!.a": None, "s!.b": None, "s!.c": None, "c": None, "d": None}
+    >>> list(shard_column_list_but_keep_arrays_grouped(list(cols.items()), 3))
+    [[('a', None), ('b', None)], [('s!.a', None), ('s!.b', None), ('s!.c', None), ('c', None)], [('d', None)]]
+
+    :param columns:
+    :param n:
+    :return:
+    """
+    res = []
+    group = []
+    last_col_group = None
+
+    for i in range(0, len(columns)):
+        (col, tpe) = columns[i]
+        col_group = col.split("!.")[0]
+        if col_group != last_col_group:
+            if len(res) > 0 and len(res) + len(group) >= n:
+                yield res
+                res = []
+            else:
+                res += group
+                group = []
+        last_col_group = col_group
+        group.append((col, tpe))
+        if len(res) >= n:
+            yield res
+            res = []
+    if len(res) + len(group) < n:
+        res = res + group
+        group = []
+    if len(res) > 0:
+        yield res
+    if len(group) > 0:
+        yield group
 
 
 class DataframeComparator:
@@ -597,22 +638,25 @@ class DataframeComparator:
         join_columns = [(col, tpe) for (col, tpe) in common_columns if col in join_cols]
         non_join_columns = [(col, tpe) for (col, tpe) in common_columns if col not in join_cols]
         nb_cols = len(non_join_columns)
-
         if nb_cols <= self._shard_size:
-            return [
-                self._build_diff_dataframe_for_shard(
-                    left_df, right_df, common_columns, join_cols, skip_make_dataframes_comparable=same_schema
-                ).persist()
-            ]
+            skip_make_dataframes_comparable = same_schema
         else:
-            columns_shard = [join_columns + shard for shard in shard_list(non_join_columns, self._shard_size)]
-            dfs = [
-                self._build_diff_dataframe_for_shard(
-                    left_df, right_df, column_shard, join_cols, skip_make_dataframes_comparable=False
-                ).persist()
-                for column_shard in tqdm(columns_shard)
-            ]
-            return dfs
+            skip_make_dataframes_comparable = False
+        columns_shard = [
+            join_columns + shard
+            for shard in shard_column_list_but_keep_arrays_grouped(non_join_columns, self._shard_size)
+        ]
+        dfs = [
+            self._build_diff_dataframe_for_shard(
+                left_df,
+                right_df,
+                column_shard,
+                join_cols,
+                skip_make_dataframes_comparable=skip_make_dataframes_comparable,
+            ).persist()
+            for column_shard in tqdm(columns_shard)
+        ]
+        return dfs
 
     def compare_df(
         self, left_df: DataFrame, right_df: DataFrame, join_cols: List[str] = None, show_examples: bool = False

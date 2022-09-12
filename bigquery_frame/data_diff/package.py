@@ -1,4 +1,4 @@
-from typing import List
+from typing import TypeVar
 
 from google.cloud.bigquery import SchemaField
 
@@ -6,13 +6,15 @@ from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column
-from bigquery_frame.dataframe import BigQueryBuilder, cols_to_str, is_repeated
-from bigquery_frame.utils import quote, quote_columns, str_to_col, strip_margin
+from bigquery_frame.dataframe import BigQueryBuilder, is_repeated
 
 MAGIC_HASH_COL_NAME = "__MAGIC_HASH__"
 EXISTS_COL_NAME = "__EXISTS__"
 IS_EQUAL_COL_NAME = "__IS_EQUAL__"
 STRUCT_SEPARATOR_ALPHA = "__DOT__"
+
+A = TypeVar("A")
+B = TypeVar("B")
 
 
 class Predicates:
@@ -36,36 +38,6 @@ def canonize_col(col: Column, schema_field: SchemaField) -> Column:
     if is_repeated(schema_field):
         col = f.expr(f"IF({col} IS NULL, NULL, TO_JSON_STRING({col}))")
     return col
-
-
-def join_dataframes(*dfs: DataFrame, join_cols: List[str]) -> DataFrame:
-    """Optimized method that joins multiple DataFrames in on single select statement.
-    Ideally, the default :func:`DataFrame.join` should be optimized to do this directly.
-    """
-    if len(dfs) == 1:
-        return dfs[0]
-    first_df = dfs[0]
-    other_dfs = dfs[1:]
-    excluded_common_cols = quote_columns(join_cols + [EXISTS_COL_NAME, IS_EQUAL_COL_NAME])
-    is_equal = f.lit(True)
-    for df in dfs:
-        is_equal = is_equal & df[IS_EQUAL_COL_NAME]
-    selected_columns = (
-        str_to_col(join_cols)
-        + [f.expr(f"{df._alias}.* EXCEPT ({cols_to_str(excluded_common_cols)})") for df in dfs]
-        + [first_df[EXISTS_COL_NAME], is_equal.alias(IS_EQUAL_COL_NAME)]
-    )
-    on_str = ", ".join(join_cols)
-    join_str = "\nJOIN ".join([f"{quote(df._alias)} USING ({on_str})" for df in other_dfs])
-
-    query = strip_margin(
-        f"""
-        |SELECT
-        |{cols_to_str(selected_columns, 2)}
-        |FROM {quote(first_df._alias)}
-        |JOIN {join_str}"""
-    )
-    return first_df._apply_query(query, deps=[first_df, *other_dfs])
 
 
 def _get_test_diff_df() -> DataFrame:
