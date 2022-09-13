@@ -7,6 +7,7 @@ from tqdm import tqdm
 from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame import transformations as df_transformations
+from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
 from bigquery_frame.data_diff.diff_results import DiffResult, SchemaDiffResult
@@ -17,7 +18,12 @@ from bigquery_frame.data_diff.package import (
     canonize_col,
 )
 from bigquery_frame.data_type_utils import get_common_columns
-from bigquery_frame.dataframe import cols_to_str, is_nullable, is_repeated
+from bigquery_frame.dataframe import (
+    BigQueryBuilder,
+    cols_to_str,
+    is_nullable,
+    is_repeated,
+)
 from bigquery_frame.transformations import (
     flatten_schema,
     harmonize_dataframes,
@@ -668,10 +674,66 @@ class DataframeComparator:
         - The algorithm is able to handle nested non-repeated records, such as STRUCT<STRUCT<>>, or even ARRAY<STRUCT>>
           but it doesn't support nested repeated structures, such as ARRAY<STRUCT<ARRAY<>>>.
 
+        Example:
+        >>> from bigquery_frame.data_diff.dataframe_comparator import __get_test_dfs
+        >>> df1, df2 = __get_test_dfs()
+        >>> diff_result = DataframeComparator().compare_df(df1, df2)
+        <BLANKLINE>
+        Analyzing differences...
+        No join_cols provided: trying to automatically infer a column that can be used for joining the two DataFrames
+        Found the following column: id
+        We will try to find the differences by joining the DataFrames together using the inferred column: id
+        >>> diff_result.display()  # noqa: E501
+        Schema has changed:
+        @@ -2,3 +2,4 @@
+        <BLANKLINE>
+         my_array!.a INTEGER
+         my_array!.b INTEGER
+         my_array!.c INTEGER
+        +my_array!.d INTEGER
+        WARNING: columns that do not match both sides will be ignored
+        <BLANKLINE>
+        diff NOT ok
+        <BLANKLINE>
+        Summary:
+        <BLANKLINE>
+        Row count ok: 3 rows
+        <BLANKLINE>
+        1 (25.0%) rows are identical
+        1 (25.0%) rows have changed
+        1 (25.0%) rows are only in 'left'
+        1 (25.0%) rows are only in 'right
+        <BLANKLINE>
+        Found the following differences:
+        +-------------+---------------+-----------------------+-----------------------+----------------+
+        | column_name | total_nb_diff |                  left |                 right | nb_differences |
+        +-------------+---------------+-----------------------+-----------------------+----------------+
+        |    my_array |             1 | [{"a":1,"b":2,"c":3}] | [{"a":2,"b":2,"c":3}] |              1 |
+        +-------------+---------------+-----------------------+-----------------------+----------------+
+        1 rows were only found in 'left' :
+        Analyzing 4 columns ...
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+        | column_number | column_name | column_type | count | count_distinct | count_null | min | max |               approx_top_100 |
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+        |             0 |          id |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
+        |             1 | my_array!.a |     INTEGER |     1 |              1 |          0 |   1 |   1 | [{'value': '1', 'count': 1}] |
+        |             2 | my_array!.b |     INTEGER |     1 |              1 |          0 |   2 |   2 | [{'value': '2', 'count': 1}] |
+        |             3 | my_array!.c |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+        1 rows were only found in 'right':
+        Analyzing 4 columns ...
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+        | column_number | column_name | column_type | count | count_distinct | count_null | min | max |               approx_top_100 |
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+        |             0 |          id |     INTEGER |     1 |              1 |          0 |   4 |   4 | [{'value': '4', 'count': 1}] |
+        |             1 | my_array!.a |     INTEGER |     1 |              1 |          0 |   1 |   1 | [{'value': '1', 'count': 1}] |
+        |             2 | my_array!.b |     INTEGER |     1 |              1 |          0 |   2 |   2 | [{'value': '2', 'count': 1}] |
+        |             3 | my_array!.c |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
+        +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+
         :param left_df: a DataFrame
         :param right_df: another DataFrame
         :param join_cols: [Optional] specifies the columns on which the two DataFrames should be joined to compare them
-        :param show_examples: if set to True, print for each column examples of full rows where this column changes
         :return: a DiffResult object
         """
         if join_cols == []:
@@ -700,3 +762,26 @@ class DataframeComparator:
         )
 
         return DiffResult(schema_diff_result, diff_shards, join_cols, self.diff_format_options)
+
+
+def __get_test_dfs() -> Tuple[DataFrame, DataFrame]:
+    bq = BigQueryBuilder(get_bq_client())
+    df1 = bq.sql(
+        """
+        SELECT * FROM UNNEST ([
+            STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array),
+            STRUCT(2 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array),
+            STRUCT(3 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array)
+        ])
+    """
+    )
+    df2 = bq.sql(
+        """
+        SELECT * FROM UNNEST ([
+            STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+            STRUCT(2 as id, [STRUCT(2 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+            STRUCT(4 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array)
+       ])
+    """
+    )
+    return df1, df2
