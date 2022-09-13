@@ -133,11 +133,12 @@ def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int, grou
         else:
             col = col.split(".")[-1]
         group_alias = quote("__group1__")
-        group_by_1 = [df[col] for col in group_by]
+        group_by_1 = [df[col].alias(col.replace(".", "_")) for col in group_by]
+        group_by_2 = [f.expr(f"{group_alias}.{quote(col.replace('.', '_'))}") for col in group_by]
         group_select_1 = [f.struct(*group_by_1).alias(group_alias)] if len(group_by) > 0 else []
         df = _unnest_column(df, schema_field.name, extra_cols=group_select_1)
-
-    group_by_2 = [f.expr(f"{group_alias}.{quote(col)}") for col in group_by]
+    else:
+        group_by_2 = [f.expr(f"{group_alias}.{quote(col)}") for col in group_by]
     group_select_2 = [f.struct(*group_by_2).alias(quote("group"))] if len(group_by) > 0 else []
 
     res = _select_group_by(df, *group_select_2, *[agg(col, schema_field, col_num) for agg in aggs], group_by=group_by_2)
