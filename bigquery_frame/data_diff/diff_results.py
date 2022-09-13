@@ -13,15 +13,31 @@ from bigquery_frame.data_diff.package import (
 from bigquery_frame.utils import quote, str_to_col, strip_margin
 
 
+class SchemaDiffResult:
+    def __init__(self, same_schema: bool, diff_str: str, nb_cols: int):
+        self.diff_str = diff_str
+        self.nb_cols = nb_cols
+        self.same_schema = same_schema
+
+    def display(self):
+        if not self.same_schema:
+            print(f"Schema has changed:\n{self.diff_str}")
+            print("WARNING: columns that do not match both sides will be ignored")
+            return False
+        else:
+            print(f"Schema: ok (%s {self.nb_cols})")
+            return True
+
+
 class DiffResult:
     def __init__(
         self,
-        same_schema: bool,
+        schema_diff_result: SchemaDiffResult,
         diff_shards: List[DataFrame],
         join_cols: List[str],
         diff_format_options: Optional[DiffFormatOptions] = DiffFormatOptions(),
     ):
-        self.same_schema = same_schema
+        self.schema_diff_result = schema_diff_result
         self.diff_shards = diff_shards
         self.join_cols = join_cols
         self.diff_format_options = diff_format_options
@@ -29,6 +45,10 @@ class DiffResult:
         self._changed_df = None
         self._diff_df = None
         self._diff_stats = None
+
+    @property
+    def same_schema(self):
+        return self.schema_diff_result.same_schema
 
     @property
     def diff_stats(self):
@@ -130,10 +150,11 @@ class DiffResult:
         |  3 | {'left_value': 'c', 'right_value': None, 'is_equal': False} | {'left_value': 3, 'right_value': None, 'is_equal': False} | {'left_value': True, 'right_value': False} |        False |
         |  4 | {'left_value': None, 'right_value': 'f', 'is_equal': False} | {'left_value': None, 'right_value': 3, 'is_equal': False} | {'left_value': False, 'right_value': True} |        False |
         +----+-------------------------------------------------------------+-----------------------------------------------------------+--------------------------------------------+--------------+
-        >>> DiffResult(same_schema=True, diff_shards=[_diff_df], join_cols=['id'])._compute_diff_stats()
+        >>> schema_diff_result = SchemaDiffResult(same_schema=True, diff_str="", nb_cols=0)
+        >>> DiffResult(schema_diff_result, diff_shards=[_diff_df], join_cols=['id'])._compute_diff_stats()
         DiffStats(total=4, no_change=1, changed=1, in_left=3, in_right=3, only_in_left=1, only_in_right=1)
         >>> _diff_df_2 = _diff_df.select('id', f.col('c1').alias('c3'), f.col('c1').alias('c4'), EXISTS_COL_NAME, IS_EQUAL_COL_NAME)
-        >>> DiffResult(same_schema=True, diff_shards=[_diff_df, _diff_df_2], join_cols=['id'])._compute_diff_stats()
+        >>> DiffResult(schema_diff_result, diff_shards=[_diff_df, _diff_df_2], join_cols=['id'])._compute_diff_stats()
         DiffStats(total=4, no_change=1, changed=1, in_left=3, in_right=3, only_in_left=1, only_in_right=1)
 
         :return:
@@ -162,8 +183,9 @@ class DiffResult:
     def __repr__(self):
         return f"DiffResult(same_schema={self.same_schema}, diff_shards={self.diff_shards})"
 
-    def display(self, show_examples):
+    def display(self, show_examples: bool = False):
         from bigquery_frame.data_diff.diff_result_analyzer import DiffResultAnalyzer
 
+        self.schema_diff_result.display()
         analyzer = DiffResultAnalyzer(self.diff_format_options)
         analyzer.display_diff_results(self, show_examples)
