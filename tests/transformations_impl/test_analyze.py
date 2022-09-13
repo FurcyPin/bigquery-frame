@@ -94,6 +94,26 @@ class TestAnalyze(unittest.TestCase):
         # fmt: on
         self.assertEqual(expected, actual.collect())
 
+    def test_analyze_with_nested_field_in_group_and_array_column(self):
+        """
+        GIVEN a DataFrame containing a STRUCT and an array column
+        WHEN we analyze it by grouping on a column inside this struct
+        THEN no crash should occur
+        """
+        bq = BigQueryBuilder(get_bq_client())
+        query = """SELECT 1 as id, STRUCT(2 as b, 3 as c) as a, [1, 2, 3] as arr"""
+        df = bq.sql(query)
+        actual = analyze(df, group_by="a.b")
+        print(actual.collect())
+        # fmt: off
+        expected = [
+            Row(({'b': 2}, 0, 'id', 'INTEGER', 1, 1, 0, '1', '1', [{'value': '1', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
+            Row(({'b': 2}, 2, 'a.c', 'INTEGER', 1, 1, 0, '3', '3', [{'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
+            Row(({'b': 2}, 3, 'arr!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9})  # noqa: E501
+        ]
+        # fmt: on
+        self.assertEqual(expected, actual.collect())
+
     def test_analyze_with_chunks(self):
         df = get_test_df()
         actual = analyze(df, _chunk_size=1)
