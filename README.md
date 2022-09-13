@@ -90,6 +90,179 @@ several things that are much harder, or even impossible, in pure-SQL:
 
 But that deserves [a blog article](https://towardsdatascience.com/sql-jinja-is-not-enough-why-we-need-dataframes-4d71a191936d).
 
+
+## Cool Features
+
+This feature list is arbitrarily sorted by decreasing order of coolness.
+
+### Data Diff _(NEW!)_
+_Just like git diff, but for data!_
+
+Performs a diff between two dataframes.
+
+**Example:**
+```python
+from bigquery_frame.data_diff import DataframeComparator
+from bigquery_frame import BigQueryBuilder
+from bigquery_frame.auth import get_bq_client
+
+bq = BigQueryBuilder(get_bq_client())
+df1 = bq.sql("""
+    SELECT * FROM UNNEST ([
+        STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array),
+        STRUCT(2 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array),
+        STRUCT(3 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array)
+    ])
+""")
+df2 = bq.sql("""
+    SELECT * FROM UNNEST ([
+        STRUCT(1 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+        STRUCT(2 as id, [STRUCT(2 as a, 2 as b, 3 as c, 4 as d)] as my_array),
+        STRUCT(4 as id, [STRUCT(1 as a, 2 as b, 3 as c, 4 as d)] as my_array)
+   ])
+""")
+
+df1.show()
+# +----+----------------------------+
+# | id |                   my_array |
+# +----+----------------------------+
+# |  1 | [{'a': 1, 'b': 2, 'c': 3}] |
+# |  2 | [{'a': 1, 'b': 2, 'c': 3}] |
+# |  3 | [{'a': 1, 'b': 2, 'c': 3}] |
+# +----+----------------------------+
+df2.show()
+# +----+------------------------------------+
+# | id |                           my_array |
+# +----+------------------------------------+
+# |  1 | [{'a': 1, 'b': 2, 'c': 3, 'd': 4}] |
+# |  2 | [{'a': 2, 'b': 2, 'c': 3, 'd': 4}] |
+# |  4 | [{'a': 1, 'b': 2, 'c': 3, 'd': 4}] |
+# +----+------------------------------------+
+diff_result = DataframeComparator().compare_df(df1, df2)
+diff_result.display()
+```
+
+Will produce the following output:
+
+```
+Schema has changed:
+@@ -2,3 +2,4 @@
+ my_array!.a INTEGER
+ my_array!.b INTEGER
+ my_array!.c INTEGER
++my_array!.d INTEGER
+WARNING: columns that do not match both sides will be ignored
+diff NOT ok
+Summary:
+Row count ok: 3 rows
+1 (25.0%) rows are identical
+1 (25.0%) rows have changed
+1 (25.0%) rows are only in 'left'
+1 (25.0%) rows are only in 'right
+100%|██████████| 1/1 [00:04<00:00,  4.26s/it]
+Found the following differences:
++-------------+---------------+-----------------------+-----------------------+----------------+
+| column_name | total_nb_diff |                  left |                 right | nb_differences |
++-------------+---------------+-----------------------+-----------------------+----------------+
+|    my_array |             1 | [{"a":1,"b":2,"c":3}] | [{"a":2,"b":2,"c":3}] |              1 |
++-------------+---------------+-----------------------+-----------------------+----------------+
+1 rows were only found in 'left' :
+Analyzing 4 columns ...
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+| column_number | column_name | column_type | count | count_distinct | count_null | min | max |               approx_top_100 |
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+|             0 |          id |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
+|             1 | my_array!.a |     INTEGER |     1 |              1 |          0 |   1 |   1 | [{'value': '1', 'count': 1}] |
+|             2 | my_array!.b |     INTEGER |     1 |              1 |          0 |   2 |   2 | [{'value': '2', 'count': 1}] |
+|             3 | my_array!.c |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+1 rows were only found in 'right':
+Analyzing 4 columns ...
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+| column_number | column_name | column_type | count | count_distinct | count_null | min | max |               approx_top_100 |
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+|             0 |          id |     INTEGER |     1 |              1 |          0 |   4 |   4 | [{'value': '4', 'count': 1}] |
+|             1 | my_array!.a |     INTEGER |     1 |              1 |          0 |   1 |   1 | [{'value': '1', 'count': 1}] |
+|             2 | my_array!.b |     INTEGER |     1 |              1 |          0 |   2 |   2 | [{'value': '2', 'count': 1}] |
+|             3 | my_array!.c |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
++---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
+```
+
+- Full support of nested records
+- (improvable) support for repeated records
+- Optimized to work even on huge table with more than 1000 columns
+
+### Analyze
+
+Perform an analysis on a DataFrame, return aggregated stats for each column,
+such as count, count distinct, count null, min, max, top 100 most frequent values. 
+
+- Optimized to work on wide tables
+- Custom aggregation functions can be added
+- Aggregations can be grouped against one or a tuple of columns
+
+**Example:**
+```python
+from bigquery_frame.transformations_impl.analyze import __get_test_df
+from bigquery_frame.transformations import analyze
+
+df = __get_test_df()
+
+df.show()
+# +----+------------+---------------------+--------------------------------------------+
+# | id |       name |               types |                                  evolution |
+# +----+------------+---------------------+--------------------------------------------+
+# |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
+# |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |
+# |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |
+# |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |
+# |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |
+# |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |
+# |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |
+# |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |
+# |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |
+# +----+------------+---------------------+--------------------------------------------+
+
+analyze(df).show()
+# +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+# | column_number |            column_name | column_type | count | count_distinct | count_null |       min |       max |                                                                                                                                                                                                                                                                                                                     approx_top_100 |
+# +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+# |             0 |                     id |     INTEGER |     9 |              9 |          0 |         1 |         9 |                                                                       [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}, {'value': '4', 'count': 1}, {'value': '5', 'count': 1}, {'value': '6', 'count': 1}, {'value': '7', 'count': 1}, {'value': '8', 'count': 1}, {'value': '9', 'count': 1}] |
+# |             1 |                   name |      STRING |     9 |              9 |          0 | Blastoise | Wartortle | [{'value': 'Bulbasaur', 'count': 1}, {'value': 'Ivysaur', 'count': 1}, {'value': 'Venusaur', 'count': 1}, {'value': 'Charmander', 'count': 1}, {'value': 'Charmeleon', 'count': 1}, {'value': 'Charizard', 'count': 1}, {'value': 'Squirtle', 'count': 1}, {'value': 'Wartortle', 'count': 1}, {'value': 'Blastoise', 'count': 1}] |
+# |             2 |                 types! |      STRING |    13 |              5 |          0 |      Fire |     Water |                                                                                                                                                                  [{'value': 'Grass', 'count': 3}, {'value': 'Poison', 'count': 3}, {'value': 'Fire', 'count': 3}, {'value': 'Water', 'count': 3}, {'value': 'Flying', 'count': 1}] |
+# |             3 |   evolution.can_evolve |     BOOLEAN |     9 |              2 |          0 |     false |      true |                                                                                                                                                                                                                                                                    [{'value': 'true', 'count': 6}, {'value': 'false', 'count': 3}] |
+# |             4 | evolution.evolves_from |     INTEGER |     9 |              6 |          3 |         1 |         8 |                                                                                                                            [{'value': 'NULL', 'count': 3}, {'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '4', 'count': 1}, {'value': '5', 'count': 1}, {'value': '7', 'count': 1}, {'value': '8', 'count': 1}] |
+# +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+```
+
+
+**Example with custom aggregation and column groups:**
+```python
+from bigquery_frame.transformations_impl import analyze_aggs
+from bigquery_frame.transformations import analyze
+aggs = [
+     analyze_aggs.column_number,
+     analyze_aggs.column_name,
+     analyze_aggs.count,
+     analyze_aggs.count_distinct,
+     analyze_aggs.count_null,
+]
+analyze(df, group_by="evolution.can_evolve", _aggs=aggs).orderBy('group.can_evolve', 'column_number').show()
+# +-----------------------+---------------+------------------------+-------+----------------+------------+
+# |                 group | column_number |            column_name | count | count_distinct | count_null |
+# +-----------------------+---------------+------------------------+-------+----------------+------------+
+# | {'can_evolve': False} |             0 |                     id |     3 |              3 |          0 |
+# | {'can_evolve': False} |             1 |                   name |     3 |              3 |          0 |
+# | {'can_evolve': False} |             2 |                 types! |     5 |              5 |          0 |
+# | {'can_evolve': False} |             4 | evolution.evolves_from |     3 |              3 |          0 |
+# |  {'can_evolve': True} |             0 |                     id |     6 |              6 |          0 |
+# |  {'can_evolve': True} |             1 |                   name |     6 |              6 |          0 |
+# |  {'can_evolve': True} |             2 |                 types! |     8 |              4 |          0 |
+# |  {'can_evolve': True} |             4 | evolution.evolves_from |     6 |              3 |          3 |
+# +-----------------------+---------------+------------------------+-------+----------------+------------+
+```
+
+
 ## I want to try this POC, how do I use it ?
 
 Just clone this repository, open PyCharm, and follow the
@@ -140,7 +313,7 @@ SELECT
 FROM _default_alias_4
 ```
 
-## Facturation
+## Billing
 
 The examples in this code only use generated data and don't ready any "real" table.
 This means that you won't be charged a cent running them.
