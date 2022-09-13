@@ -1,0 +1,3 @@
+from bigquery_frame.data_diff.dataframe_comparator import DataframeComparator
+
+DataframeComparator = DataframeComparator

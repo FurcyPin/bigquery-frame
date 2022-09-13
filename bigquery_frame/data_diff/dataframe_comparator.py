@@ -1,9 +1,7 @@
 import difflib
-import traceback
 from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from google.cloud.bigquery import SchemaField
-from google.cloud.exceptions import BadRequest
 from tqdm import tqdm
 
 from bigquery_frame import DataFrame
@@ -11,7 +9,7 @@ from bigquery_frame import functions as f
 from bigquery_frame import transformations as df_transformations
 from bigquery_frame.column import Column
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
-from bigquery_frame.data_diff.diff_results import DiffResult
+from bigquery_frame.data_diff.diff_results import DiffResult, SchemaDiffResult
 from bigquery_frame.data_diff.package import (
     EXISTS_COL_NAME,
     IS_EQUAL_COL_NAME,
@@ -142,7 +140,7 @@ class DataframeComparator:
         return res
 
     @staticmethod
-    def _compare_schemas(left_df: DataFrame, right_df: DataFrame) -> bool:
+    def _compare_schemas(left_df: DataFrame, right_df: DataFrame) -> SchemaDiffResult:
         """Compares two DataFrames schemas and print out the differences.
         Ignore the nullable and comment attributes.
 
@@ -153,7 +151,7 @@ class DataframeComparator:
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> left_df = bq.sql('''SELECT 1 as id, "" as c1, "" as c2, [STRUCT(2 as a, "" as b)] as c4''')
         >>> right_df = bq.sql('''SELECT 1 as id, 2 as c1, "" as c3, [STRUCT(3 as a, "" as d)] as c4''')
-        >>> res = DataframeComparator._compare_schemas(left_df, right_df)
+        >>> res = DataframeComparator._compare_schemas(left_df, right_df).display()
         Schema has changed:
         @@ -1,5 +1,5 @@
         <BLANKLINE>
@@ -179,14 +177,7 @@ class DataframeComparator:
         right_string_schema = DataframeComparator._schema_to_string(right_schema_flat)
 
         diff = list(difflib.unified_diff(left_string_schema, right_string_schema))[2:]
-
-        if len(diff) > 0:
-            print("Schema has changed:\n%s" % "\n".join(diff))
-            print("WARNING: columns that do not match both sides will be ignored")
-            return False
-        else:
-            print("Schema: ok (%s columns)" % len(left_df.columns))
-            return True
+        return SchemaDiffResult(same_schema=(len(diff) == 0), diff_str="\n".join(diff), nb_cols=len(left_df.columns))
 
     @staticmethod
     def _get_self_join_growth_estimate(df: DataFrame, cols: Union[str, List[str]]) -> float:
@@ -658,9 +649,7 @@ class DataframeComparator:
         ]
         return dfs
 
-    def compare_df(
-        self, left_df: DataFrame, right_df: DataFrame, join_cols: List[str] = None, show_examples: bool = False
-    ) -> DiffResult:
+    def compare_df(self, left_df: DataFrame, right_df: DataFrame, join_cols: List[str] = None) -> DiffResult:
         """Compares two DataFrames and print out the differences.
         We first compare the DataFrame schemas. If the schemas are different, we adapt the DataFrames to make them
         as much comparable as possible:
@@ -697,7 +686,7 @@ class DataframeComparator:
             join_cols = None
         specified_join_cols = join_cols
 
-        same_schema = self._compare_schemas(left_df, right_df)
+        schema_diff_result = self._compare_schemas(left_df, right_df)
 
         left_flat = df_transformations.flatten(left_df, struct_separator=STRUCT_SEPARATOR_ALPHA)
         right_flat = df_transformations.flatten(right_df, struct_separator=STRUCT_SEPARATOR_ALPHA)
@@ -707,25 +696,15 @@ class DataframeComparator:
         self._check_join_cols(specified_join_cols, join_cols, self_join_growth_estimate)
 
         left_schema_flat = flatten_schema(left_flat.schema, explode=True)
-        if not same_schema:
+        if not schema_diff_result.same_schema:
             # We apply a `limit(0).persist()` to prevent BigQuery from crashing on very large tables
             right_schema_flat = flatten_schema(right_flat.schema, explode=True)
             common_columns = get_common_columns(left_schema_flat, right_schema_flat)
         else:
             common_columns = [(field.name, None) for field in left_schema_flat]
 
-        diff_shards = self._build_diff_dataframe_shards(left_flat, right_flat, common_columns, join_cols, same_schema)
+        diff_shards = self._build_diff_dataframe_shards(
+            left_flat, right_flat, common_columns, join_cols, schema_diff_result.same_schema
+        )
 
-        diff_result = DiffResult(same_schema, diff_shards, join_cols, self.diff_format_options)
-        try:
-            diff_result.display(show_examples)
-        except BadRequest:
-            traceback.print_exc()
-            print(
-                "An error occurred while displaying the diff results. "
-                "If you are in a Python console and did not assign the result of compare_df() to a value, "
-                "you can retrieve the results by running this command:"
-                "diff_result = _"
-            )
-
-        return diff_result
+        return DiffResult(schema_diff_result, diff_shards, join_cols, self.diff_format_options)
