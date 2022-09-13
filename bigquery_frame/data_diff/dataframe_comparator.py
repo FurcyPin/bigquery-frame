@@ -34,14 +34,6 @@ class CombinatorialExplosionError(DataframeComparatorException):
     pass
 
 
-def shard_list(lst: List, n: int):
-    """Yield successive n-sized shards from lst."""
-    for i in range(0, len(lst), n):
-        # fmt: off
-        yield lst[i: i + n]
-        # fmt: on
-
-
 def shard_column_list_but_keep_arrays_grouped(
     columns: List[Tuple[str, str]], n: int
 ) -> Generator[List[Tuple[str, str]], None, None]:
