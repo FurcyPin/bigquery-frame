@@ -25,7 +25,7 @@ class SchemaDiffResult:
             print("WARNING: columns that do not match both sides will be ignored")
             return False
         else:
-            print(f"Schema: ok (%s {self.nb_cols})")
+            print(f"Schema: ok ({self.nb_cols})")
             return True
 
 
