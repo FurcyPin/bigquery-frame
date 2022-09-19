@@ -7,7 +7,6 @@ from tqdm import tqdm
 from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame import transformations as df_transformations
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
 from bigquery_frame.data_diff.diff_results import DiffResult, SchemaDiffResult
@@ -18,12 +17,7 @@ from bigquery_frame.data_diff.package import (
     canonize_col,
 )
 from bigquery_frame.data_type_utils import get_common_columns
-from bigquery_frame.dataframe import (
-    BigQueryBuilder,
-    cols_to_str,
-    is_nullable,
-    is_repeated,
-)
+from bigquery_frame.dataframe import cols_to_str, is_nullable, is_repeated
 from bigquery_frame.transformations import (
     flatten_schema,
     harmonize_dataframes,
@@ -765,6 +759,9 @@ class DataframeComparator:
 
 
 def __get_test_dfs() -> Tuple[DataFrame, DataFrame]:
+    from bigquery_frame import BigQueryBuilder
+    from bigquery_frame.auth import get_bq_client
+
     bq = BigQueryBuilder(get_bq_client())
     df1 = bq.sql(
         """
