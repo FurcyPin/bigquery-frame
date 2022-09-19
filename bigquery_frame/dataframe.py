@@ -1,17 +1,17 @@
-from typing import Dict, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
 
-from google.cloud.bigquery import Client, Row, SchemaField
+from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
-import bigquery_frame
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
-from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.nested import resolve_nested_columns
 from bigquery_frame.printing import print_results
 from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 from bigquery_frame.utils import assert_true, indent, quote, str_to_col, strip_margin
+
+if TYPE_CHECKING:
+    from bigquery_frame.bigquery_builder import BigQueryBuilder
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -61,6 +61,8 @@ def schema_to_simple_string(schema: List[SchemaField]):
 
     Example:
 
+    >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+    >>> from bigquery_frame.auth import get_bq_client
     >>> bq = BigQueryBuilder(get_bq_client())
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> print(df.schema)  # noqa: E501
@@ -120,74 +122,6 @@ def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
     return list({k: v for k, v in items}.items())
 
 
-class BigQueryBuilder(HasBigQueryClient):
-    def __init__(self, client: Client, use_session: bool = True):
-        super().__init__(client, use_session)
-        self._alias_count = 0
-        self._temp_table_count = 0
-        self._views: Dict[str, "DataFrame"] = {}
-        self._temp_tables: Set[str] = set()
-
-    def table(self, full_table_name: str) -> "DataFrame":
-        """Returns the specified table as a :class:`DataFrame`."""
-        query = f"""SELECT * FROM {quote(full_table_name)}"""
-        return DataFrame(query, alias=None, bigquery=self)
-
-    def sql(self, sql_query) -> "DataFrame":
-        """Returns a :class:`DataFrame` representing the result of the given query."""
-        return DataFrame(sql_query, None, self)
-
-    def _generate_header(self) -> str:
-        return f"/* This query was generated using bigquery-frame v{bigquery_frame.__version__} */\n"
-
-    def _execute_query(self, query: str, use_query_cache=True, try_count=1) -> RowIterator:
-        query = self._generate_header() + query
-        return super()._execute_query(query, use_query_cache=use_query_cache, try_count=try_count)
-
-    def _registerDataFrameAsTempView(self, df: "DataFrame", alias: str) -> None:
-        # self._check_alias(alias, [])
-        self._views[alias] = df
-
-    def _registerDataFrameAsTempTable(self, df: "DataFrame", alias: Optional[str] = None) -> "DataFrame":
-        if alias is None:
-            alias = self._get_temp_table_alias()
-        query = f"CREATE OR REPLACE TEMP TABLE {quote(alias)} AS \n" + df.compile()
-        self._execute_query(query)
-        return self.table(alias)
-
-    def _compile_views(self) -> Dict[str, str]:
-        return {
-            alias: strip_margin(
-                f"""{quote(alias)} AS (
-                |{indent(df._compile_with_deps(), 2)}
-                |)"""
-            )
-            for alias, df in self._views.items()
-        }
-
-    def _get_alias(self) -> str:
-        self._alias_count += 1
-        return "{" + DEFAULT_ALIAS_NAME.format(num=self._alias_count) + "}"
-
-    def _get_temp_table_alias(self) -> str:
-        self._temp_table_count += 1
-        return DEFAULT_TEMP_TABLE_NAME.format(num=self._temp_table_count)
-
-    def _check_alias(self, new_alias, deps: List[Tuple[str, "DataFrame"]]) -> None:
-        """Checks that the alias follows BigQuery constraints, such as:
-
-        - BigQuery does not allow having two CTEs with the same name in a query.
-
-        :param new_alias:
-        :param deps:
-        :return: None
-        :raises: an Exception if something that does not comply with BigQuery's rules is found.
-        """
-        collisions = [alias for alias, df in list(self._views.items()) + deps if alias == new_alias]
-        if len(collisions) > 0:
-            raise Exception(f"Duplicate alias {new_alias}")
-
-
 class DataFrame:
 
     _deps: List[Tuple[str, "DataFrame"]]
@@ -197,7 +131,7 @@ class DataFrame:
         self,
         query: str,
         alias: Optional[str],
-        bigquery: BigQueryBuilder,
+        bigquery: "BigQueryBuilder",
         deps: Optional[List["DataFrame"]] = None,
     ):
         self.query = query
@@ -210,7 +144,7 @@ class DataFrame:
         else:
             bigquery._check_alias(alias, self._deps)
         self._alias = alias
-        self.bigquery: BigQueryBuilder = bigquery
+        self.bigquery: "BigQueryBuilder" = bigquery
         self._schema = None
 
     def __repr__(self):
@@ -336,6 +270,8 @@ class DataFrame:
     def createOrReplaceTempTable(self, alias: str) -> "DataFrame":
         """Creates or replace a persisted temporary table.
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempTable("temp_table")
@@ -353,6 +289,8 @@ class DataFrame:
     def createOrReplaceTempView(self, name: str) -> None:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempView("temp_view")
@@ -652,6 +590,8 @@ class DataFrame:
 
         Examples:
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.printSchema()
@@ -671,6 +611,8 @@ class DataFrame:
 
         Examples:
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''SELECT 1 as a''').select(
@@ -717,6 +659,8 @@ class DataFrame:
         - Corresponding column expressions must use short field names for repeated structs
         - Corresponding column expressions must use the name `_` for array elements
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
@@ -789,6 +733,8 @@ class DataFrame:
 
         Formating options may be set using `format_args`.
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.show()
@@ -920,6 +866,8 @@ class DataFrame:
         The difference between this function and :func:`union` is that this function
         resolves columns by name (not by position):
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
         >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col0''')
@@ -1033,6 +981,8 @@ class DataFrame:
         - Corresponding column expressions must use short field names for repeated structs
         - Corresponding column expressions must use the name `_` for array elements
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
@@ -1056,6 +1006,8 @@ class DataFrame:
         |  1 | {'a': 1, 'b': 2, 'c': 3} |
         +----+--------------------------+
 
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame import functions as f
         >>> bq = BigQueryBuilder(get_bq_client())
         >>> df = bq.sql('''
@@ -1119,6 +1071,9 @@ class DataFrame:
 
 
 def __get_test_df() -> DataFrame:
+    from bigquery_frame.auth import get_bq_client
+    from bigquery_frame.bigquery_builder import BigQueryBuilder
+
     bq = BigQueryBuilder(get_bq_client())
     query = """
         SELECT
@@ -1133,6 +1088,9 @@ def __get_test_df() -> DataFrame:
 
 
 def __get_test_dfs() -> Tuple[DataFrame, ...]:
+    from bigquery_frame.auth import get_bq_client
+    from bigquery_frame.bigquery_builder import BigQueryBuilder
+
     bq = BigQueryBuilder(get_bq_client())
     df1 = bq.sql(
         strip_margin(
@@ -1169,6 +1127,9 @@ def __get_test_dfs() -> Tuple[DataFrame, ...]:
 
 
 def __get_test_df_2() -> DataFrame:
+    from bigquery_frame.auth import get_bq_client
+    from bigquery_frame.bigquery_builder import BigQueryBuilder
+
     bq = BigQueryBuilder(get_bq_client())
     query = """
         SELECT

@@ -1,4 +1,5 @@
-from bigquery_frame.dataframe import BigQueryBuilder, DataFrame
+from bigquery_frame.bigquery_builder import BigQueryBuilder
+from bigquery_frame.dataframe import DataFrame
 
 BigQueryBuilder = BigQueryBuilder
 DataFrame = DataFrame

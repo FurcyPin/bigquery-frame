@@ -1,9 +1,9 @@
 from typing import List
 
-from bigquery_frame import DataFrame
+from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import cols_to_str
-from bigquery_frame.dataframe import BigQueryBuilder, strip_margin
+from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.utils import quote
 
 
