@@ -267,7 +267,7 @@ class DataFrame:
         ctes = {**self.bigquery._compile_views(), **self._compile_deps()}
         return self._compile_with_ctes(ctes)
 
-    def createOrReplaceTempTable(self, alias: str) -> "DataFrame":
+    def createOrReplaceTempTable(self, alias: str) -> None:
         """Creates or replace a persisted temporary table.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
@@ -1062,6 +1062,36 @@ class DataFrame:
         default_columns = {field.name: get_col_short_name(field.name) for field in schema_flat}
         columns = {**default_columns, **columns}
         return self.select(*resolve_nested_columns(columns))
+
+    @property
+    def write(self):
+        """Interface for saving the content of the :class:`DataFrame` out into external storage.
+
+        Examples
+        --------
+        >>> from bigquery_frame.auth import get_bq_client
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.dataframe_writer import __setup_test_dataset, __teardown_test_dataset
+        >>> client = get_bq_client()
+        >>> bq = BigQueryBuilder(client)
+        >>> test_dataset = __setup_test_dataset(client)
+        >>> df = bq.sql("SELECT 1 as a")
+
+        >>> df.write.mode('overwrite').save(f"{test_dataset.dataset_id}.my_table")
+        >>> df.write.mode('append').save(f"{test_dataset.dataset_id}.my_table")
+        >>> bq.table(f"{test_dataset.dataset_id}.my_table").show()
+        +---+
+        | a |
+        +---+
+        | 1 |
+        | 1 |
+        +---+
+        >>> __teardown_test_dataset(client, test_dataset)
+
+        """
+        from bigquery_frame.dataframe_writer import DataframeWriter
+
+        return DataframeWriter(self)
 
     orderBy = sort
 
