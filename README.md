@@ -387,6 +387,15 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
+### 0.4.1
+
+- Added `DataFrame.write` feature. It currently supports partitioning, table-level options, and several insertion modes:
+  - `append`: Append contents of this :class:`DataFrame` to existing table.
+  - `overwrite`: Replace destination table with the new data if it already exists.
+  - `error` or `errorifexists`: Throw an exception if destination table already exists.
+  - `ignore`: Silently ignore this operation if destination table already exists.
+
+
 ### 0.4.0
 
 
