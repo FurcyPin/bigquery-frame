@@ -98,8 +98,7 @@ class DiffResult:
         Ideally, the default :func:`DataFrame.join` should be optimized to do this directly.
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())  # noqa: E501
+            >>> bq = BigQueryBuilder()  # noqa: E501
         >>> df_a = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as a, True as __EXISTS__, TRUE as __IS_EQUAL__')
         >>> df_b = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as b, True as __EXISTS__, TRUE as __IS_EQUAL__')
         >>> df_c = bq.sql('SELECT 1 as id, STRUCT(1 as left_value, 1 as right_value, TRUE as is_equal) as c, True as __EXISTS__, TRUE as __IS_EQUAL__')

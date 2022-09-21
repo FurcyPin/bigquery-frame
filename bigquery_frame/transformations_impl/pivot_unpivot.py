@@ -21,8 +21,7 @@ def pivot(
 
     Example:
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = __get_test_unpivoted_df(bq)
     >>> df.show()
     +------+---------+---------+--------+
@@ -148,8 +147,7 @@ def unpivot(
 
     Example:
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = __get_test_pivoted_df(bq)
     >>> df.show()
     +------+---------+--------+-------+--------+

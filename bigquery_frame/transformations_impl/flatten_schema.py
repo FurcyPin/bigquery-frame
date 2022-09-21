@@ -17,9 +17,8 @@ def flatten_schema(
 
     Example:
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
     >>> from bigquery_frame.dataframe import schema_to_simple_string
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> schema_to_simple_string(df.schema)
     'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'

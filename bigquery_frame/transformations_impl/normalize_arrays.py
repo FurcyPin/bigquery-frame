@@ -9,8 +9,7 @@ def normalize_arrays(df: DataFrame) -> DataFrame:
     making them comparable
 
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT [3, 2, 1] as a')
     >>> df.show()
     +-----------+

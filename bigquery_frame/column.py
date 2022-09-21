@@ -106,8 +106,7 @@ class Column:
         Examples
         --------
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('SELECT STRUCT([1, 2, 3] as a, "x" as b) s')
         >>> df.show()
         +----------------------------+
@@ -236,9 +235,8 @@ class Column:
         Examples
         --------
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''
         ...     SELECT * FROM UNNEST ([
         ...         STRUCT("a" as col1, "a" as col2),
@@ -296,8 +294,7 @@ class Column:
         Examples
         --------
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''
         ...     SELECT * FROM UNNEST ([
         ...         STRUCT("a" as col1, "a" as col2),
@@ -335,8 +332,7 @@ class Column:
         Examples
         --------
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''
         ...     SELECT * FROM UNNEST ([
         ...         STRUCT("a" as col1, "a" as col2),

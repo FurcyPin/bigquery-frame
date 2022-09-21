@@ -21,8 +21,7 @@ def harmonize_dataframes(
     repeated records (a.k.a. ARRAY<STRUCT<>>).
 
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df1 = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> df2 = bq.sql('SELECT 1 as id, STRUCT(2 as a, [STRUCT(3.0 as c, "4" as d)] as b, [5.0, 6.0] as e) as s')
     >>> df1.union(df2).show() # doctest: +ELLIPSIS
