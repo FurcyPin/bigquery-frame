@@ -24,7 +24,7 @@ def client(random_test_dataset: str):
     client.close()
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True)
 def bq(client: Client):
     bq = BigQueryBuilder(client)
-    yield bq
+    return bq

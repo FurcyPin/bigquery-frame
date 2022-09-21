@@ -1,7 +1,6 @@
 from typing import List
 
 from bigquery_frame import BigQueryBuilder, DataFrame
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import cols_to_str
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.utils import quote
@@ -21,7 +20,10 @@ def pivot(
     efficient, because we need to first compute the list of distinct values internally.
 
     Example:
-    >>> df = __get_test_unpivoted_df()
+    >>> from bigquery_frame import BigQueryBuilder
+    >>> from bigquery_frame.auth import get_bq_client
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = __get_test_unpivoted_df(bq)
     >>> df.show()
     +------+---------+---------+--------+
     | year | product | country | amount |
@@ -145,7 +147,10 @@ def unpivot(
     All columns that are not pivot columns should have the same type.
 
     Example:
-    >>> df = __get_test_pivoted_df()
+    >>> from bigquery_frame import BigQueryBuilder
+    >>> from bigquery_frame.auth import get_bq_client
+    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> df = __get_test_pivoted_df(bq)
     >>> df.show()
     +------+---------+--------+-------+--------+
     | year | product | Canada | China | Mexico |
@@ -264,8 +269,7 @@ def unpivot_v2(
     return df._apply_query(query)
 
 
-def __get_test_pivoted_df() -> DataFrame:
-    bq = BigQueryBuilder(get_bq_client())
+def __get_test_pivoted_df(bq: BigQueryBuilder) -> DataFrame:
     query = """
         SELECT
             *
@@ -283,8 +287,7 @@ def __get_test_pivoted_df() -> DataFrame:
     return bq.sql(query)
 
 
-def __get_test_unpivoted_df():
-    bq = BigQueryBuilder(get_bq_client())
+def __get_test_unpivoted_df(bq: BigQueryBuilder):
     query = """
         SELECT
             *
