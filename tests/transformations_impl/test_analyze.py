@@ -1,10 +1,8 @@
-import unittest
 from typing import List
 
 from google.cloud.bigquery import Row
 
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.transformations_impl.analyze import __get_test_df as get_test_df
 from bigquery_frame.transformations_impl.analyze import analyze
 
@@ -33,88 +31,82 @@ def get_expected() -> List[Row]:
     return expected
 
 
-class TestAnalyze(unittest.TestCase):
-    def setUp(self) -> None:
-        self.bigquery = BigQueryBuilder(get_bq_client())
+def test_analyze(bq: BigQueryBuilder):
+    df = get_test_df()
+    actual = analyze(df)
+    assert actual.collect() == get_expected()
 
-    def tearDown(self) -> None:
-        self.bigquery.close()
 
-    def test_analyze(self):
-        df = get_test_df()
-        actual = analyze(df)
-        self.assertEqual(get_expected(), actual.collect())
+def test_analyze_with_keyword_column_names(bq: BigQueryBuilder):
+    """Analyze method should still work on DataFrames with columns names that collision with SQL keywords
+    such as 'FROM'."""
+    query = """SELECT 1 as `FROM`, STRUCT('a' as `ALL`) as `UNION`"""
+    df = bq.sql(query)
+    actual = analyze(df)
+    # fmt: off
+    expected = [
+        Row((0, 'FROM', 'INTEGER', 1, 1, 0, '1', '1', [{'value': '1', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8}),  # noqa: E501
+        Row((1, 'UNION.ALL', 'STRING', 1, 1, 0, 'a', 'a', [{'value': 'a', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
+    ]
+    # fmt: on
+    assert actual.collect() == expected
 
-    def test_analyze_with_keyword_column_names(self):
-        """Analyze method should still work on DataFrames with columns names that collision with SQL keywords
-        such as 'FROM'."""
-        bq = BigQueryBuilder(get_bq_client())
-        query = """SELECT 1 as `FROM`, STRUCT('a' as `ALL`) as `UNION`"""
-        df = bq.sql(query)
-        actual = analyze(df)
-        # fmt: off
-        expected = [
-            Row((0, 'FROM', 'INTEGER', 1, 1, 0, '1', '1', [{'value': '1', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8}),  # noqa: E501
-            Row((1, 'UNION.ALL', 'STRING', 1, 1, 0, 'a', 'a', [{'value': 'a', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
-        ]
-        # fmt: on
-        self.assertEqual(expected, actual.collect())
 
-    def test_analyze_with_array_struct_array(self):
-        """
-        GIVEN a DataFrame containing an ARRAY<STRUCT<ARRAY<INT>>>
-        WHEN we analyze it
-        THEN no crash should occur
-        """
-        bq = BigQueryBuilder(get_bq_client())
-        query = """SELECT [STRUCT([1, 2, 3] as b)] as a"""
-        df = bq.sql(query)
-        actual = analyze(df)
-        # fmt: off
-        expected = [
-            Row((0, 'a!.b!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
-        ]
-        # fmt: on
-        self.assertEqual(expected, actual.collect())
+def test_analyze_with_array_struct_array(bq: BigQueryBuilder):
+    """
+    GIVEN a DataFrame containing an ARRAY<STRUCT<ARRAY<INT>>>
+    WHEN we analyze it
+    THEN no crash should occur
+    """
+    query = """SELECT [STRUCT([1, 2, 3] as b)] as a"""
+    df = bq.sql(query)
+    actual = analyze(df)
+    # fmt: off
+    expected = [
+        Row((0, 'a!.b!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
+    ]
+    # fmt: on
+    assert actual.collect() == expected
 
-    def test_analyze_with_bytes(self):
-        """
-        GIVEN a DataFrame containing a column of type bytes
-        WHEN we analyze it
-        THEN no crash should occur
-        """
-        bq = BigQueryBuilder(get_bq_client())
-        query = r"""SELECT b'\377\340' as s"""
-        df = bq.sql(query)
-        actual = analyze(df)
-        # fmt: off
-        expected = [
-            Row((0, 's', 'BYTES', 1, 1, 0, '/+A=', '/+A=', [{'value': '/+A=', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
-        ]
-        # fmt: on
-        self.assertEqual(expected, actual.collect())
 
-    def test_analyze_with_nested_field_in_group_and_array_column(self):
-        """
-        GIVEN a DataFrame containing a STRUCT and an array column
-        WHEN we analyze it by grouping on a column inside this struct
-        THEN no crash should occur
-        """
-        bq = BigQueryBuilder(get_bq_client())
-        query = """SELECT 1 as id, STRUCT(2 as b, 3 as c) as a, [1, 2, 3] as arr"""
-        df = bq.sql(query)
-        actual = analyze(df, group_by="a.b")
-        print(actual.collect())
-        # fmt: off
-        expected = [
-            Row(({'b': 2}, 0, 'id', 'INTEGER', 1, 1, 0, '1', '1', [{'value': '1', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
-            Row(({'b': 2}, 2, 'a.c', 'INTEGER', 1, 1, 0, '3', '3', [{'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
-            Row(({'b': 2}, 3, 'arr!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9})  # noqa: E501
-        ]
-        # fmt: on
-        self.assertEqual(expected, actual.collect())
+def test_analyze_with_bytes(bq: BigQueryBuilder):
+    """
+    GIVEN a DataFrame containing a column of type bytes
+    WHEN we analyze it
+    THEN no crash should occur
+    """
+    query = r"""SELECT b'\377\340' as s"""
+    df = bq.sql(query)
+    actual = analyze(df)
+    # fmt: off
+    expected = [
+        Row((0, 's', 'BYTES', 1, 1, 0, '/+A=', '/+A=', [{'value': '/+A=', 'count': 1}]), {'column_number': 0, 'column_name': 1, 'column_type': 2, 'count': 3, 'count_distinct': 4, 'count_null': 5, 'min': 6, 'max': 7, 'approx_top_100': 8})  # noqa: E501
+    ]
+    # fmt: on
+    assert actual.collect() == expected
 
-    def test_analyze_with_chunks(self):
-        df = get_test_df()
-        actual = analyze(df, _chunk_size=1)
-        self.assertEqual(get_expected(), actual.collect())
+
+def test_analyze_with_nested_field_in_group_and_array_column(bq: BigQueryBuilder):
+    """
+    GIVEN a DataFrame containing a STRUCT and an array column
+    WHEN we analyze it by grouping on a column inside this struct
+    THEN no crash should occur
+    """
+    query = """SELECT 1 as id, STRUCT(2 as b, 3 as c) as a, [1, 2, 3] as arr"""
+    df = bq.sql(query)
+    actual = analyze(df, group_by="a.b")
+    print(actual.collect())
+    # fmt: off
+    expected = [
+        Row(({'b': 2}, 0, 'id', 'INTEGER', 1, 1, 0, '1', '1', [{'value': '1', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
+        Row(({'b': 2}, 2, 'a.c', 'INTEGER', 1, 1, 0, '3', '3', [{'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9}),  # noqa: E501
+        Row(({'b': 2}, 3, 'arr!', 'INTEGER', 3, 3, 0, '1', '3', [{'value': '1', 'count': 1}, {'value': '2', 'count': 1}, {'value': '3', 'count': 1}]), {'group': 0, 'column_number': 1, 'column_name': 2, 'column_type': 3, 'count': 4, 'count_distinct': 5, 'count_null': 6, 'min': 7, 'max': 8, 'approx_top_100': 9})  # noqa: E501
+    ]
+    # fmt: on
+    assert actual.collect() == expected
+
+
+def test_analyze_with_chunks(bq: BigQueryBuilder):
+    df = get_test_df()
+    actual = analyze(df, _chunk_size=1)
+    assert actual.collect() == get_expected()

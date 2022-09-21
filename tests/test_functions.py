@@ -1,22 +1,15 @@
-import unittest
+import pytest
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame import functions as f
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import strip_margin
 from tests.utils import captured_output
 
 
-class TestFunctions(unittest.TestCase):
-    def setUp(self) -> None:
-        self.bigquery = BigQueryBuilder(get_bq_client())
-
-    def tearDown(self) -> None:
-        self.bigquery.close()
-
-    def test_isnull_with_alias(self):
+class TestFunctions:
+    def test_isnull_with_alias(self, bq: BigQueryBuilder):
         """isnull should work on columns with an alias"""
-        df = self.bigquery.sql("""SELECT * FROM UNNEST([1, 2, NULL]) as a""")
+        df = bq.sql("""SELECT * FROM UNNEST([1, 2, NULL]) as a""")
 
         with captured_output() as (stdout, stderr):
             df.withColumn("b", f.isnull(f.col("a").alias("a"))).show()
@@ -31,10 +24,10 @@ class TestFunctions(unittest.TestCase):
                 |+------+-------+
                 |"""
             )
-            self.assertEqual(expected, stdout.getvalue())
+            assert stdout.getvalue() == expected
 
-    def test_when(self):
-        df = self.bigquery.sql(
+    def test_when(self, bq: BigQueryBuilder):
+        df = bq.sql(
             """
             SELECT
                 *
@@ -65,23 +58,23 @@ class TestFunctions(unittest.TestCase):
                 "c",
                 f.when(a == f.lit(1), f.lit("a")).when(a == f.lit(2), f.lit("b")).otherwise(f.lit("c")),
             ).show()
-            self.assertEqual(expected, stdout.getvalue())
+            assert stdout.getvalue() == expected
 
-    def test_when_without_bootstrap(self):
-        with self.assertRaises(AttributeError):
+    def test_when_without_bootstrap(self, bq: BigQueryBuilder):
+        with pytest.raises(AttributeError):
             f.col("1").when(f.col("a") > f.lit(1), f.lit("ok"))
 
-    def test_when_multiple_otherwise(self):
-        with self.assertRaises(AttributeError):
+    def test_when_multiple_otherwise(self, bq: BigQueryBuilder):
+        with pytest.raises(AttributeError):
             f.when(f.col("a") > f.lit(1), f.lit("ok")).otherwise(f.lit(1)).otherwise(f.lit(2))
 
-    def test_coalesce_with_alias(self):
+    def test_coalesce_with_alias(self, bq: BigQueryBuilder):
         """
         Given a DataFrame
         When using `functions.coalesce` on columns with aliases
         Then aliases should be ignored
         """
-        df = self.bigquery.sql(
+        df = bq.sql(
             """
             SELECT
                 *
@@ -108,15 +101,15 @@ class TestFunctions(unittest.TestCase):
             b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "0 + a"
             df.withColumn("c", f.coalesce(a, b)).show()
-            self.assertEqual(expected, stdout.getvalue())
+            assert stdout.getvalue() == expected
 
-    def test_struct_with_alias(self):
+    def test_struct_with_alias(self, bq: BigQueryBuilder):
         """
         Given a DataFrame
         When using `functions.coalesce` on columns with aliases
         Then aliases should be ignored
         """
-        df = self.bigquery.sql(
+        df = bq.sql(
             """
             SELECT
                 *
@@ -143,17 +136,11 @@ class TestFunctions(unittest.TestCase):
             b = f.col("b").alias("b")
             # Operators must be compatible with literals, hence the "0 + a"
             df.withColumn("c", f.struct(a, b)).show()
-            self.assertEqual(expected, stdout.getvalue())
+            assert stdout.getvalue() == expected
 
 
-class TestTransform(unittest.TestCase):
-    def setUp(self) -> None:
-        self.bigquery = BigQueryBuilder(get_bq_client())
-
-    def tearDown(self) -> None:
-        self.bigquery.close()
-
-    def test_transform_on_array_of_struct(self):
+class TestTransform:
+    def test_transform_on_array_of_struct(self, bq: BigQueryBuilder):
         """
         GIVEN a array of structs
         WHEN we transform it
@@ -169,9 +156,9 @@ class TestTransform(unittest.TestCase):
             |  FROM UNNEST(`s`) as `_`
             |)"""
         )
-        self.assertEqual(expected, actual.expr)
+        assert actual.expr == expected
 
-    def test_transform_with_sort_array_on_array_of_struct(self):
+    def test_transform_with_sort_array_on_array_of_struct(self, bq: BigQueryBuilder):
         """
         GIVEN a array of structs
         WHEN we transform and sort it, in whichever order
@@ -190,10 +177,10 @@ class TestTransform(unittest.TestCase):
             |  ORDER BY `a`, `b`
             |)"""
         )
-        self.assertEqual(expected, actual_1.expr)
-        self.assertEqual(expected, actual_2.expr)
+        assert actual_1.expr == expected
+        assert actual_2.expr == expected
 
-    def test_transform_on_simple_array(self):
+    def test_transform_on_simple_array(self, bq: BigQueryBuilder):
         """
         GIVEN a simple array
         WHEN we transform it
@@ -208,9 +195,9 @@ class TestTransform(unittest.TestCase):
             |  FROM UNNEST(`s`) as `_`
             |)"""
         )
-        self.assertEqual(expected, actual.expr)
+        assert actual.expr == expected
 
-    def test_transform_with_sort_array_on_simple_array(self):
+    def test_transform_with_sort_array_on_simple_array(self, bq: BigQueryBuilder):
         """
         GIVEN a simple array
         WHEN we transform and sort it, in whichever order
@@ -229,5 +216,5 @@ class TestTransform(unittest.TestCase):
             |  ORDER BY `_` DESC
             |)"""
         )
-        self.assertEqual(expected, actual_1.expr)
-        self.assertEqual(expected, actual_2.expr)
+        assert actual_1.expr == expected
+        assert actual_2.expr == expected
