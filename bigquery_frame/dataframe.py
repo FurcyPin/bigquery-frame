@@ -62,8 +62,7 @@ def schema_to_simple_string(schema: List[SchemaField]):
     Example:
 
     >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> print(df.schema)  # noqa: E501
     [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, (), None)), None)]
@@ -271,8 +270,7 @@ class DataFrame:
         """Creates or replace a persisted temporary table.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempTable("temp_table")
         >>> bq.sql("SELECT * FROM temp_table").show()
@@ -290,8 +288,7 @@ class DataFrame:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempView("temp_view")
         >>> bq.sql("SELECT * FROM temp_view").show()
@@ -591,8 +588,7 @@ class DataFrame:
         Examples:
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.printSchema()
         root
@@ -612,8 +608,7 @@ class DataFrame:
         Examples:
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''SELECT 1 as a''').select(
         ...   'a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b')
@@ -660,8 +655,7 @@ class DataFrame:
         - Corresponding column expressions must use the name `_` for array elements
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
@@ -685,7 +679,7 @@ class DataFrame:
         +----+----------+
 
         >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder(get_bq_client())
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
         ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
@@ -734,8 +728,7 @@ class DataFrame:
         Formating options may be set using `format_args`.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.show()
         +----+---------------------------+
@@ -867,8 +860,7 @@ class DataFrame:
         resolves columns by name (not by position):
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
         >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col0''')
         >>> df1.union(df2).show()
@@ -982,8 +974,7 @@ class DataFrame:
         - Corresponding column expressions must use the name `_` for array elements
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
@@ -1007,9 +998,8 @@ class DataFrame:
         +----+--------------------------+
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
         ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
@@ -1069,8 +1059,8 @@ class DataFrame:
 
         Examples
         --------
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.dataframe_writer import __setup_test_dataset, __teardown_test_dataset
         >>> client = get_bq_client()
         >>> bq = BigQueryBuilder(client)

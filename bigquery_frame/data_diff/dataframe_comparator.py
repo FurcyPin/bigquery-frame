@@ -91,8 +91,7 @@ class DataframeComparator:
         """Return a list of strings representing the schema
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df_comparator = DataframeComparator()
         >>> df = bq.sql('''SELECT 1 as id, "a" as c1, 1 as c2''')
         >>> print('\\n'.join(DataframeComparator()._schema_to_string(df.schema)))
@@ -139,8 +138,7 @@ class DataframeComparator:
         Example:
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> left_df = bq.sql('''SELECT 1 as id, "" as c1, "" as c2, [STRUCT(2 as a, "" as b)] as c4''')
         >>> right_df = bq.sql('''SELECT 1 as id, 2 as c1, "" as c3, [STRUCT(3 as a, "" as d)] as c4''')
         >>> res = DataframeComparator._compare_schemas(left_df, right_df).display()
@@ -181,8 +179,7 @@ class DataframeComparator:
         If a column unique on each row, it's number of duplicates will be 0.
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT * FROM UNNEST([
         ...     STRUCT(1 as id, "a" as name),
         ...     STRUCT(2 as id, "b" as name),
@@ -239,8 +236,7 @@ class DataframeComparator:
         of the number of rows in the DataFrame. Returns None if no such column is found.
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT * FROM UNNEST([
         ...     STRUCT(1 as id, "a" as name),
         ...     STRUCT(2 as id, "b" as name),
@@ -309,8 +305,7 @@ class DataframeComparator:
         of the number of rows in the DataFrame. Returns None if no suche column is found.
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> left_df = bq.sql('''SELECT * FROM UNNEST([
         ...     STRUCT(1 as id, "a" as name),
         ...     STRUCT(2 as id, "b" as name),
@@ -439,8 +434,7 @@ class DataframeComparator:
         Example:
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> left_df = bq.sql('''SELECT * FROM UNNEST([
         ...     STRUCT(1 as id, "a" as c1, 1 as c2),
         ...     STRUCT(2 as id, "b" as c1, 2 as c2),
@@ -555,8 +549,7 @@ class DataframeComparator:
         The result is sharded by group of columns in order to avoid hitting BigQuery's query complexity limit
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> left_df = bq.sql('''SELECT * FROM UNNEST([
         ...     STRUCT(1 as id, "a" as c1, 1 as c2),
         ...     STRUCT(2 as id, "b" as c1, 2 as c2),

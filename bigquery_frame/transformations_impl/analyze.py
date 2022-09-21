@@ -16,7 +16,7 @@ from bigquery_frame.utils import quote
 def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[str]] = None):
     """Recursively unnest a :class:`DataFrame`'s column
 
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT 1 as id, '
     ... '[STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s1, STRUCT(7 as f) as s2')
     >>> [col.name for col in flatten_schema(df.schema, explode=True)]

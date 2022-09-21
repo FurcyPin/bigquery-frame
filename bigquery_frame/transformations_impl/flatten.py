@@ -12,8 +12,7 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
 
     Examples:
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, STRUCT(1 as c, 1 as d) as b) as s''')
     >>> df.printSchema()
     root

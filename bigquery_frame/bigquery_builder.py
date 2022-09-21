@@ -4,6 +4,7 @@ from google.cloud.bigquery import Client
 from google.cloud.bigquery.table import RowIterator
 
 import bigquery_frame
+from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import DEFAULT_ALIAS_NAME, DEFAULT_TEMP_TABLE_NAME
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
 from bigquery_frame.utils import indent, quote, strip_margin
@@ -13,7 +14,9 @@ if TYPE_CHECKING:
 
 
 class BigQueryBuilder(HasBigQueryClient):
-    def __init__(self, client: Client, use_session: bool = True):
+    def __init__(self, client: Optional[Client] = None, use_session: bool = True):
+        if client is None:
+            client = get_bq_client()
         super().__init__(client, use_session)
         self._alias_count = 0
         self._temp_table_count = 0

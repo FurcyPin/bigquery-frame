@@ -87,8 +87,7 @@ class DiffResultAnalyzer:
         Example:
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> unpivoted_diff_df = bq.sql('''  # noqa: E501
         ...     SELECT * FROM UNNEST([
         ...         STRUCT(1 as id, "c1" as column, STRUCT("a" as left_value, "d" as right_value, False as is_equal) as diff),
@@ -226,8 +225,7 @@ class DiffResultAnalyzer:
         Example:
 
         >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> bq = BigQueryBuilder(get_bq_client())
+            >>> bq = BigQueryBuilder()
         >>> diff_count_per_col_df = bq.sql('''  # noqa: E501
         ...     SELECT * FROM UNNEST([
         ...         STRUCT('c1' as column, 'a' as left_value, 'd' as right_value, 1 as nb_differences, 3 as total_nb_differences),

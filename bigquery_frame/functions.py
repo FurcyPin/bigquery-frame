@@ -184,7 +184,7 @@ def concat(*cols: StringOrColumn) -> Column:
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 'abcd' as s, '123' as d")
     >>> from bigquery_frame import functions as f
     >>> df.select(f.concat(df['s'], df['d']).alias('s')).show()
@@ -347,7 +347,7 @@ def length(col: StringOrColumn) -> Column:
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
     >>> bq.sql("SELECT 'ABC ' as a").select(f.length('a').alias('length')).show()
     +--------+
@@ -421,7 +421,7 @@ def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_val
     """Replaces all occurrences of `from_value` with `to_value` in `original_value`.
     If `from_value` is empty, no replacement is made.
 
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 'a.b.c.d' as s, '.' as dot, '/' as slash")
     >>> from bigquery_frame import functions as f
     >>> df.select(f.replace('s', ".", "/").alias('s')).show()
@@ -470,7 +470,7 @@ def sort_array(array: StringOrColumn, sort_cols: Union[Column, List[Column]]) ->
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql('''
     ...     SELECT data FROM UNNEST ([
     ...         STRUCT([2, 1, 3] as data),
@@ -517,7 +517,7 @@ def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] 
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 'abcd' as s")
     >>> from bigquery_frame import functions as f
     >>> df.select(f.substring(df['s'], 1, 2).alias('s')).show()
@@ -615,7 +615,7 @@ def to_base32(col: StringOrColumn) -> Column:
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
     >>> df = bq.sql(r"SELECT b'abcde\\xFF' as b")
     >>> df.select(f.to_base32('b').alias('base32_string')).show()
@@ -640,7 +640,7 @@ def to_base64(col: StringOrColumn) -> Column:
 
     Examples
     --------
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
     >>> df = bq.sql(r"SELECT b'\\377\\340' as b")
     >>> df.select(f.to_base64('b').alias('base64_string')).show()
@@ -677,7 +677,7 @@ def transform(array: StringOrColumn, transform_col: Column) -> Column:
     Examples
     --------
     >>> from bigquery_frame import functions as f
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 1 as key, [1, 2, 3, 4] as values")
     >>> df.select(transform("values", f.col("_") * f.lit(2)).alias("doubled")).show()
     +--------------+

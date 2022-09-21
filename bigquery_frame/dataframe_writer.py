@@ -65,8 +65,8 @@ class DataframeWriter:
 
         Examples
         --------
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> client = get_bq_client()
         >>> test_dataset = __setup_test_dataset(client)
         >>> bq = BigQueryBuilder(client)
@@ -115,8 +115,8 @@ class DataframeWriter:
 
         Examples:
         ---------
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> client = get_bq_client()
         >>> test_dataset = __setup_test_dataset(client)
         >>> bq = BigQueryBuilder(client)
@@ -156,8 +156,8 @@ class DataframeWriter:
 
         Examples
         --------
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> client = get_bq_client()
         >>> test_dataset = __setup_test_dataset(client)
         >>> bq = BigQueryBuilder(client)
@@ -225,8 +225,8 @@ class DataframeWriter:
 
         Examples
         --------
-        >>> from bigquery_frame.auth import get_bq_client
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> from bigquery_frame.auth import get_bq_client
         >>> client = get_bq_client()
         >>> test_dataset = __setup_test_dataset(client)
         >>> bq = BigQueryBuilder(client)

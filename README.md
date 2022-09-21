@@ -394,7 +394,7 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
   - `overwrite`: Replace destination table with the new data if it already exists.
   - `error` or `errorifexists`: Throw an exception if destination table already exists.
   - `ignore`: Silently ignore this operation if destination table already exists.
-
+- `BigQueryBuilder` now tries to create it's own bigquery client if none is passed
 
 ### 0.4.0
 

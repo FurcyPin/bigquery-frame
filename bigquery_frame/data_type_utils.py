@@ -123,8 +123,7 @@ def get_common_columns(left_schema: List[SchemaField], right_schema: List[Schema
     When columns already have the same type or have incompatible types, they are simply not cast.
 
     >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.auth import get_bq_client
-    >>> bq = BigQueryBuilder(get_bq_client())
+    >>> bq = BigQueryBuilder()
     >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as d, 'a' as a''')
     >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as d, ['a'] as a''')
     >>> get_common_columns(df1.schema, df2.schema)
