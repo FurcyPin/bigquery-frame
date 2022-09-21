@@ -185,7 +185,7 @@ class DataframeWriter:
             else:
                 return repr(v)
 
-        if options is not None:
+        if len(options) > 0:
             options_str_list = [f"{k}={to_str(v)}" for k, v in options.items()]
             options_str = f"\n OPTIONS(\n{cols_to_str(options_str_list, 2)}\n)"
         else:
@@ -262,8 +262,8 @@ class DataframeWriter:
 
 
 def __setup_test_dataset(client: Client) -> Dataset:
-    id = uuid4()
-    test_dataset_name = "test_dataset_" + str(id).replace("-", "_")
+    random_id = uuid4()
+    test_dataset_name = "test_dataset_" + str(random_id).replace("-", "_")
     test_dataset = Dataset(f"{client.project}.{test_dataset_name}")
     test_dataset.location = "EU"
     client.create_dataset(test_dataset, exists_ok=True)

@@ -84,4 +84,4 @@ class BigQueryBuilder(HasBigQueryClient):
         """
         collisions = [alias for alias, df in list(self._views.items()) + deps if alias == new_alias]
         if len(collisions) > 0:
-            raise Exception(f"Duplicate alias {new_alias}")
+            raise ValueError(f"Duplicate alias {new_alias}")
