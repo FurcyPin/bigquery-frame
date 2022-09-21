@@ -9,8 +9,8 @@ from bigquery_frame.bigquery_builder import BigQueryBuilder
 
 @pytest.fixture(autouse=True, scope="session")
 def random_test_dataset():
-    id = uuid4()
-    return "test_dataset_" + str(id).replace("-", "_")
+    random_id = uuid4()
+    return "test_dataset_" + str(random_id).replace("-", "_")
 
 
 @pytest.fixture(autouse=True, scope="session")
