@@ -11,17 +11,14 @@
 
 ## What is it ?
 
-This project is a POC that aims to showcase the wonders
-that could be done if BigQuery provided a DataFrame API in 
-Python similar to the one already available with PySpark
-or Snowpark (for which the Python API will come out soon).
+This project is a POC that aims to showcase the wonders that could be done if BigQuery provided a DataFrame API in 
+Python similar to the one already available with PySpark or Snowpark (for which the Python API will come out soon).
 
-I tried to reproduce the most commonly used methods of the Spark DataFrame object. 
-I aimed at making something as close as possible as PySpark, and tried to keep exactly
-the same naming and docstrings as PySpark's DataFrames.
+I tried to reproduce the most commonly used methods of the Spark DataFrame object. I aimed at making something 
+as close as possible as PySpark, and tried to keep exactly the same naming and docstrings as PySpark's DataFrames.
  
 
-For instance, this is a working example of PySpark code :
+For instance, this is a working example of PySpark code:
 ```python
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as f
