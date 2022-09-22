@@ -1,15 +1,15 @@
 from collections import OrderedDict
-from typing import Dict, List, Union
+from typing import Dict, List, Mapping, Union
 
 from bigquery_frame.column import Column, StringOrColumn
 from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.utils import str_to_col
 
-OrderedTree = Union["OrderedTree", Dict[str, "OrderedTree"]]
+OrderedTree = Union["OrderedTree", Dict[str, Union["OrderedTree", StringOrColumn]]]
 
 
-def _build_nested_struct_tree(columns: Dict[str, Column]) -> OrderedTree:
-    def rec_insert(node: OrderedDict, alias: str, column: Column) -> None:
+def _build_nested_struct_tree(columns: Mapping[str, StringOrColumn]) -> OrderedTree:
+    def rec_insert(node: OrderedTree, alias: str, column: StringOrColumn) -> None:
         if STRUCT_SEPARATOR in alias:
             struct, subcol = alias.split(STRUCT_SEPARATOR, 1)
             if struct not in node:
@@ -18,7 +18,7 @@ def _build_nested_struct_tree(columns: Dict[str, Column]) -> OrderedTree:
         else:
             node[alias] = column
 
-    tree = OrderedDict()
+    tree: OrderedTree = OrderedDict()
     for col_name, col_type in columns.items():
         rec_insert(tree, col_name, col_type)
     return tree
@@ -139,7 +139,7 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
     return [col for col, is_array in cols]
 
 
-def resolve_nested_columns(columns: Dict[str, StringOrColumn], sort: bool = False) -> List[Column]:
+def resolve_nested_columns(columns: Mapping[str, StringOrColumn], sort: bool = False) -> List[Column]:
     """Builds a list of column expressions to manipulate structs and repeated records
 
     >>> from bigquery_frame import functions as f

@@ -80,7 +80,7 @@ def normalize_arrays(df: DataFrame) -> DataFrame:
         df.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
     )
 
-    def get_col_short_name(col: str):
+    def get_col_short_name(col: str) -> str:
         if col[-1] == REPETITION_MARKER:
             return ELEMENT_COL_NAME
         else:

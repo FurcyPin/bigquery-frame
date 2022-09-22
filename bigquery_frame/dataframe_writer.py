@@ -30,7 +30,7 @@ DEFAULT_MODE = "error"
 class DataframeWriterOptions:
     partition_by: Optional[str]
     options: Dict[str, Any]
-    mode: Optional[str] = DEFAULT_MODE
+    mode: str = DEFAULT_MODE
 
     def __init__(self):
         self.partition_by = None
@@ -168,7 +168,7 @@ class DataframeWriter:
         So we make sure the table does not exist
         >>> df.write.partition_by("day").mode("OVERWRITE").save(f"{test_dataset.dataset_id}.my_partitioned_table")
         >>> table = client.get_table(f"{test_dataset.dataset_id}.my_partitioned_table")
-        >>> table.partitioning_type
+        >>> table.time_partitioning.type_
         'DAY'
         >>> __teardown_test_dataset(client, test_dataset)
 

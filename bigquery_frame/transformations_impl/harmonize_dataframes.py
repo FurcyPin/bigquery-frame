@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
@@ -10,7 +10,7 @@ from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 
 
 def harmonize_dataframes(
-    left_df: DataFrame, right_df: DataFrame, common_columns: Optional[List[Tuple[str, Optional[str]]]] = None
+    left_df: DataFrame, right_df: DataFrame, common_columns: Optional[Sequence[Tuple[str, Optional[str]]]] = None
 ) -> Tuple[DataFrame, DataFrame]:
     """Given two DataFrames, returns two new corresponding DataFrames with the same schemas by applying the following
     changes:
@@ -54,5 +54,5 @@ def harmonize_dataframes(
         else:
             return col
 
-    common_columns = {col_name: build_col(col_name, col_type) for (col_name, col_type) in common_columns}
-    return left_df.select_nested_columns(common_columns), right_df.select_nested_columns(common_columns)
+    common_columns_dict = {col_name: build_col(col_name, col_type) for (col_name, col_type) in common_columns}
+    return left_df.select_nested_columns(common_columns_dict), right_df.select_nested_columns(common_columns_dict)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ from bigquery_frame.utils import assert_true, quote, quote_columns, strip_margin
 
 
 class DiffResultAnalyzer:
-    def __init__(self, diff_format_options: Optional[DiffFormatOptions] = DiffFormatOptions()):
+    def __init__(self, diff_format_options: DiffFormatOptions = DiffFormatOptions()):
         self.diff_format_options = diff_format_options
 
     def _unpivot(self, diff_df: DataFrame, join_cols: List[str]):

@@ -1,20 +1,20 @@
-from bigquery_frame.transformations_impl import (
-    analyze,
-    flatten,
-    flatten_schema,
+from bigquery_frame.transformations_impl.analyze import analyze
+from bigquery_frame.transformations_impl.flatten import flatten
+from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
+from bigquery_frame.transformations_impl.harmonize_dataframes import (
     harmonize_dataframes,
-    normalize_arrays,
-    pivot_unpivot,
-    sort_columns,
-    union_dataframes,
 )
+from bigquery_frame.transformations_impl.normalize_arrays import normalize_arrays
+from bigquery_frame.transformations_impl.pivot_unpivot import pivot, unpivot
+from bigquery_frame.transformations_impl.sort_columns import sort_columns
+from bigquery_frame.transformations_impl.union_dataframes import union_dataframes
 
-analyze = analyze.analyze
-flatten = flatten.flatten
-flatten_schema = flatten_schema.flatten_schema
-harmonize_dataframes = harmonize_dataframes.harmonize_dataframes
-normalize_arrays = normalize_arrays.normalize_arrays
-pivot = pivot_unpivot.pivot
-sort_columns = sort_columns.sort_columns
-union_dataframes = union_dataframes.union_dataframes
-unpivot = pivot_unpivot.unpivot
+analyze = analyze
+flatten = flatten
+flatten_schema = flatten_schema
+harmonize_dataframes = harmonize_dataframes
+normalize_arrays = normalize_arrays
+pivot = pivot
+sort_columns = sort_columns
+union_dataframes = union_dataframes
+unpivot = unpivot

@@ -1,10 +1,8 @@
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Generator, List, Optional, Tuple
 
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame.utils import assert_true
-
-OrderedTree = Union["OrderedTree", Dict[str, "OrderedTree"]]
 
 BIGQUERY_TYPE_ALIASES = {
     "INT64": "INT64",
@@ -116,7 +114,9 @@ def find_wider_type_for_two(t1: str, t2: str) -> Optional[str]:
     return None
 
 
-def get_common_columns(left_schema: List[SchemaField], right_schema: List[SchemaField]) -> List[Tuple[str, str]]:
+def get_common_columns(
+    left_schema: List[SchemaField], right_schema: List[SchemaField]
+) -> List[Tuple[str, Optional[str]]]:
     """Return a list of common Columns between two DataFrame schemas, along with the widest common type
     of for the two columns.
 

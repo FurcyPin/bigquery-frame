@@ -43,7 +43,7 @@ jobs:
       - name: Linter flake8
         run: poetry run flake8 bigquery_frame tests
       - name: Linter mypy
-        run: poetry run mypy bigquery_frame tests
+        run: poetry run mypy bigquery_frame
         # We run mypy but ignore the results as there are too many things to fix for now.
         continue-on-error: true
       - name: Security bandit

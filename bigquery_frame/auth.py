@@ -19,6 +19,8 @@ def _get_bq_client_from_credential_files() -> Optional[Client]:
         )
         client = google.cloud.bigquery.Client(credentials=credentials, project=credentials.project_id)
         return client
+    else:
+        return None
 
 
 def _get_bq_client_from_credentials() -> Optional[Client]:

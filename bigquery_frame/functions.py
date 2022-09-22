@@ -1,4 +1,5 @@
-from typing import Iterable, List, Optional, Set, Union
+import typing
+from typing import Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
@@ -12,7 +13,7 @@ from bigquery_frame.column import (
     literal_col,
 )
 from bigquery_frame.dataframe import DataFrame
-from bigquery_frame.utils import quote, str_to_col
+from bigquery_frame.utils import quote, str_to_col, str_to_cols
 
 
 def _invoke_function_over_column(function_name: str, col: StringOrColumn):
@@ -49,7 +50,7 @@ def approx_count_distinct(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
 
 
-def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]]) -> Column:
+def array(*cols: Union[StringOrColumn, Sequence[StringOrColumn]]) -> Column:
     """Creates a new array column.
 
     Limitations
@@ -82,10 +83,13 @@ def array(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]
     :param cols: a list or set of str (column names) or :class:`Column` that have the same data type.
     :return:
     """
-    if len(cols) == 1 and isinstance(cols[0], (list, set)):
-        cols = cols[0]
-    cols = [col.expr for col in str_to_col(cols)]
-    return Column(f"[{cols_to_str(cols)}]")
+    columns: Iterable[StringOrColumn]
+    if len(cols) == 1 and isinstance(cols[0], (List, Set)):
+        columns = cols[0]
+    else:
+        columns = typing.cast(Tuple[StringOrColumn], cols)
+    str_cols = [col.expr for col in str_to_cols(columns)]
+    return Column(f"[{cols_to_str(str_cols)}]")
 
 
 def asc(col: StringOrColumn) -> Column:
@@ -140,8 +144,8 @@ def cast(col: StringOrColumn, tpe: str) -> Column:
     +------+------+
 
     """
-    column = str_to_col(col)
-    return Column(f"CAST({column.expr} as {tpe.upper()})")
+    str_col = str_to_col(col)
+    return Column(f"CAST({str_col.expr} as {tpe.upper()})")
 
 
 def coalesce(*cols: StringOrColumn) -> Column:
@@ -170,8 +174,8 @@ def coalesce(*cols: StringOrColumn) -> Column:
     +------+------+----------+
 
     """
-    cols = [col.expr for col in str_to_col(cols)]
-    return Column(f"COALESCE({cols_to_str(cols)})")
+    str_cols = [col.expr for col in str_to_cols(cols)]
+    return Column(f"COALESCE({cols_to_str(str_cols)})")
 
 
 def col(expr: str) -> Column:
@@ -197,8 +201,8 @@ def concat(*cols: StringOrColumn) -> Column:
     :param cols:
     :return:
     """
-    cols = [col.expr for col in str_to_col(cols)]
-    return Column(f"CONCAT({cols_to_str(cols)})")
+    str_cols = [col.expr for col in str_to_cols(cols)]
+    return Column(f"CONCAT({cols_to_str(str_cols)})")
 
 
 def count(col: StringOrColumn) -> Column:
@@ -254,8 +258,8 @@ def count_distinct(col: StringOrColumn) -> Column:
     +---------------------+---------------------+
 
     """
-    col = str_to_col(col)
-    return Column(f"COUNT(DISTINCT {col.expr})")
+    str_col = str_to_col(col)
+    return Column(f"COUNT(DISTINCT {str_col.expr})")
 
 
 def desc(col: StringOrColumn) -> Column:
@@ -319,8 +323,8 @@ def hash(*cols: Union[str, Column]) -> Column:
     |    2 | null |  1951453458346972811 |
     +------+------+----------------------+
     """
-    cols = str_to_col(cols)
-    return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(cols)})))")
+    str_cols = str_to_cols(cols)
+    return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(str_cols)})))")
 
 
 def isnull(col: StringOrColumn) -> Column:
@@ -462,7 +466,7 @@ def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_val
     return Column(f"REPLACE({original_value.expr}, {from_value.expr}, {replace_value.expr})")
 
 
-def sort_array(array: StringOrColumn, sort_cols: Union[Column, List[Column]]) -> ArrayColumn:
+def sort_array(array: Column, sort_cols: Union[Column, List[Column]]) -> ArrayColumn:
     """Collection function: sorts the input array in ascending or descending order according to the natural ordering
     of the array elements. Unlike in Spark, arrays cannot contain NULL element when they are serialized.
 
@@ -504,7 +508,8 @@ def sort_array(array: StringOrColumn, sort_cols: Union[Column, List[Column]]) ->
         sort_cols = [sort_cols]
     if isinstance(array, ArrayColumn):
         return array._copy(sort_cols=sort_cols)
-    return ArrayColumn(array, sort_cols=sort_cols)
+    else:
+        return ArrayColumn(array, sort_cols=sort_cols)
 
 
 def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] = None) -> Column:
@@ -539,15 +544,15 @@ def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] 
         If not, the substring runs until the end of the input string.
     :return: a column of same type
     """
-    col = str_to_col(col)
+    str_col = str_to_col(col)
     if not isinstance(pos, Column):
         pos = lit(pos)
     if len is not None:
         if not isinstance(len, Column):
             len = lit(len)
-        return Column(f"SUBSTRING({col.expr}, {pos.expr}, {len.expr})")
+        return Column(f"SUBSTRING({str_col.expr}, {pos.expr}, {len.expr})")
     else:
-        return Column(f"SUBSTRING({col.expr}, {pos.expr})")
+        return Column(f"SUBSTRING({str_col.expr}, {pos.expr})")
 
 
 def sum(col: StringOrColumn) -> Column:
@@ -603,10 +608,13 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     :param cols: a list or set of str (column names) or :class:`Column` to be added to the output struct.
     :return:
     """
-    if len(cols) == 1 and isinstance(cols[0], (list, set)):
-        cols = cols[0]
+    columns: Iterable[StringOrColumn]
+    if len(cols) == 1 and isinstance(cols[0], (List, Set)):
+        columns = cols[0]
+    else:
+        columns = typing.cast(Tuple[StringOrColumn], cols)
     # Unlike other functions (e.g. coalesce) we keep the column aliases here.
-    return Column(f"STRUCT({cols_to_str(cols)})")
+    return Column(f"STRUCT({cols_to_str(columns)})")
 
 
 def to_base32(col: StringOrColumn) -> Column:
@@ -723,8 +731,8 @@ def transform(array: StringOrColumn, transform_col: Column) -> Column:
     if isinstance(array, ArrayColumn):
         return array._copy(transform_col=transform_col)
     else:
-        array = str_to_col(array)
-        return ArrayColumn(array, transform_col=transform_col)
+        str_array = str_to_col(array)
+        return ArrayColumn(str_array, transform_col=transform_col)
 
 
 def when(condition: Column, value: Column) -> WhenColumn:
