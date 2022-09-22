@@ -44,5 +44,5 @@ def max(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
 
 
 def approx_top_100(col: str, schema_field: SchemaField, col_num: int) -> Column:  # NOSONAR
-    col = f.coalesce(_to_string(f.col(col), schema_field.field_type), f.lit("NULL"))
-    return f.expr(f"APPROX_TOP_COUNT({col.expr}, 100)").alias("approx_top_100")
+    column = f.coalesce(_to_string(f.col(col), schema_field.field_type), f.lit("NULL"))
+    return f.expr(f"APPROX_TOP_COUNT({column.expr}, 100)").alias("approx_top_100")

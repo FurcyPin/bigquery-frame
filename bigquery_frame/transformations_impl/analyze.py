@@ -5,7 +5,7 @@ from google.cloud.bigquery import SchemaField
 from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import StringOrColumn, cols_to_str
+from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.transformations_impl import analyze_aggs
 from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
@@ -13,7 +13,7 @@ from bigquery_frame.transformations_impl.union_dataframes import union_dataframe
 from bigquery_frame.utils import quote
 
 
-def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[str]] = None):
+def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[Column]] = None):
     """Recursively unnest a :class:`DataFrame`'s column
 
     >>> bq = BigQueryBuilder()
@@ -93,7 +93,7 @@ def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[str]] = No
         query = strip_margin(
             f"""
             |SELECT
-            |  {cols_to_str(extra_cols + [col], 2)}
+            |  {cols_to_str(extra_cols + [f.expr(col)], 2)}
             |FROM {quote(df._alias)}
             |{cross_join_str}"""
         )
@@ -102,15 +102,8 @@ def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[str]] = No
         return df
 
 
-def _select_group_by(
-    df: DataFrame, *columns: Union[List[StringOrColumn], StringOrColumn], group_by: List[str]
-) -> "DataFrame":
+def _select_group_by(df: DataFrame, *columns: StringOrColumn, group_by: List[Column]) -> "DataFrame":
     """Projects a set of expressions and returns a new :class:`DataFrame`."""
-    if isinstance(columns[0], list):
-        if len(columns) == 1:
-            columns = columns[0]
-        else:
-            raise TypeError(f"Wrong argument type: {type(columns)}")
     group_by_str = ""
     if len(group_by) > 0:
         group_by_str = f"\nGROUP BY {cols_to_str(group_by)}"
@@ -122,7 +115,13 @@ def _select_group_by(
     return df._apply_query(query)
 
 
-def _analyze_column(df: DataFrame, schema_field: SchemaField, col_num: int, group_by: List[str], aggs: List[Callable]):
+def _analyze_column(
+    df: DataFrame,
+    schema_field: SchemaField,
+    col_num: int,
+    group_by: List[str],
+    aggs: List[Callable[[str, SchemaField, int], Column]],
+):
     col = schema_field.name
     is_repeated = "!" in col
 
@@ -153,7 +152,7 @@ def __chunks(lst: List, n: int):
         # fmt: on
 
 
-default_aggs = [
+default_aggs: List[Callable[[str, SchemaField, int], Column]] = [
     analyze_aggs.column_number,
     analyze_aggs.column_name,
     analyze_aggs.column_type,
@@ -169,7 +168,7 @@ default_aggs = [
 def analyze(
     df: DataFrame,
     group_by: Optional[Union[str, List[str]]] = None,
-    _aggs: Optional[List[Callable]] = None,
+    _aggs: Optional[List[Callable[[str, SchemaField, int], Column]]] = None,
     _chunk_size: int = 50,
 ):
     """Analyze a DataFrame by computing various stats for each column.

@@ -1,6 +1,6 @@
 import math
 import re
-from typing import TYPE_CHECKING, Iterable, List, Union
+from typing import TYPE_CHECKING, Iterable, List
 
 if TYPE_CHECKING:
     from bigquery_frame.column import Column, LitOrColumn, StringOrColumn
@@ -43,15 +43,13 @@ def quote_columns(columns: List[str]) -> List[str]:
     return [quote(col) for col in columns]
 
 
-def str_to_col(args: Union[List["StringOrColumn"], "StringOrColumn"]) -> Union[List["Column"], "Column"]:
-    """Converts string or Column arguments to Column types
+def str_to_col(args: "StringOrColumn") -> "Column":
+    """Converts string or Column argument to Column types
 
     Examples:
 
     >>> str_to_col("id")
     Column('`id`')
-    >>> str_to_col(["c1", "c2"])
-    [Column('`c1`'), Column('`c2`')]
     >>> from bigquery_frame import functions as f
     >>> str_to_col(f.expr("COUNT(1)"))
     Column('COUNT(1)')
@@ -63,21 +61,34 @@ def str_to_col(args: Union[List["StringOrColumn"], "StringOrColumn"]) -> Union[L
 
     if isinstance(args, str):
         return f.col(args)
-    elif isinstance(args, Iterable):
-        return [str_to_col(arg) for arg in args]
     else:
         return args
 
 
-def lit_to_col(args: Union[Iterable["LitOrColumn"], "LitOrColumn"]) -> Union[List["Column"], "Column"]:
-    """Converts literal string or Column arguments to Column types
+def str_to_cols(args: Iterable["StringOrColumn"]) -> List["Column"]:
+    """Converts string or Column arguments to Column types
+
+    Examples:
+
+    >>> str_to_cols(["c1", "c2"])
+    [Column('`c1`'), Column('`c2`')]
+    >>> from bigquery_frame import functions as f
+    >>> str_to_col(f.expr("COUNT(1)"))
+    Column('COUNT(1)')
+    >>> str_to_col("*")
+    Column('*')
+
+    """
+    return [str_to_col(arg) for arg in args]
+
+
+def lit_to_col(args: "LitOrColumn") -> "Column":
+    """Converts literal string or Column argument to Column type
 
     Examples:
 
     >>> lit_to_col("id")
     Column(''id'')
-    >>> lit_to_col(["c1", "c2"])
-    [Column(''c1''), Column(''c2'')]
     >>> from bigquery_frame import functions as f
     >>> lit_to_col(f.expr("COUNT(1)"))
     Column('COUNT(1)')
@@ -88,12 +99,10 @@ def lit_to_col(args: Union[Iterable["LitOrColumn"], "LitOrColumn"]) -> Union[Lis
     from bigquery_frame import functions as f
     from bigquery_frame.column import Column
 
-    if isinstance(args, List):
-        return [lit_to_col(arg) for arg in args]
-    elif not isinstance(args, Column):
-        return f.lit(args)
-    else:
+    if isinstance(args, Column):
         return args
+    else:
+        return f.lit(args)
 
 
 def number_lines(string: str, starting_index: int = 1) -> str:

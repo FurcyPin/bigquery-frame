@@ -9,11 +9,11 @@ StringOrColumn = Union[str, "Column"]
 
 
 def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = None, sep: str = ",") -> str:
-    cols = [str(col) for col in cols]
+    str_cols = [str(col) for col in cols]
     if indentation is not None:
-        return indent(f"{sep}\n".join(cols), indentation)
+        return indent(f"{sep}\n".join(str_cols), indentation)
     else:
-        return ", ".join(cols)
+        return ", ".join(str_cols)
 
 
 def literal_col(val: LitOrColumn) -> "Column":
@@ -27,17 +27,17 @@ def literal_col(val: LitOrColumn) -> "Column":
 
 
 def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
-    def fun(self, other: LitOrColumn) -> "Column":
-        other = lit_to_col(other)
-        return Column(f"({self.expr}) {op} ({other.expr})")
+    def fun(self: "Column", other: LitOrColumn) -> "Column":
+        other_col = lit_to_col(other)
+        return Column(f"({self.expr}) {op} ({other_col.expr})")
 
     return fun
 
 
 def _reverse_bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
-    def fun(self, other: LitOrColumn) -> "Column":
-        other = lit_to_col(other)
-        return Column(f"({other.expr}) {op} ({self.expr})")
+    def fun(self: "Column", other: LitOrColumn) -> "Column":
+        other_col = lit_to_col(other)
+        return Column(f"({other_col.expr}) {op} ({self.expr})")
 
     return fun
 
@@ -67,32 +67,32 @@ class Column:
     def __repr__(self):
         return f"Column('{self.expr}')"
 
-    __add__: Callable[[LitOrColumn], "Column"] = _bin_op("+")
-    __radd__: Callable[[LitOrColumn], "Column"] = _bin_op("+")
-    __sub__: Callable[[LitOrColumn], "Column"] = _bin_op("-")
-    __rsub__: Callable[[LitOrColumn], "Column"] = _reverse_bin_op("-")
-    __neg__: Callable[[], "Column"] = _func_op("-")
-    __mul__: Callable[[LitOrColumn], "Column"] = _bin_op("*")
-    __rmul__: Callable[[LitOrColumn], "Column"] = _bin_op("*")
-    __truediv__: Callable[[LitOrColumn], "Column"] = _bin_op("/")
-    __rtruediv__: Callable[[LitOrColumn], "Column"] = _reverse_bin_op("/")
-    __and__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
-    __rand__: Callable[[LitOrColumn], "Column"] = _bin_op("AND")
-    __or__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
-    __ror__: Callable[[LitOrColumn], "Column"] = _bin_op("OR")
+    __add__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
+    __radd__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
+    __sub__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("-")
+    __rsub__: Callable[["Column", LitOrColumn], "Column"] = _reverse_bin_op("-")
+    __neg__: Callable[["Column"], "Column"] = _func_op("-")
+    __mul__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("*")
+    __rmul__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("*")
+    __truediv__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("/")
+    __rtruediv__: Callable[["Column", LitOrColumn], "Column"] = _reverse_bin_op("/")
+    __and__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("AND")
+    __rand__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("AND")
+    __or__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("OR")
+    __ror__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("OR")
     __invert__ = _func_op("NOT")
 
     def __mod__(self, other: LitOrColumn) -> "Column":
-        other = lit_to_col(other)
-        return Column(f"MOD({self.expr}, {other.expr})")
+        other_col = lit_to_col(other)
+        return Column(f"MOD({self.expr}, {other_col.expr})")
 
     # logistic operators
-    __eq__: Callable[[LitOrColumn], "Column"] = _bin_op("=")
-    __ne__: Callable[[LitOrColumn], "Column"] = _bin_op("<>")
-    __lt__: Callable[[LitOrColumn], "Column"] = _bin_op("<")
-    __le__: Callable[[LitOrColumn], "Column"] = _bin_op("<=")
-    __ge__: Callable[[LitOrColumn], "Column"] = _bin_op(">=")
-    __gt__: Callable[[LitOrColumn], "Column"] = _bin_op(">")
+    __eq__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("=")
+    __ne__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("<>")
+    __lt__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("<")
+    __le__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("<=")
+    __ge__: Callable[["Column", LitOrColumn], "Column"] = _bin_op(">=")
+    __gt__: Callable[["Column", LitOrColumn], "Column"] = _bin_op(">")
 
     def __bool__(self):
         raise ValueError(
@@ -142,7 +142,7 @@ class Column:
             self._alias = col._alias
         return self
 
-    def alias(self, alias: str) -> "Column":
+    def alias(self, alias: Optional[str]) -> "Column":
         if alias is not None:
             alias = quote(alias)
         return Column(self.expr)._copy_from(self, alias)
@@ -365,7 +365,7 @@ class Column:
         """
         return Column(f"(({self.expr}) IS NOT NULL)")
 
-    def get_alias(self) -> str:
+    def get_alias(self) -> Optional[str]:
         return self._alias
 
     asType = cast

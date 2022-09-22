@@ -1,5 +1,5 @@
 import difflib
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Sequence, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import SchemaField
 from tqdm import tqdm
@@ -34,9 +34,12 @@ class CombinatorialExplosionError(DataframeComparatorException):
     pass
 
 
+A = TypeVar("A")
+
+
 def shard_column_list_but_keep_arrays_grouped(
-    columns: List[Tuple[str, str]], n: int
-) -> Generator[List[Tuple[str, str]], None, None]:
+    columns: List[Tuple[str, A]], n: int
+) -> Generator[List[Tuple[str, A]], None, None]:
     """
 
     >>> cols = {"a": None, "b": None, "s!.a": None, "s!.b": None, "s!.c": None, "c": None, "d": None}
@@ -47,8 +50,8 @@ def shard_column_list_but_keep_arrays_grouped(
     :param n:
     :return:
     """
-    res = []
-    group = []
+    res: List[Tuple[str, A]] = []
+    group: List[Tuple[str, A]] = []
     last_col_group = None
 
     for i in range(0, len(columns)):
@@ -78,8 +81,8 @@ def shard_column_list_but_keep_arrays_grouped(
 class DataframeComparator:
     def __init__(
         self,
-        diff_format_options: Optional[DiffFormatOptions] = DiffFormatOptions(),
-        _shard_size: Optional[int] = 100,
+        diff_format_options: DiffFormatOptions = DiffFormatOptions(),
+        _shard_size: int = 100,
     ):
         self.diff_format_options = diff_format_options
         self._shard_size = _shard_size
@@ -349,7 +352,9 @@ class DataframeComparator:
         else:
             return None, None
 
-    def _get_join_cols(self, left_df: DataFrame, right_df: DataFrame, join_cols: List[str]) -> Tuple[List[str], float]:
+    def _get_join_cols(
+        self, left_df: DataFrame, right_df: DataFrame, join_cols: Optional[List[str]]
+    ) -> Tuple[List[str], float]:
         """Performs an in-depth analysis between two DataFrames with the same columns and prints the differences found.
         We first attempt to identify columns that look like ids.
         For that we choose all the columns with an approximate_count_distinct greater than 90% of the row count.
@@ -368,7 +373,7 @@ class DataframeComparator:
             inferred_join_col, self_join_growth_estimate = DataframeComparator._automatically_infer_join_col(
                 left_df, right_df
             )
-            if inferred_join_col is None:
+            if inferred_join_col is None or self_join_growth_estimate is None:
                 raise DataframeComparatorException(
                     "Could not automatically infer a column sufficiently "
                     "unique to join the two DataFrames and perform a comparison. "
@@ -385,7 +390,7 @@ class DataframeComparator:
         return join_cols, self_join_growth_estimate
 
     def _check_join_cols(
-        self, specified_join_cols: Optional[List[str]], join_cols: Optional[List[str]], self_join_growth_estimate: float
+        self, specified_join_cols: Optional[List[str]], join_cols: List[str], self_join_growth_estimate: float
     ) -> None:
         """Check the self_join_growth_estimate and raise an Exception if it is bigger than 2.
 
@@ -518,7 +523,7 @@ class DataframeComparator:
         self,
         left_flat: DataFrame,
         right_flat: DataFrame,
-        common_column_shard: List[Tuple[str, str]],
+        common_column_shard: List[Tuple[str, Optional[str]]],
         join_cols: List[str],
         skip_make_dataframes_comparable: bool,
     ):
@@ -532,7 +537,7 @@ class DataframeComparator:
         self,
         left_df: DataFrame,
         right_df: DataFrame,
-        common_columns: List[Tuple[str, str]],
+        common_columns: Sequence[Tuple[str, Optional[str]]],
         join_cols: List[str],
         same_schema: bool,
     ) -> List[DataFrame]:

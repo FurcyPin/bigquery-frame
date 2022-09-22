@@ -1,4 +1,16 @@
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, TypeVar, Union
+import typing
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
@@ -8,7 +20,7 @@ from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPA
 from bigquery_frame.nested import resolve_nested_columns
 from bigquery_frame.printing import print_results
 from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
-from bigquery_frame.utils import assert_true, indent, quote, str_to_col, strip_margin
+from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
 
 if TYPE_CHECKING:
     from bigquery_frame.bigquery_builder import BigQueryBuilder
@@ -136,15 +148,15 @@ class DataFrame:
         self.query = query
         if deps is None:
             deps = []
-        deps = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
-        self._deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps)
+        deps_with_aliases = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
+        self._deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
         if alias is None:
             alias = bigquery._get_alias()
         else:
             bigquery._check_alias(alias, self._deps)
         self._alias = alias
         self.bigquery: "BigQueryBuilder" = bigquery
-        self._schema = None
+        self._schema: Optional[List[SchemaField]] = None
 
     def __repr__(self):
         return f"""DataFrame('{self.query}) as {self._alias}')"""
@@ -343,10 +355,10 @@ class DataFrame:
         This is a no-op if schema doesn't contain the given column name(s).
         """
         schema_cols = set(self.columns)
-        cols = [col for col in cols if col in schema_cols]
+        cols_in_schema = [col for col in cols if col in schema_cols]
         query = strip_margin(
             f"""SELECT
-            |  * EXCEPT ({cols_to_str(cols)})
+            |  * EXCEPT ({cols_to_str(cols_in_schema)})
             |FROM {quote(self._alias)}"""
         )
         return self._apply_query(query)
@@ -364,7 +376,7 @@ class DataFrame:
     def join(
         self,
         other: "DataFrame",
-        on: Optional[Union[StringOrColumn, List[StringOrColumn]]] = None,
+        on: Optional[Union[StringOrColumn, Sequence[StringOrColumn]]] = None,
         how: Optional[str] = None,
     ):
         """Joins with another :class:`DataFrame`, using the given join expression.
@@ -532,7 +544,7 @@ class DataFrame:
                 semi = True
             if how.endswith("anti"):
                 anti = True
-                other = other.withColumn(anti_join_presence_col_name, "1")
+                other = other.withColumn(anti_join_presence_col_name, Column("TRUE"))
         else:
             join_str = "JOIN"
         if isinstance(on, str):
@@ -628,26 +640,29 @@ class DataFrame:
         """
         print(self.compile())
 
-    def select(self, *columns: Union[List[StringOrColumn], StringOrColumn]) -> "DataFrame":
+    def select(self, *columns: Union[Sequence[StringOrColumn], StringOrColumn]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
+        cols: Sequence[StringOrColumn]
         if isinstance(columns[0], list):
             if len(columns) == 1:
-                columns = columns[0]
+                cols = columns[0]
             else:
                 raise TypeError(f"Wrong argument type: {type(columns)}")
+        else:
+            cols = typing.cast(Tuple[StringOrColumn], columns)
         query = strip_margin(
             f"""SELECT
-            |{cols_to_str(columns, 2)}
+            |{cols_to_str(cols, 2)}
             |FROM {quote(self._alias)}"""
         )
         return self._apply_query(query)
 
-    def select_nested_columns(self, columns: Dict[str, StringOrColumn]) -> "DataFrame":
+    def select_nested_columns(self, columns: Mapping[str, StringOrColumn]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
         Unlike the :func:`select` method, this method works on repeated elements
         and records (arrays and arrays of struct).
 
-        The syntax for column names works as follow:
+        The syntax for column names works as follows:
         - "." is the separator for struct elements
         - "!" must be appended at the end of fields that are repeated
         - Corresponding column expressions must use the complete field names for non-repeated structs
@@ -783,12 +798,12 @@ class DataFrame:
         :param cols:
         :return:
         """
-        cols = [col.expr for col in str_to_col(cols)]
+        str_cols = [col.expr for col in str_to_cols(cols)]
         query = strip_margin(
             f"""
             |SELECT *
             |FROM {quote(self._alias)}
-            |ORDER BY {cols_to_str(cols)}"""
+            |ORDER BY {cols_to_str(str_cols)}"""
         )
         return self._apply_query(query)
 
@@ -915,7 +930,7 @@ class DataFrame:
                 f"Columns in second DataFrame: [{cols_to_str(other.columns)}]"
             )
 
-        def optional_comma(_list: List[object]):
+        def optional_comma(_list: Sequence[object]):
             return "," if len(_list) > 0 else ""
 
         query = strip_margin(

@@ -17,6 +17,8 @@ tabulate = "^0.8.10"
 tqdm = "^4.64.0"
 
 [tool.poetry.dev-dependencies]
+types-tqdm = "^4.64.6"
+types-tabulate = "^0.8.11"
 black = "^22.6.0"
 isort = "^5.10.1"
 flake8 = "^5.0.4"

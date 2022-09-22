@@ -10,7 +10,7 @@ from bigquery_frame.data_diff.package import (
     IS_EQUAL_COL_NAME,
     Predicates,
 )
-from bigquery_frame.utils import quote, str_to_col, strip_margin
+from bigquery_frame.utils import quote, str_to_cols, strip_margin
 
 
 class SchemaDiffResult:
@@ -35,16 +35,16 @@ class DiffResult:
         schema_diff_result: SchemaDiffResult,
         diff_shards: List[DataFrame],
         join_cols: List[str],
-        diff_format_options: Optional[DiffFormatOptions] = DiffFormatOptions(),
+        diff_format_options: DiffFormatOptions = DiffFormatOptions(),
     ):
         self.schema_diff_result = schema_diff_result
         self.diff_shards = diff_shards
         self.join_cols = join_cols
         self.diff_format_options = diff_format_options
-        self._changed_df_shards = None
-        self._changed_df = None
-        self._diff_df = None
-        self._diff_stats = None
+        self._changed_df_shards: Optional[List[DataFrame]] = None
+        self._changed_df: Optional[DataFrame] = None
+        self._diff_df: Optional[DataFrame] = None
+        self._diff_stats: Optional[DiffStats] = None
 
     @property
     def same_schema(self):
@@ -119,7 +119,7 @@ class DiffResult:
         for df in dfs:
             is_equal = is_equal & df[IS_EQUAL_COL_NAME]
         selected_columns = (
-            str_to_col(join_cols)
+            str_to_cols(join_cols)
             + [f.expr(f"{df._alias}.* EXCEPT ({cols_to_str(excluded_common_cols)})") for df in dfs]
             + [first_df[EXISTS_COL_NAME], is_equal.alias(IS_EQUAL_COL_NAME)]
         )

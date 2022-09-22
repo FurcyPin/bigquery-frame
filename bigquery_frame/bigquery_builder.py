@@ -44,7 +44,6 @@ class BigQueryBuilder(HasBigQueryClient):
         return super()._execute_query(query, use_query_cache=use_query_cache, try_count=try_count)
 
     def _registerDataFrameAsTempView(self, df: "DataFrame", alias: str) -> None:
-        # self._check_alias(alias, [])
         self._views[alias] = df
 
     def _registerDataFrameAsTempTable(self, df: "DataFrame", alias: Optional[str] = None) -> "DataFrame":
