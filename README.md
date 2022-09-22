@@ -384,6 +384,13 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 
 ## Release Notes
 
+### 0.4.2
+
+- The BigQueryBuilder now aggregates stats about the total number of bytes processed and billed. 
+  This is useful to check how much you spend after running a diff (^ ^)  
+  It can be displayed with `print(bq.stats.human_readable())`
+
+
 ### 0.4.1
 
 - Added `DataFrame.write` feature. It currently supports partitioning, table-level options, and several insertion modes:
