@@ -144,6 +144,7 @@ class DataFrame:
         alias: Optional[str],
         bigquery: "BigQueryBuilder",
         deps: Optional[List["DataFrame"]] = None,
+        _ignore_debug: bool = False,
     ):
         self.query = query
         if deps is None:
@@ -157,6 +158,14 @@ class DataFrame:
         self._alias = alias
         self.bigquery: "BigQueryBuilder" = bigquery
         self._schema: Optional[List[SchemaField]] = None
+        if self.bigquery.debug and not _ignore_debug:
+            self.__validate()
+
+    def __validate(self):
+        """Compiles this :class:`DataFrame's` SQL and send it to BigQuery to validate that the query is correct.
+        Used in debug mode.
+        """
+        self.bigquery._execute_query(self.limit(0, _ignore_debug=True).compile(), use_query_cache=False)
 
     def __repr__(self):
         return f"""DataFrame('{self.query}) as {self._alias}')"""
@@ -209,10 +218,12 @@ class DataFrame:
         else:
             raise TypeError("unexpected item type: %s" % type(item))
 
-    def _apply_query(self, query: str, deps: Optional[List["DataFrame"]] = None) -> "DataFrame":
+    def _apply_query(
+        self, query: str, deps: Optional[List["DataFrame"]] = None, _ignore_debug: bool = False
+    ) -> "DataFrame":
         if deps is None:
             deps = [self]
-        return DataFrame(query, None, self.bigquery, deps=deps)
+        return DataFrame(query, None, self.bigquery, deps=deps, _ignore_debug=_ignore_debug)
 
     def _compute_schema(self):
         df = self.limit(0)
@@ -575,10 +586,10 @@ class DataFrame:
         )
         return self._apply_query(query, deps=[self, other])
 
-    def limit(self, num: int) -> "DataFrame":
+    def limit(self, num: int, _ignore_debug: bool = False) -> "DataFrame":
         """Returns a new :class:`DataFrame` with a result count limited to the specified number of rows."""
         query = f"""SELECT * FROM {quote(self._alias)} LIMIT {num}"""
-        return self._apply_query(query)
+        return self._apply_query(query, _ignore_debug=_ignore_debug)
 
     def persist(self) -> "DataFrame":
         """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
