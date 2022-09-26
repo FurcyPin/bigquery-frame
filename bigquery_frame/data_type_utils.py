@@ -2,6 +2,7 @@ from typing import Generator, List, Optional, Tuple
 
 from google.cloud.bigquery import SchemaField
 
+from bigquery_frame.dataframe import is_repeated
 from bigquery_frame.utils import assert_true
 
 BIGQUERY_TYPE_ALIASES = {
@@ -85,23 +86,23 @@ def list_wider_types(tpe: str) -> Generator[str, None, None]:
             next_type = BIGQUERY_TYPE_CONVERSIONS.get(current_type, None)
 
 
-def find_wider_type_for_two(t1: str, t2: str) -> Optional[str]:
+def find_wider_type_for_string_types(t1: str, t2: str) -> Optional[str]:
     """Find the smallest common type into which the two given type can both be cast.
     Returns None if no such type exists.
 
     Based on: https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules
 
-    >>> find_wider_type_for_two("INT64", "DECIMAL")
+    >>> find_wider_type_for_string_types("INT64", "DECIMAL")
     'NUMERIC'
-    >>> find_wider_type_for_two("TINYINT", "INTEGER")
+    >>> find_wider_type_for_string_types("TINYINT", "INTEGER")
     'INT64'
-    >>> find_wider_type_for_two("DECIMAL", "FLOAT64")
+    >>> find_wider_type_for_string_types("DECIMAL", "FLOAT64")
     'FLOAT64'
-    >>> find_wider_type_for_two("DATE", "TIMESTAMP")
+    >>> find_wider_type_for_string_types("DATE", "TIMESTAMP")
     'TIMESTAMP'
-    >>> find_wider_type_for_two("DATE", "TIME")
+    >>> find_wider_type_for_string_types("DATE", "TIME")
     'STRING'
-    >>> find_wider_type_for_two("ARRAY<INT>", "INT")
+    >>> find_wider_type_for_string_types("WRONG_TYPE", "INT")
 
     :param t1: a BigQuery type
     :param t2: another BigQuery type
@@ -114,6 +115,15 @@ def find_wider_type_for_two(t1: str, t2: str) -> Optional[str]:
     return None
 
 
+def find_common_type_for_fields(left_field: SchemaField, right_field: SchemaField):
+    if is_repeated(right_field) != is_repeated(left_field):
+        return None
+    elif right_field.field_type == left_field.field_type:
+        return None
+    else:
+        return find_wider_type_for_string_types(left_field.field_type, right_field.field_type)
+
+
 def get_common_columns(
     left_schema: List[SchemaField], right_schema: List[SchemaField]
 ) -> List[Tuple[str, Optional[str]]]:
@@ -124,8 +134,8 @@ def get_common_columns(
 
     >>> from bigquery_frame import BigQueryBuilder
     >>> bq = BigQueryBuilder()
-    >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as d, 'a' as a''')
-    >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as d, ['a'] as a''')
+    >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as d, 'a' as a, 'x' as b''')
+    >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as d, ['a'] as a, 'x' as c''')
     >>> get_common_columns(df1.schema, df2.schema)
     [('id', None), ('d', 'FLOAT64'), ('a', None)]
 
@@ -140,14 +150,6 @@ def get_common_columns(
         for name, left_field in left_fields.items():
             if name in right_fields:
                 right_field: SchemaField = right_fields[name]
-                if left_field:
-                    if right_field.field_type == left_field.field_type:
-                        yield name, None
-                    else:
-                        common_type = find_wider_type_for_two(left_field.field_type, right_field.field_type)
-                        if common_type is not None:
-                            yield name, common_type
-                        else:
-                            yield name, None
+                yield name, find_common_type_for_fields(left_field, right_field)
 
     return list(get_columns())
