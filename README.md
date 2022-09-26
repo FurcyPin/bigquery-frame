@@ -11,8 +11,9 @@
 
 ## What is it ?
 
-This project is a POC that aims to showcase the wonders that could be done if BigQuery provided a DataFrame API in 
-Python similar to the one already available with PySpark or Snowpark (for which the Python API will come out soon).
+This project started as a POC that aimed to showcase the wonders that could be done if BigQuery provided a DataFrame API in 
+Python similar to the one already available with PySpark or Snowpark.
+With time, I started to add more and more [cool features :sunglasses:](#cool-features).
 
 I tried to reproduce the most commonly used methods of the Spark DataFrame object. I aimed at making something 
 as close as possible as PySpark, and tried to keep exactly the same naming and docstrings as PySpark's DataFrames.
@@ -86,6 +87,85 @@ several things that are much harder, or even impossible, in pure-SQL:
 - higher level abstraction
 
 But that deserves [a blog article](https://towardsdatascience.com/sql-jinja-is-not-enough-why-we-need-dataframes-4d71a191936d).
+
+
+## I want to try bigquery-frame, how do I use it ?
+
+[bigquery-frame is available on PyPi](https://pypi.org/project/bigquery-frame/).
+
+### 1. Install bigquery-frame
+
+```bash
+pip install bigquery-frame
+```
+
+### 2. Configure access to your BigQuery project.
+
+There are three possible methods detailed in [AUTH.md](/AUTH.md):
+
+#### The quickest way
+Either run `gcloud auth application-default login` and set the environment variable `GCP_PROJECT` to your project name.
+If you do that bigquery-frame will inherit use own credentials.
+
+#### The safest way
+Create a service account, configure its rights and set the environment variable `GCP_CREDENTIALS_PATH` to point to
+your service account's credential file.
+
+#### The custom way
+Create a `google.cloud.bigquery.Client` object yourself and pass it to the `BigQueryBuilder`.
+
+
+### 3. Open your favorite python console / notebook and enjoy
+
+```python
+from bigquery_frame import BigQueryBuilder
+bq = BigQueryBuilder()
+df = bq.table('bigquery-public-data.utility_us.country_code_iso')
+df.printSchema()
+df.show()
+```
+
+## How does it work ?
+
+Very simply, by generating SQL queries that are sent to BigQuery.
+You can get the query by calling the method `DataFrame.compile()`.
+
+For instance, if we reuse the example from the beginning:
+```
+print(df2.compile())
+```
+
+This will print the following SQL query:
+```SQL
+WITH pokedex AS (
+  WITH _default_alias_1 AS (
+    
+        SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col
+        UNION ALL
+        SELECT 2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, NULL as other_col
+    
+  )
+  SELECT 
+    id,
+    name,
+    types
+  FROM _default_alias_1
+)
+, _default_alias_3 AS (
+  SELECT * FROM pokedex
+)
+, _default_alias_4 AS (
+  SELECT 
+    *,
+    ARRAY_LENGTH(types) AS nb_types
+  FROM _default_alias_3
+)
+SELECT 
+  * REPLACE (
+    LOWER(name) AS name
+  )
+FROM _default_alias_4
+```
 
 
 ## Cool Features
@@ -196,7 +276,7 @@ such as count, count distinct, count null, min, max, top 100 most frequent value
 
 - Optimized to work on wide tables
 - Custom aggregation functions can be added
-- Aggregations can be grouped against one or a tuple of columns
+- Aggregations can be grouped against one or several columns
 
 **Example:**
 ```python
@@ -260,77 +340,118 @@ analyze(df, group_by="evolution.can_evolve", _aggs=aggs).orderBy('group.can_evol
 ```
 
 
-## I want to try this POC, how do I use it ?
-
-Just clone this repository, open PyCharm, and follow the
-instructions in the [AUTH.md](/AUTH.md) documentation
-to set up your connection to BigQuery. Then, go fiddle
-with the [demo](/examples/demo.py), or have a look at the [examples](/examples).
-
-
-## How does it work ?
-
-Very simply, by generating SQL queries that are sent to BigQuery.
-You can get the query by calling the method `DataFrame.compile()`.
-
-For instance, if we reuse the example from the beginning:
-```
-print(df2.compile())
-```
-
-This will print the following SQL query:
-```SQL
-WITH pokedex AS (
-  WITH _default_alias_1 AS (
-    
-        SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col
-        UNION ALL
-        SELECT 2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, NULL as other_col
-    
-  )
-  SELECT 
-    id,
-    name,
-    types
-  FROM _default_alias_1
-)
-, _default_alias_3 AS (
-  SELECT * FROM pokedex
-)
-, _default_alias_4 AS (
-  SELECT 
-    *,
-    ARRAY_LENGTH(types) AS nb_types
-  FROM _default_alias_3
-)
-SELECT 
-  * REPLACE (
-    LOWER(name) AS name
-  )
-FROM _default_alias_4
-```
-
 ## Billing
 
-The examples in this code only use generated data and don't ready any "real" table.
-This means that you won't be charged a cent running them.
+All queries are run on BigQuery, so BigQuery usual billing will apply on your queries. 
+The following operations trigger a query execution: 
 
-Also, even when reading "real" tables, any one-the-fly introspection (such as
-getting a DataFrame's schema), will trigger a query on BigQuery but will read
-0 rows, and will thus be billed 0 cent.
+- `df.show()`
+- `df.persist()`
+- `df.createOrReplaceTempTable()`
+- `df.write`
+
+The operation `df.schema` also triggers a query execution, but it uses a `LIMIT 0`, which will make BigQuery return 
+0 rows and charge **0 cent** for it.
+
+### Query caching
+
+Since version 0.4.0, the queries generated by bigquery-frame are now 100% deterministic, so executing the same
+DataFrame code twice should send the same SQL query to BigQuery, thus leveraging BigQuery's query caching.
+
+### Accessing billing stats
+Since version 0.4.2, the BigQueryBuilder gather statistics about billing.
+
+Example:
+```python
+from bigquery_frame import BigQueryBuilder
+bq = BigQueryBuilder()
+df = bq.sql(f"SELECT 1 as a").persist()
+df.show()
+print(bq.stats.human_readable())
+```
+will print:
+```
++---+
+| a |
++---+
+| 1 |
++---+
+Estimated bytes processed : 8.00 B
+Total bytes processed : 8.00 B
+Total bytes billed : 10.00 MiB
+```
+_The number of bytes billed is larger because BigQuery applies a minimal pricing on all queries run 
+to account for execution overhead (except those with `LIMIT 0`)._
+More details in the [BigQuery Documentation](https://cloud.google.com/bigquery/pricing#on_demand_pricing).
+
+### Cost of advanced transformations 
+Some advanced transformations, like `analyze` and `DataframeComparator.compare_df`, persist intermediary results.
+
+- `analyze` scans each column of the table exactly once, and stores very small intermediary results, which should
+  cost no more than 10 MiB per 50 column in the table analyzed. This is negligible and the cost of analyze
+  should be comparable to that of a regular `SELECT *`.
+
+- `DataframeComparator.compare_df` persists multiple intermediary results, which should never exceed 2 times the size
+  of the input tables. It also has a built-in security to prevent any combinatorial explosion, should the user provide
+  a join key that has duplicate. Overall, the cost of a diff should be comparable to scanning both input tables 
+  4 to 6 times.
+
+
+## Debugging
+
+If you have already used Spark, you probably remember times when you tried to troubleshoot
+a complex transformation pipeline but had trouble finding at which exact line the bug was hidden,
+because Spark's lazy evaluation often makes it crash *several steps **after*** the actual buggy line.
+
+To make debugging easier, I added a `debug` flag that when set to True, will validate each transformation
+step instead of doing a lazy evaluation at the end. 
+
+Examples:
+```python
+from bigquery_frame import BigQueryBuilder
+bq = BigQueryBuilder(client)
+df1 = bq.sql("""SELECT 1 as a""")
+
+# This line is wrong, but since we don't fetch any result here, the error will be caught later.
+df2 = df1.select("b")  
+
+# The execution fails at this line.
+df2.show()  
+```
+
+```python
+from bigquery_frame import BigQueryBuilder
+bq = BigQueryBuilder(client)
+
+# This time, we activate the "debug mode"
+bq.debug = True
+
+df1 = bq.sql("""SELECT 1 as a""")
+
+# Since debug mode is enabled, the execution will fail at this line.
+df2 = df1.select("b")  
+
+df2.show()
+```
+
+Of course, this is costly in performance, *even if query validation does not 
+incur extra query costs*, and it is advised to keep this
+option to `False` by default and use it only for troubleshooting.
+
 
 ## Known limitations
 
-Since this is a POC, I took some shortcuts and did not try to optimize the query length.
-In particular, this uses _**a lot**_ of CTEs, and any serious project trying to use it
-might reach the maximum query length very quickly.
+This project started as a POC, and while I keep improving it with time, 
+I did take some shortcuts and did not try to optimize the query length.
+In particular, bigquery-frame generates _**a lot**_ of CTEs, and any 
+serious project trying to use it might reach the maximum query length very quickly.
 
 Here is a list of other known limitations, please also see the 
 [Further developments](#further-developments) section for a list of missing features.
 
 - `DataFrame.withColumn`: 
-  - unlike in Spark, replacing an existing column is  
-    not done automatically, an extra argument `replace=True` must be passed.
+  - unlike in Spark, replacing an existing column is not done 
+    automatically, an extra argument `replace=True` must be passed.
 - `DataFrame.createOrReplaceTempView`: 
   - I kept the same name as Spark for consistency, but it does not create an actual view on BigQuery, it just emulates 
     Spark's behaviour by using a CTE. Because of this, if you replace a temp view that already exists, the new view
@@ -342,29 +463,76 @@ Here is a list of other known limitations, please also see the
 
 ## Further developments
 
-Functions not supported yet :
+Functions not supported yet:
 
 - `DataFrame.groupBy`
+- UDTFs such as `explode`, `explode_outer`, etc. 
+
+Other improvements:
+
+- One main improvement would be to make DataFrame more _schema-conscious_.
+  Currently, the only way we get to know a DataFrame's schema is by making 
+  a round-trip with BigQuery. Ideally, we could improve this so that simple 
+  well-defined transformations would update the DataFrame schema directly 
+  on the client side. Of course, we would always have to ask BigQuery when 
+  evaluating raw SQL expressions (e.g. `BigQueryBuilder.sql`, `functions.expr`).
+- Another improvement would be to optimize the size of the generated query 
+  and being able to generate only one single SELECT statement combining multiple
+  steps like JOINS, GROUP BY, HAVING etc. rather than doing one CTE for each step.
+
 
 Also, it would be cool to expand this to other SQL engines than BigQuery 
-(contributors are welcome ;-) ).
+(contributors are welcome :wink: ).
+
+
+## Similar projects
+
+
+### Ibis project
+[ibis-project](https://github.com/ibis-project/ibis) provides a Python API inspired by pandas and dplyr that 
+generates queries against multiple analytics (SQL or DataFrame-based) backends, such as Pandas, Dask, PySpark
+and [BigQuery](https://github.com/ibis-project/ibis-bigquery).
+
+I played with ibis very shortly, so I might have misunderstood some parts, but from my understanding, 
+I noted the following differences between bigquery-frame and ibis-bigquery:
+
+Unlike bigquery-frame (at least for now), Ibis is always _schema-conscious_ which has several upsides:
+- If you select a column that does not exist from a DataFrame, ibis will detect it immediately, 
+  while bigquery-frame will only see once the query is executed, unless if the debug mode is active.
+- Ibis is capable of finding from which DataFrame a column comes from after a join, 
+  while bigquery-frame isn't at the moment.
+- Ibis's query compilation is also more advanced and the SQL queries generated by ibis are much shorter and
+  cleaner than the ones generated by bigquery-frame for the moment.
+
+But this also have some downsides:
+- Since ibis always requires to know the exact schema of an expression, it seems to be unable to evaluate
+  raw SQL expression at the moment, which bigquery-frame can. This is especially useful if you want to use
+  "that brand-new SQL feature that was just added in BigQuery": with bigquery-frame you can always revert to 
+  pure-SQL, while with ibis you must wait until that feature is integrated into ibis.
+
+Another key difference between ibis-bigquery and bigquery-frame is that ibis-bigquery is part of a larger
+cross-platform framework, while bigquery-frame only support BigQuery at the moment. This allows bigquery-frame
+to support more easily some of BigQuery's exotic features. For instance bigquery-frame offers a good 
+support for nested repeated fields (array of structs) thanks to the `flatten_schema` function, 
+and the `functions.transform`, `DataFrame.with_nested_columns` and `DataFrame.select_nested_columns` functions.
+ 
+I plan to address most of bigquery-frame's downsides in the future, whenever I get the time. 
 
 
 ## Why did I make this ?
 
 I hope that it will motivate the teams working on BigQuery (or Redshift, 
 or Azure Synapse) to propose a real python DataFrame API on top of their 
-massively parallel SQL engines. But not something ugly like this POC,
-that generates SQL strings, more something like Spark Catalyst, which directly
-generates logical plans out of the DataFrame API without passing through the 
-"SQL string" step.
+massively parallel SQL engines. But not something that generates ugly SQL strings, 
+more something like Spark Catalyst, which directly generates logical plans 
+out of the DataFrame API without passing through the "SQL string" step.
 
 After starting this POC, I realized Snowflake already understood this and 
 developed Snowpark, a Java/Scala (and soon Python) API to run complex workflows
 on Snowflake, and [Snowpark's DataFrame API](https://docs.snowflake.com/en/developer-guide/snowpark/reference/scala/com/snowflake/snowpark/DataFrame.html)
 which was clearly borrowed from [Spark's DataFrame (= DataSet[Row]) API](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/Dataset.html)
 (we recognize several key method names: cache, createOrReplaceTempView, 
-where/filter, collect, toLocalIterator). 
+where/filter, collect, toLocalIterator).
 
 I believe such project could open the gate to hundreds of very cool applications.
 For instance, did you know that, in its early versions at least, Dataiku Shaker 
@@ -377,9 +545,23 @@ platforms, like [Malloy](https://github.com/looker-open-source/malloy), could
 all use the same DataFrame abstraction. Adding support for a new SQL platform
 would immediately allow all the project based on it to support this new platform.
 
-**I would be very interested if someone could make a similar POC with, 
-RedShift, Postgres, Azure Synapse, or any other SQL engines 
-(aside from Spark-SQL and Snowpark, of course :-p).**
+I recently discovered several other projects that have similar goals:
+- [ibis-project](https://github.com/ibis-project/ibis) that provides a unified pandas-like API on top of several
+  backends such as Pandas, Dask, Postgres, DuckDB, PySpark, BigQuery (cf the [comparison above](#ibis-project))
+- [substrait](https://substrait.io/) aims at providing a formal universal serialization specification for 
+  expressing relational-algebra transformations. The idea is to abstract the query plan from the syntax 
+  in which it was expressed by using a single common query plan representation for everyone. Maybe one day,
+  if this project becomes mainstream enough, we will have code written with PySpark, Pandas or SQL generate 
+  an abstract query plan **using the same specification**, which could then be run by Dask, BigQuery, or Snowflake.
+  Personally, I'm afraid that the industry is moving too fast to allow such initiative to catch up and 
+  become prevalent one day, but of course I would LOVE to be proven wrong there.
+
+Given that the ibis-project is much more advanced than mine when it comes to multilingualism, I think
+I will pursue my efforts into deep-diving more advanced features for BigQuery only.
+Perhaps one day I or someone else will port them to the ibis-project.
+
+Would anyone be interested in trying to POC an extension of this project to RedShift, Postgres, Azure Synapse, 
+or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 
 ## Release Notes
@@ -389,6 +571,8 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
 - The BigQueryBuilder now aggregates stats about the total number of bytes processed and billed. 
   This is useful to check how much you spend after running a diff (^ ^)  
   It can be displayed with `print(bq.stats.human_readable())`
+- Added a [`BigQueryBuilder.debug` attribute](#debugging). When set to true, each step of a DataFrame 
+  transformation flow will be validated instead of compiling the query lazily when we need to fetch a result.
 
 
 ### 0.4.1
@@ -398,7 +582,7 @@ RedShift, Postgres, Azure Synapse, or any other SQL engines
   - `overwrite`: Replace destination table with the new data if it already exists.
   - `error` or `errorifexists`: Throw an exception if destination table already exists.
   - `ignore`: Silently ignore this operation if destination table already exists.
-- `BigQueryBuilder` now tries to create it's own bigquery client if none is passed
+- `BigQueryBuilder` now tries to create its own BigQuery client if none is passed
 
 ### 0.4.0
 
