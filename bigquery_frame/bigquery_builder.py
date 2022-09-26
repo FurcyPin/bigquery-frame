@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class BigQueryBuilder(HasBigQueryClient):
-    def __init__(self, client: Optional[Client] = None, use_session: bool = True):
+    def __init__(self, client: Optional[Client] = None, use_session: bool = True, debug: bool = False):
         if client is None:
             client = get_bq_client()
         super().__init__(client, use_session)
@@ -22,6 +22,7 @@ class BigQueryBuilder(HasBigQueryClient):
         self._temp_table_count = 0
         self._views: Dict[str, "DataFrame"] = {}
         self._temp_tables: Set[str] = set()
+        self.debug = debug
 
     def table(self, full_table_name: str) -> "DataFrame":
         """Returns the specified table as a :class:`DataFrame`."""
