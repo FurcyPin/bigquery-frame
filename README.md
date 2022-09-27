@@ -89,7 +89,7 @@ several things that are much harder, or even impossible, in pure-SQL:
 But that deserves [a blog article](https://towardsdatascience.com/sql-jinja-is-not-enough-why-we-need-dataframes-4d71a191936d).
 
 
-## I want to try bigquery-frame, how do I use it ?
+## Installation
 
 [bigquery-frame is available on PyPi](https://pypi.org/project/bigquery-frame/).
 
@@ -177,7 +177,63 @@ _Just like git diff, but for data!_
 
 Performs a diff between two dataframes.
 
-**Example:**
+It can be called from Python or directly via the command line if you made a `pip install bigquery-frame`.
+
+**Example with the command line:**
+
+_Please make sure you followed the [Installation section](#installation) first._
+In this example, I compared two snapshots of the public table `bigquery-public-data.utility_us.country_code_iso`
+made at 6 days interval and noticed that a bug had been introduced, as you can see from the diff: the new values
+for the columns `continent_code` and `continent_name` look like they have been inverted.
+
+```bash
+$ bq-diff --tables test_us.country_code_iso_snapshot_20220921 test_us.country_code_iso_snapshot_20220927 --join-cols country_name
+
+Analyzing differences...
+We will try to find the differences by joining the DataFrames together using the provided column: country_name
+100%|███████████████████████████████████████████████████████████████████████████████████| 1/1 [00:04<00:00,  4.66s/it]
+Schema: ok (10)
+
+diff NOT ok
+
+Summary:
+
+Row count ok: 278 rows
+
+28 (10.07%) rows are identical
+250 (89.93%) rows have changed
+
+100%|███████████████████████████████████████████████████████████████████████████████████| 1/1 [00:04<00:00,  4.67s/it]
+Found the following differences:
++----------------+---------------+---------------+--------------------+----------------+
+|    column_name | total_nb_diff |          left |              right | nb_differences |
++----------------+---------------+---------------+--------------------+----------------+
+| continent_code |           250 |            NA |          Caribbean |             26 |
+| continent_code |           250 |            AF |     Eastern Africa |             20 |
+| continent_code |           250 |            AS |       Western Asia |             18 |
+| continent_code |           250 |            AF |     Western Africa |             17 |
+| continent_code |           250 |            EU |    Southern Europe |             16 |
+| continent_code |           250 |            EU |    Northern Europe |             15 |
+| continent_code |           250 |            SA |      South America |             14 |
+| continent_code |           250 |            AS | South-Eastern Asia |             11 |
+| continent_code |           250 |            EU |     Eastern Europe |             10 |
+| continent_code |           250 |            OC |          Polynesia |             10 |
+| continent_name |           250 |        Africa |                 AF |             58 |
+| continent_name |           250 |          Asia |                 AS |             54 |
+| continent_name |           250 |        Europe |                 EU |             53 |
+| continent_name |           250 | North America |                 NA |             39 |
+| continent_name |           250 |       Oceania |                 OC |             26 |
+| continent_name |           250 | South America |                 SA |             15 |
+| continent_name |           250 |    Antarctica |                 AN |              5 |
++----------------+---------------+---------------+--------------------+----------------+
+```
+
+An equivalent analysis made with Python is available 
+at [examples/data_diff/country_code_iso.py](examples/data_diff/country_code_iso.py).
+
+**Example with Python:**
+
+_Please make sure you followed the [Installation section](#installation) first._
 ```python
 from bigquery_frame.data_diff import DataframeComparator
 from bigquery_frame import BigQueryBuilder
@@ -264,6 +320,8 @@ Analyzing 4 columns ...
 |             3 | my_array!.c |     INTEGER |     1 |              1 |          0 |   3 |   3 | [{'value': '3', 'count': 1}] |
 +---------------+-------------+-------------+-------+----------------+------------+-----+-----+------------------------------+
 ```
+
+#### Features
 
 - Full support of nested records
 - (improvable) support for repeated records
@@ -573,6 +631,7 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
   It can be displayed with `print(bq.stats.human_readable())`
 - Added a [`BigQueryBuilder.debug` attribute](#debugging). When set to true, each step of a DataFrame 
   transformation flow will be validated instead of compiling the query lazily when we need to fetch a result.
+- Added a `bq-diff` command that can be called directly from bash. Run `bq-diff --help` for more information. 
 
 
 ### 0.4.1
