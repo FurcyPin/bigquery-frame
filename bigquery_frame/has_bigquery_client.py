@@ -2,10 +2,15 @@ import copy
 import sys
 import traceback
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, List, Optional, TypeVar, cast
 
 from google.api_core.exceptions import BadRequest, InternalServerError
-from google.cloud.bigquery import ConnectionProperty, QueryJob, QueryJobConfig
+from google.cloud.bigquery import (
+    ConnectionProperty,
+    QueryJob,
+    QueryJobConfig,
+    SchemaField,
+)
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.table import RowIterator
 
@@ -13,6 +18,8 @@ from bigquery_frame.units import bytes_to_human_readable
 from bigquery_frame.utils import number_lines, strip_margin
 
 DEFAULT_MAX_TRY_COUNT = 3
+
+ReturnType = TypeVar("ReturnType")
 
 
 @dataclass()
@@ -90,15 +97,22 @@ class HasBigQueryClient:
             else:
                 job_config.connection_properties = [ConnectionProperty("session_id", self.__session_id)]
 
-    def _execute_query(self, query: str, use_query_cache=True, try_count=1) -> RowIterator:
-        job_config = QueryJobConfig(use_query_cache=use_query_cache)
+    def _execute_job(
+        self,
+        query: str,
+        action: Callable[[QueryJob], ReturnType],
+        dry_run: bool,
+        use_query_cache: bool,
+        try_count: int = 1,
+    ) -> ReturnType:
+        job_config = QueryJobConfig(use_query_cache=use_query_cache, dry_run=dry_run)
 
         self._set_session_id_before_query(job_config)
         job = self.__client.query(query=query, job_config=job_config)
         self._get_session_id_after_query(job)
 
         try:
-            res = job.result()
+            res = action(job)
         except BadRequest as e:
             e.message += "\nQuery:\n" + number_lines(query, 1)
             raise e
@@ -112,7 +126,19 @@ class HasBigQueryClient:
             self.__stats.add_job_stats(job)
             return res
         print(f"Retrying query (Try n°{try_count}/{self.max_try_count})", file=sys.stderr)
-        return self._execute_query(query, use_query_cache=use_query_cache, try_count=try_count)
+        return self._execute_job(query, action, dry_run=dry_run, use_query_cache=use_query_cache, try_count=try_count)
+
+    def _get_query_schema(self, query: str) -> List[SchemaField]:
+        def action(job: QueryJob) -> List[SchemaField]:
+            return cast(List[SchemaField], job.schema)
+
+        return self._execute_job(query, action, dry_run=True, use_query_cache=False)
+
+    def _execute_query(self, query: str, use_query_cache=True) -> RowIterator:
+        def action(job: QueryJob) -> RowIterator:
+            return job.result()
+
+        return self._execute_job(query, action, dry_run=False, use_query_cache=use_query_cache)
 
     def close(self):
         self.__client.close()

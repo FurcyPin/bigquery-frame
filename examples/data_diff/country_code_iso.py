@@ -78,4 +78,3 @@ result.display(show_examples=True)
 # |                           Mayotte |                   AF |        Eastern Africa |               Africa |                    AF |
 # +-----------------------------------+----------------------+-----------------------+----------------------+-----------------------+
 # only showing top 10 rows
-

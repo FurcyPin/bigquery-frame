@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
-from google.cloud.bigquery import Client
+from google.cloud.bigquery import Client, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
 import bigquery_frame
@@ -40,9 +40,13 @@ class BigQueryBuilder(HasBigQueryClient):
     def _generate_header(self) -> str:
         return f"/* This query was generated using bigquery-frame v{bigquery_frame.__version__} */\n"
 
-    def _execute_query(self, query: str, use_query_cache=True, try_count=1) -> RowIterator:
+    def _get_query_schema(self, query: str) -> List[SchemaField]:
         query = self._generate_header() + query
-        return super()._execute_query(query, use_query_cache=use_query_cache, try_count=try_count)
+        return super()._get_query_schema(query)
+
+    def _execute_query(self, query: str, use_query_cache=True) -> RowIterator:
+        query = self._generate_header() + query
+        return super()._execute_query(query, use_query_cache=use_query_cache)
 
     def _registerDataFrameAsTempView(self, df: "DataFrame", alias: str) -> None:
         self._views[alias] = df
