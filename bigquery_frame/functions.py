@@ -92,6 +92,77 @@ def array(*cols: Union[StringOrColumn, Sequence[StringOrColumn]]) -> Column:
     return Column(f"[{cols_to_str(str_cols)}]")
 
 
+def array_agg(
+    col: StringOrColumn,
+    order_by: Optional[StringOrColumn] = None,
+    distinct: bool = False,
+    ignore_nulls: bool = False,
+    limit: Optional[int] = None,
+) -> Column:
+    """
+    Aggregates this column into an array of values.
+
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder()
+    >>> from bigquery_frame import functions as f
+    >>> df = bq.sql("SELECT * FROM UNNEST([1, 2, 3, 2, 3, 3]) as c")
+    >>> df.select(f.array_agg("c").alias("a")).show()
+    +--------------------+
+    |                  a |
+    +--------------------+
+    | [1, 2, 3, 2, 3, 3] |
+    +--------------------+
+    >>> df.select(f.array_agg("c", order_by=f.desc("c")).alias("a")).show()
+    +--------------------+
+    |                  a |
+    +--------------------+
+    | [3, 3, 3, 2, 2, 1] |
+    +--------------------+
+    >>> df.select(f.array_agg("c", order_by=f.desc("c"), limit=3).alias("a")).show()
+    +-----------+
+    |         a |
+    +-----------+
+    | [3, 3, 3] |
+    +-----------+
+    >>> df.select(f.array_agg("c", order_by="c", distinct=True).alias("a")).show()
+    +-----------+
+    |         a |
+    +-----------+
+    | [1, 2, 3] |
+    +-----------+
+    >>> null_if_even = f.when(f.col("c") % 2 == 0, f.lit(None)).otherwise(f.col("c"))
+    >>> df.select(f.array_agg(null_if_even, order_by="c", ignore_nulls=True).alias("a")).show()
+    +--------------+
+    |            a |
+    +--------------+
+    | [1, 3, 3, 3] |
+    +--------------+
+
+    :param col: a str (column name) or :class:`Column`
+    :param order_by: (optional) sort the resulting array according to this column
+    :param distinct: (optional) only keep distinct values in the resulting array
+    :param ignore_nulls: (optional) remove null values from the resulting array
+    :param limit: (optional) only keep this number of values in the resulting array
+    :return:
+    """
+    distinct_str = ""
+    ignore_nulls_str = ""
+    limit_str = ""
+    order_by_str = ""
+    if distinct:
+        distinct_str = "DISTINCT "
+    if ignore_nulls:
+        ignore_nulls_str = " IGNORE NULLS "
+    if limit:
+        limit_str = f" LIMIT {limit}"
+    if order_by is not None:
+        order_by_str = f" ORDER BY {str_to_col(order_by).expr}"
+    col_str = str_to_col(col).expr
+    return Column(f"ARRAY_AGG({distinct_str}{col_str}{ignore_nulls_str}{order_by_str}{limit_str})")
+
+
 def asc(col: StringOrColumn) -> Column:
     """Returns a sort expression based on the ascending order of the given column.
 

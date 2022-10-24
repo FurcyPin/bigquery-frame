@@ -624,6 +624,10 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 ## Release Notes
 
+### 0.4.3
+
+- Added `functions.array_agg` method.
+
 ### 0.4.2
 
 - The BigQueryBuilder now aggregates stats about the total number of bytes processed and billed. 
