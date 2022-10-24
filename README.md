@@ -627,7 +627,9 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 ### 0.4.3
 
 - Added `functions.array_agg` method.
-
+- added a first graph algorithm: `graph.connected_component` computes the connected components in a graph using the
+  "small star - large star" algorithm which is conjectured to perform in `O(n log(n))`.
+- 
 ### 0.4.2
 
 - The BigQueryBuilder now aggregates stats about the total number of bytes processed and billed. 
@@ -692,7 +694,7 @@ Several new features that make working with nested structure easier were added.
 
 #### Bugfixes
 
-- fixed various bugs in transformations.analyze
+- fixed various bugs in `transformations.analyze`
   - Was crashing on ARRAY<STRUCT<ARRAY<...>>>
   - Was crashing on columns of type BYTES
   - Columns used in group_by were analyzed, which is useless because the group is constant
