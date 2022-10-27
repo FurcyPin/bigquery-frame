@@ -378,6 +378,62 @@ def expr(expr: str) -> Column:
     return Column(expr)
 
 
+def from_base32(col: StringOrColumn) -> Column:
+    """Converts the base32-encoded input string_expr into BYTES format.
+    To convert BYTES to a base32-encoded STRING, use :func:`to_base32`.
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder()
+    >>> from bigquery_frame import functions as f
+    >>> df = bq.sql(r"SELECT 'MFRGGZDF74======' as s")
+    >>> df.select(f.from_base32('s').alias('byte_data')).show()
+    +--------------+
+    |    byte_data |
+    +--------------+
+    | b'abcde\xff' |
+    +--------------+
+
+    """
+    return _invoke_function_over_column("FROM_BASE32", col)
+
+
+def from_base64(col: StringOrColumn) -> Column:
+    """Converts the base64-encoded input string_expr into BYTES format.
+    To convert BYTES to a base64-encoded STRING, use :func:`to_base64`.
+
+    There are several base64 encodings in common use that vary in exactly which alphabet of 65 ASCII characters
+    are used to encode the 64 digits and padding. See RFC 4648 for details.
+    This function expects the alphabet [A-Za-z0-9+/=].
+
+    Examples
+    --------
+    >>> bq = BigQueryBuilder()
+    >>> from bigquery_frame import functions as f
+    >>> df = bq.sql(r"SELECT '/+A=' as s")
+    >>> df.select(f.from_base64('s').alias('byte_data')).show()
+    +-------------+
+    |   byte_data |
+    +-------------+
+    | b'\xff\xe0' |
+    +-------------+
+
+    To work with an encoding using a different base64 alphabet, you might need to compose :func:`from_base64` with
+    the :func:`replace` function. For instance, the base64url url-safe and filename-safe encoding commonly used
+    in web programming uses `-_=` as the last characters rather than `+/=`.
+    To decode a base64url-encoded string, replace `-` and `_` with `+` and `/` respectively.
+
+    >>> df.select(f.from_base64(f.replace(f.replace(f.lit('_-A='), '-', '+'),  '_', '/')).alias('binary')).show()
+    +-------------+
+    |      binary |
+    +-------------+
+    | b'\xff\xe0' |
+    +-------------+
+
+    """
+    return _invoke_function_over_column("FROM_BASE64", col)
+
+
 def hash(*cols: Union[str, Column]) -> Column:
     """Calculates the hash code of given columns, and returns the result as an int column.
 
@@ -729,9 +785,9 @@ def to_base64(col: StringOrColumn) -> Column:
     |          /+A= |
     +---------------+
 
-    To work with an encoding using a different base64 alphabet, you might need to compose TO_BASE64 with the
-    REPLACE function. For instance, the base64url url-safe and filename-safe encoding commonly used in web programming
-    uses -_= as the last characters rather than +/=. To encode a base64url-encoded string,
+    To work with an encoding using a different base64 alphabet, you might need to compose :func:`to_base64` with the
+    :func:`replace` function. For instance, the base64url url-safe and filename-safe encoding commonly used in
+    web programming uses -_= as the last characters rather than +/=. To encode a base64url-encoded string,
     replace + and / with - and _ respectively.
 
     >>> df.select(f.replace(f.replace(f.to_base64('b'), '+', '-'), '/', '_').alias('websafe_base64')).show()
