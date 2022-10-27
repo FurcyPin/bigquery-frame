@@ -631,7 +631,8 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 - Added `functions.array_agg` method.
 - added a first graph algorithm: `graph.connected_component` computes the connected components in a graph using the
   "small star - large star" algorithm which is conjectured to perform in `O(n log(n))`.
-- 
+- Added `functions.from_base_32` and `functions.from_base_64`.
+
 ### 0.4.2
 
 - The BigQueryBuilder now aggregates stats about the total number of bytes processed and billed. 
