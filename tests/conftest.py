@@ -7,13 +7,13 @@ from bigquery_frame.auth import get_bq_client
 from bigquery_frame.bigquery_builder import BigQueryBuilder
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def random_test_dataset() -> str:
     random_id = uuid4()
     return "test_dataset_" + str(random_id).replace("-", "_")
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(scope="session")
 def client(random_test_dataset: str) -> Client:
     client = get_bq_client()
     dataset = Dataset(f"{client.project}.{random_test_dataset}")
@@ -24,7 +24,7 @@ def client(random_test_dataset: str) -> Client:
     client.close()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def bq(client: Client) -> BigQueryBuilder:
     bq = BigQueryBuilder(client)
     return bq
