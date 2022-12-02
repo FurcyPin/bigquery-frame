@@ -77,7 +77,7 @@ def schema_to_simple_string(schema: List[SchemaField]):
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
     >>> print(df.schema)  # noqa: E501
-    [SchemaField('id', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, (), None)), None)]
+    [SchemaField('id', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, None, (), None)), None)]
     >>> schema_to_simple_string(df.schema)
     'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
 
