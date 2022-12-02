@@ -126,7 +126,7 @@ def assert_true(assertion: bool, error_message: str = None) -> None:
     >>> assert_true(3==4, "3 <> 4")
     Traceback (most recent call last):
     ...
-    ValueError: 3 <> 4
+    AssertionError: 3 <> 4
 
     >>> assert_true(3==3, "3 <> 4")
 
@@ -135,6 +135,6 @@ def assert_true(assertion: bool, error_message: str = None) -> None:
     """
     if not assertion:
         if error_message is None:
-            raise ValueError()
+            raise AssertionError()
         else:
-            raise ValueError(error_message)
+            raise AssertionError(error_message)
