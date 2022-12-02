@@ -106,9 +106,9 @@ class DataframeComparator:
         c1 STRING (nullable)
         c2 INTEGER (nullable)
         >>> schema = [
-        ...     SchemaField('id', 'INTEGER', 'NULLABLE', 'An id', (), None),
-        ...     SchemaField('c1', 'STRING', 'REQUIRED', 'A string column', (), None),
-        ...     SchemaField('c2', 'INTEGER', 'NULLABLE', 'An int column', (), None)
+        ...     SchemaField(name='id', field_type='INTEGER', mode='NULLABLE', description='An id'),
+        ...     SchemaField(name='c1', field_type='STRING', mode='REQUIRED', description='A string column'),
+        ...     SchemaField(name='c2', field_type='INTEGER', mode='NULLABLE', description='An int column')
         ... ]
         >>> print('\\n'.join(df_comparator._schema_to_string(schema, include_nullable=True, include_metadata=True)))
         id INTEGER (nullable) An id

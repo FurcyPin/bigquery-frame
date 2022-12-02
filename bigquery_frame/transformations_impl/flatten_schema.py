@@ -57,11 +57,11 @@ def flatten_schema(
                     mode = "REPEATED"
             return [
                 SchemaField(
-                    prefix,
-                    schema_field.field_type,
-                    mode,
-                    schema_field.description,
-                    schema_field.fields,
+                    name=prefix,
+                    field_type=schema_field.field_type,
+                    mode=mode,
+                    description=schema_field.description,
+                    fields=schema_field.fields,
                 )
             ]
 

@@ -14,10 +14,10 @@ def test_createOrReplaceTempView(bq: BigQueryBuilder):
     df2 = bq.sql("""SELECT * FROM pokedex""")
 
     expected = [
-        SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
-        SchemaField("name", "STRING", "NULLABLE", None, (), None),
-        SchemaField("types", "STRING", "REPEATED", None, (), None),
-        SchemaField("other_col", "INTEGER", "NULLABLE", None, (), None),
+        SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="name", field_type="STRING", mode="NULLABLE"),
+        SchemaField(name="types", field_type="STRING", mode="REPEATED"),
+        SchemaField(name="other_col", field_type="INTEGER", mode="NULLABLE"),
     ]
 
     assert df2.schema == expected
@@ -29,7 +29,7 @@ def test_createOrReplaceTempView_with_reserved_keyword_alias(bq: BigQueryBuilder
     bq.sql("""SELECT 1 as id""").createOrReplaceTempView("all")
     df = bq.table("all")
 
-    expected = [SchemaField("id", "INTEGER", "NULLABLE", None, (), None)]
+    expected = [SchemaField(name="id", field_type="INTEGER", mode="NULLABLE")]
 
     assert df.schema == expected
 
@@ -66,10 +66,10 @@ def test_createOrReplaceTempTable(bq: BigQueryBuilder):
     df2 = bq.sql("""SELECT * FROM pokedex""")
 
     expected = [
-        SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
-        SchemaField("name", "STRING", "NULLABLE", None, (), None),
-        SchemaField("types", "STRING", "REPEATED", None, (), None),
-        SchemaField("other_col", "INTEGER", "NULLABLE", None, (), None),
+        SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="name", field_type="STRING", mode="NULLABLE"),
+        SchemaField(name="types", field_type="STRING", mode="REPEATED"),
+        SchemaField(name="other_col", field_type="INTEGER", mode="NULLABLE"),
     ]
 
     assert df2.schema == expected
@@ -81,7 +81,7 @@ def test_createOrReplaceTempTable_with_reserved_keyword_alias(bq: BigQueryBuilde
     bq.sql("""SELECT 1 as id""").createOrReplaceTempTable("all")
     df = bq.table("all")
 
-    expected = [SchemaField("id", "INTEGER", "NULLABLE", None, (), None)]
+    expected = [SchemaField(name="id", field_type="INTEGER", mode="NULLABLE")]
 
     assert df.schema == expected
 
@@ -98,8 +98,8 @@ def test_select(bq: BigQueryBuilder):
     df = bq.sql("""SELECT 1 as c1, 2 as c2""").select("c1", "c2").select(["c1", "c2"])
 
     expected = [
-        SchemaField("c1", "INTEGER", "NULLABLE", None, (), None),
-        SchemaField("c2", "INTEGER", "NULLABLE", None, (), None),
+        SchemaField(name="c1", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="c2", field_type="INTEGER", mode="NULLABLE"),
     ]
 
     assert df.schema == expected
@@ -117,10 +117,10 @@ def test_bare_strings(bq: BigQueryBuilder):
     df5 = df4.withColumn("name", "LOWER(name)", replace=True)
 
     expected = [
-        SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
-        SchemaField("name", "STRING", "NULLABLE", None, (), None),
-        SchemaField("types", "STRING", "REPEATED", None, (), None),
-        SchemaField("nb_types", "INTEGER", "NULLABLE", None, (), None),
+        SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="name", field_type="STRING", mode="NULLABLE"),
+        SchemaField(name="types", field_type="STRING", mode="REPEATED"),
+        SchemaField(name="nb_types", field_type="INTEGER", mode="NULLABLE"),
     ]
 
     assert df5.schema == expected
@@ -176,9 +176,9 @@ def test_drop(bq: BigQueryBuilder):
     df2 = df.drop("other_col", "col_that_does_not_exists")
 
     expected = [
-        SchemaField("id", "INTEGER", "NULLABLE", None, (), None),
-        SchemaField("name", "STRING", "NULLABLE", None, (), None),
-        SchemaField("types", "STRING", "REPEATED", None, (), None),
+        SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="name", field_type="STRING", mode="NULLABLE"),
+        SchemaField(name="types", field_type="STRING", mode="REPEATED"),
     ]
 
     assert df2.schema == expected
