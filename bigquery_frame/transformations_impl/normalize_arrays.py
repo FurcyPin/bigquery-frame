@@ -1,7 +1,7 @@
 from bigquery_frame import DataFrame
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
+from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.nested import resolve_nested_columns
-from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 
 
 def normalize_arrays(df: DataFrame) -> DataFrame:

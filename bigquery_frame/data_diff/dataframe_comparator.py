@@ -16,13 +16,9 @@ from bigquery_frame.data_diff.package import (
     STRUCT_SEPARATOR_ALPHA,
     canonize_col,
 )
-from bigquery_frame.data_type_utils import get_common_columns
+from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 from bigquery_frame.dataframe import cols_to_str, is_nullable, is_repeated
-from bigquery_frame.transformations import (
-    flatten_schema,
-    harmonize_dataframes,
-    normalize_arrays,
-)
+from bigquery_frame.transformations import harmonize_dataframes, normalize_arrays
 from bigquery_frame.utils import quote, quote_columns, strip_margin
 
 
