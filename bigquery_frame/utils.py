@@ -6,8 +6,30 @@ if TYPE_CHECKING:
     from bigquery_frame.column import Column, LitOrColumn, StringOrColumn
 
 
-def strip_margin(text):
-    s = re.sub(r"\n[ \t]*\|", "\n", text)
+def strip_margin(text: str):
+    """For every line in this string, strip a leading prefix consisting of whitespace, tabs and carriage returns
+    followed by | from the line.
+
+    If the first character is a newline, it is also removed.
+    This method is inspired from Scala's String.stripMargin.
+
+    Args:
+        text:
+
+    Returns:
+        A stripped string
+
+    Examples:
+
+        >>> print(strip_margin('''
+        ...     |a
+        ...     |b
+        ...     |c'''))
+        a
+        b
+        c
+    """
+    s = re.sub(r"\n[ \t\r]*\|", "\n", text)
     if s.startswith("\n"):
         return s[1:]
     else:
