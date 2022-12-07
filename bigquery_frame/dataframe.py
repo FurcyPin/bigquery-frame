@@ -54,15 +54,15 @@ SUPPORTED_JOIN_TYPES = {
 }
 
 
-def is_repeated(schema_field: SchemaField):
+def is_repeated(schema_field: SchemaField) -> bool:
     return schema_field.mode == "REPEATED"
 
 
-def is_struct(schema_field: SchemaField):
+def is_struct(schema_field: SchemaField) -> bool:
     return schema_field.field_type == "RECORD"
 
 
-def is_nullable(schema_field: SchemaField):
+def is_nullable(schema_field: SchemaField) -> bool:
     return schema_field.mode == "NULLABLE"
 
 
