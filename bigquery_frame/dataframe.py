@@ -19,7 +19,6 @@ from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.nested import resolve_nested_columns
 from bigquery_frame.printing import print_results
-from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
 
 if TYPE_CHECKING:
@@ -1057,6 +1056,8 @@ class DataFrame:
         :param columns: a Dict[column_alias, column_expression] of columns to select
         :return:
         """
+        from bigquery_frame.data_type_utils import flatten_schema
+
         schema_flat = flatten_schema(
             self.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
         )

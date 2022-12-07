@@ -1,6 +1,5 @@
 from bigquery_frame.transformations_impl.analyze import analyze
 from bigquery_frame.transformations_impl.flatten import flatten
-from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 from bigquery_frame.transformations_impl.harmonize_dataframes import (
     harmonize_dataframes,
 )
@@ -11,7 +10,6 @@ from bigquery_frame.transformations_impl.union_dataframes import union_dataframe
 
 analyze = analyze
 flatten = flatten
-flatten_schema = flatten_schema
 harmonize_dataframes = harmonize_dataframes
 normalize_arrays = normalize_arrays
 pivot = pivot

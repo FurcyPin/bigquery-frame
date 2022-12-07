@@ -4,8 +4,7 @@ from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.column import Column
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
-from bigquery_frame.data_type_utils import get_common_columns
-from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
+from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 
 
 def harmonize_dataframes(

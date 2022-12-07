@@ -6,9 +6,9 @@ from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
+from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.transformations_impl import analyze_aggs
-from bigquery_frame.transformations_impl.flatten_schema import flatten_schema
 from bigquery_frame.transformations_impl.union_dataframes import union_dataframes
 from bigquery_frame.utils import quote
 
