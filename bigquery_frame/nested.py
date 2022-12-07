@@ -19,8 +19,8 @@ def _build_nested_struct_tree(columns: Mapping[str, StringOrColumn]) -> OrderedT
             node[alias] = column
 
     tree: OrderedTree = OrderedDict()
-    for col_name, col_type in columns.items():
-        rec_insert(tree, col_name, col_type)
+    for col_name, col_target in columns.items():
+        rec_insert(tree, col_name, col_target)
     return tree
 
 
@@ -96,7 +96,7 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
     """
     from bigquery_frame import functions as f
 
-    def aux(node: OrderedTree, prefix: str = ""):
+    def recurse(node: OrderedTree, prefix: str = ""):
         def json_if_not_sortable(col: Column, is_sortable: bool) -> Column:
             if not is_sortable:
                 return f.expr(f"TO_JSON_STRING({col.expr})")
@@ -106,7 +106,7 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
         cols = []
         for key, col_or_children in node.items():
             is_repeated = key[-1] == REPETITION_MARKER
-            is_struct = col_or_children is not None and not isinstance(col_or_children, (str, Column))
+            is_struct = isinstance(col_or_children, Dict)
             is_sortable = not (is_repeated or is_struct)
             key_no_sep = key.replace(REPETITION_MARKER, "")
             if not is_struct:
@@ -121,7 +121,7 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
                 cols.append((col.alias(key_no_sep), is_sortable))
             else:
                 if is_repeated:
-                    fields = aux(col_or_children, prefix="")
+                    fields = recurse(col_or_children, prefix="")
                     transform_col = f.struct(*[field for field, is_sortable in fields])
                     struct_col = f.transform(Column(prefix + key_no_sep), transform_col)
                     if sort:
@@ -129,14 +129,14 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
                         struct_col = f.sort_array(struct_col, sort_cols)
                     struct_col = struct_col.alias(key_no_sep)
                 else:
-                    fields = aux(col_or_children, prefix=prefix + key + STRUCT_SEPARATOR)
-                    fields = [field for field, is_array in fields]
+                    fields = recurse(col_or_children, prefix=prefix + key + STRUCT_SEPARATOR)
+                    fields = [field for field, is_sortable in fields]
                     struct_col = f.struct(*fields).alias(key_no_sep)
                 cols.append((struct_col, is_sortable))
         return cols
 
-    cols = aux(node)
-    return [col for col, is_array in cols]
+    cols = recurse(node)
+    return [col for col, is_sortable in cols]
 
 
 def resolve_nested_columns(columns: Mapping[str, StringOrColumn], sort: bool = False) -> List[Column]:
