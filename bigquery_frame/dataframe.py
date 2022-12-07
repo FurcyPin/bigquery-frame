@@ -984,7 +984,7 @@ class DataFrame:
         Unlike the :func:`withColumn` method, this method works on repeated elements
         and records (arrays and arrays of struct).
 
-        The syntax for column names works as follow:
+        The syntax for column names works as follows:
         - "." is the separator for struct elements
         - "!" must be appended at the end of fields that are repeated
         - Corresponding column expressions must use the complete field names for non-repeated structs
