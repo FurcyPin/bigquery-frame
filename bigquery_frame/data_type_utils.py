@@ -47,8 +47,11 @@ def resolve_type_alias(tpe: str) -> str:
 
     Based on: https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules
 
-    :param tpe: a BigQuery type
-    :return: the most common alias for this type
+    Args:
+        tpe: A Bigquery type
+
+    Returns:
+        The most common alias for this type
     """
     return BIGQUERY_TYPE_ALIASES.get(tpe, tpe)
 
@@ -58,17 +61,21 @@ def list_wider_types(tpe: str) -> Generator[str, None, None]:
 
     Based on: https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules
 
-    >>> list(list_wider_types("INT64"))
-    ['INT64', 'NUMERIC', 'BIGNUMERIC', 'FLOAT64', 'STRING']
-    >>> list(list_wider_types("INTEGER"))
-    ['INT64', 'NUMERIC', 'BIGNUMERIC', 'FLOAT64', 'STRING']
-    >>> list(list_wider_types("STRING"))
-    ['STRING']
-    >>> list(list_wider_types("FOO"))
-    ['FOO']
+    Args:
+        tpe: Input type
 
-    :param tpe: input type
-    :return: a generator of wider types
+    Returns:
+        A generator of wider types
+
+    Examples:
+        >>> list(list_wider_types("INT64"))
+        ['INT64', 'NUMERIC', 'BIGNUMERIC', 'FLOAT64', 'STRING']
+        >>> list(list_wider_types("INTEGER"))
+        ['INT64', 'NUMERIC', 'BIGNUMERIC', 'FLOAT64', 'STRING']
+        >>> list(list_wider_types("STRING"))
+        ['STRING']
+        >>> list(list_wider_types("FOO"))
+        ['FOO']
     """
     current_type = resolve_type_alias(tpe)
     max_loop = 10
@@ -93,21 +100,25 @@ def find_wider_type_for_string_types(t1: str, t2: str) -> Optional[str]:
 
     Based on: https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules
 
-    >>> find_wider_type_for_string_types("INT64", "DECIMAL")
-    'NUMERIC'
-    >>> find_wider_type_for_string_types("TINYINT", "INTEGER")
-    'INT64'
-    >>> find_wider_type_for_string_types("DECIMAL", "FLOAT64")
-    'FLOAT64'
-    >>> find_wider_type_for_string_types("DATE", "TIMESTAMP")
-    'TIMESTAMP'
-    >>> find_wider_type_for_string_types("DATE", "TIME")
-    'STRING'
-    >>> find_wider_type_for_string_types("WRONG_TYPE", "INT")
+    Args:
+        t1: A BigQuery type
+        t2: Another BigQuery type
 
-    :param t1: a BigQuery type
-    :param t2: another BigQuery type
-    :return: the smallest common type for the two
+    Returns:
+        The smallest common type for the two
+
+    Examples:
+        >>> find_wider_type_for_string_types("INT64", "DECIMAL")
+        'NUMERIC'
+        >>> find_wider_type_for_string_types("TINYINT", "INTEGER")
+        'INT64'
+        >>> find_wider_type_for_string_types("DECIMAL", "FLOAT64")
+        'FLOAT64'
+        >>> find_wider_type_for_string_types("DATE", "TIMESTAMP")
+        'TIMESTAMP'
+        >>> find_wider_type_for_string_types("DATE", "TIME")
+        'STRING'
+        >>> find_wider_type_for_string_types("WRONG_TYPE", "INT")
     """
     l1 = list(list_wider_types(t1))
     for t in list_wider_types(t2):
@@ -128,21 +139,25 @@ def find_common_type_for_fields(left_field: SchemaField, right_field: SchemaFiel
 def get_common_columns(
     left_schema: List[SchemaField], right_schema: List[SchemaField]
 ) -> List[Tuple[str, Optional[str]]]:
-    """Return a list of common Columns between two DataFrame schemas, along with the widest common type
-    of for the two columns.
+    """Return a list of common Columns between two DataFrame schemas, along with the widest common type for the
+    two columns.
 
-    When columns already have the same type or have incompatible types, they are simply not cast.
+    When columns already have the same type or have incompatible types, the type returned is None.
 
-    >>> from bigquery_frame import BigQueryBuilder
-    >>> bq = BigQueryBuilder()
-    >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as d, 'a' as a, 'x' as b''')
-    >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as d, ['a'] as a, 'x' as c''')
-    >>> get_common_columns(df1.schema, df2.schema)
-    [('id', None), ('d', 'FLOAT64'), ('a', None)]
+    Args:
+        left_schema: A DataFrame schema
+        right_schema: Another DataFrame schema with common columns
 
-    :param left_schema:
-    :param right_schema:
-    :return:
+    Returns:
+        A list of Columns
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as a, 'a' as b, 'x' as c''')
+        >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as a, ['a'] as b, 'x' as d''')
+        >>> get_common_columns(df1.schema, df2.schema)
+        [('id', None), ('a', 'FLOAT64'), ('b', None)]
     """
     left_fields = {field.name: field for field in left_schema}
     right_fields = {field.name: field for field in right_schema}
@@ -166,23 +181,26 @@ def flatten_schema(
     The field names are kept, with a '.' separator for struct fields.
     If `explode` option is set, arrays are exploded with a '!' separator.
 
-    Example:
-    >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame.dataframe import schema_to_simple_string
-    >>> bq = BigQueryBuilder()
-    >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
-    >>> schema_to_simple_string(df.schema)
-    'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
-    >>> schema_to_simple_string(flatten_schema(df.schema, explode=True))
-    'id:INTEGER,s.a:INTEGER,s.b!.c:INTEGER,s.b!.d:INTEGER,s.e!:INTEGER'
-    >>> schema_to_simple_string(flatten_schema(df.schema, explode=False))
-    'id:INTEGER,s.a:INTEGER,s.b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,s.e:ARRAY<INTEGER>'
+    Args:
+        schema: A DataFrame schema
+        explode: If set, arrays are exploded and an `repetition_marker` is appended to their name
+        struct_separator: String used to delimit structs
+        repetition_marker: String used to mark repeated fields
 
-    :param schema: A BigQuery DataFrame's schema
-    :param explode: If set, arrays are exploded and an `array_separator` is appended to their name.
-    :param struct_separator: separator used to delimit structs
-    :param repetition_marker: separator used to delimit arrays
-    :return:
+    Returns:
+        A flattened version of the schema
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame.dataframe import schema_to_simple_string
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
+        >>> schema_to_simple_string(df.schema)
+        'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
+        >>> schema_to_simple_string(flatten_schema(df.schema, explode=True))
+        'id:INTEGER,s.a:INTEGER,s.b!.c:INTEGER,s.b!.d:INTEGER,s.e!:INTEGER'
+        >>> schema_to_simple_string(flatten_schema(df.schema, explode=False))
+        'id:INTEGER,s.a:INTEGER,s.b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,s.e:ARRAY<INTEGER>'
     """
     from bigquery_frame.dataframe import is_nullable, is_repeated, is_struct
 
