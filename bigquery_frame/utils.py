@@ -1,6 +1,6 @@
 import math
 import re
-from typing import TYPE_CHECKING, Iterable, List
+from typing import TYPE_CHECKING, Iterable, List, Union
 
 if TYPE_CHECKING:
     from bigquery_frame.column import Column, LitOrColumn, StringOrColumn
@@ -150,21 +150,36 @@ def number_lines(string: str, starting_index: int = 1) -> str:
     return "\n".join(numbered_lines)
 
 
-def assert_true(assertion: bool, error_message: str = None) -> None:
-    """Raise a ValueError with the given error_message if the assertion passed is false
+def assert_true(assertion: bool, error: Union[str, BaseException] = None) -> None:
+    """Raise an Exception with the given error_message if the assertion passed is false.
 
+    !!! tip
+        This method is especially useful to get 100% coverage more easily, without having to write tests for every
+        single assertion to cover the cases when they fail (which are generally just there to provide a more helpful
+        error message to users when something that is not supposed to happen does happen)
+
+    Args:
+        assertion: The boolean result of an assertion
+        error: An Exception or a message string (in which case an AssertError with this message will be raised)
+
+    >>> assert_true(3==3, "3 <> 4")
     >>> assert_true(3==4, "3 <> 4")
     Traceback (most recent call last):
     ...
     AssertionError: 3 <> 4
-
-    >>> assert_true(3==3, "3 <> 4")
-
-    :param assertion: assertion that will be checked
-    :param error_message: error message to display if the assertion is false
+    >>> assert_true(3==4, ValueError("3 <> 4"))
+    Traceback (most recent call last):
+    ...
+    ValueError: 3 <> 4
+    >>> assert_true(3==4)
+    Traceback (most recent call last):
+    ...
+    AssertionError
     """
     if not assertion:
-        if error_message is None:
-            raise AssertionError()
+        if isinstance(error, BaseException):
+            raise error
+        elif isinstance(error, str):
+            raise AssertionError(error)
         else:
-            raise AssertionError(error_message)
+            raise AssertionError()
