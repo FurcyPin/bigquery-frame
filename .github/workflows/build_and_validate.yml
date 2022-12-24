@@ -45,13 +45,10 @@ jobs:
 
       - name: Linter black
         run: poetry run black --diff --check .
-
       - name: Linter isort
         run: poetry run isort --check-only bigquery_frame tests
-
       - name: Linter flake8
         run: poetry run flake8 bigquery_frame tests
-
       - name: Linter mypy
         run: poetry run mypy bigquery_frame
         # We run mypy but ignore the results as there are too many things to fix for now.
