@@ -14,7 +14,7 @@ def strip_margin(text: str):
     This method is inspired from Scala's String.stripMargin.
 
     Args:
-        text:
+        text: A multi-line string
 
     Returns:
         A stripped string
@@ -28,6 +28,14 @@ def strip_margin(text: str):
         a
         b
         c
+        >>> print(strip_margin('''a
+        ... |b
+        ...   |c
+        ...     |d'''))
+        a
+        b
+        c
+        d
     """
     s = re.sub(r"\n[ \t\r]*\|", "\n", text)
     if s.startswith("\n"):
