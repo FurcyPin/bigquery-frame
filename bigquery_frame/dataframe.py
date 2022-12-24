@@ -284,7 +284,7 @@ class DataFrame:
         """Creates or replace a persisted temporary table.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempTable("temp_table")
         >>> bq.sql("SELECT * FROM temp_table").show()
@@ -302,7 +302,7 @@ class DataFrame:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql("SELECT 1 as id")
         >>> df.createOrReplaceTempView("temp_view")
         >>> bq.sql("SELECT * FROM temp_view").show()
