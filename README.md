@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/bigquery-frame.svg)](https://badge.fury.io/py/bigquery-frame)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/bigquery-frame.svg)](https://pypi.org/project/bigquery-frame/)
-[![GitHub Build](https://img.shields.io/github/workflow/status/FurcyPin/bigquery-frame/Build%20and%20Validate)](https://github.com/FurcyPin/bigquery-frame/actions)
+[![GitHub Build](https://img.shields.io/github/actions/workflow/status/FurcyPin/bigquery-frame/build_and_validate.yml?branch=main)](https://github.com/FurcyPin/bigquery-frame/actions)
 [![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=coverage)](https://sonarcloud.io/component_measures?id=FurcyPin_bigquery-frame&metric=coverage&view=list)
 [![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=bugs)](https://sonarcloud.io/component_measures?metric=reliability_rating&view=list&id=FurcyPin_bigquery-frame)
 [![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=FurcyPin_bigquery-frame&metric=vulnerabilities)](https://sonarcloud.io/component_measures?metric=security_rating&view=list&id=FurcyPin_bigquery-frame)
