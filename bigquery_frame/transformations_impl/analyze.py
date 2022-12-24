@@ -125,7 +125,6 @@ def _analyze_column(
     col = schema_field.name
     is_repeated = "!" in col
 
-    group_alias = df._alias
     if is_repeated:
         if col[-1] == "!":
             col = col.split("!")[-2].replace(".", "")
@@ -137,7 +136,7 @@ def _analyze_column(
         group_select_1 = [f.struct(*group_by_1).alias(group_alias)] if len(group_by) > 0 else []
         df = _unnest_column(df, schema_field.name, extra_cols=group_select_1)
     else:
-        group_by_2 = [f.expr(f"{group_alias}.{quote(col)}") for col in group_by]
+        group_by_2 = [df[quote(col)] for col in group_by]
     group_select_2 = [f.struct(*group_by_2).alias(quote("group"))] if len(group_by) > 0 else []
 
     res = _select_group_by(df, *group_select_2, *[agg(col, schema_field, col_num) for agg in aggs], group_by=group_by_2)
@@ -170,7 +169,7 @@ def analyze(
     group_by: Optional[Union[str, List[str]]] = None,
     _aggs: Optional[List[Callable[[str, SchemaField, int], Column]]] = None,
     _chunk_size: int = 50,
-):
+) -> DataFrame:
     """Analyze a DataFrame by computing various stats for each column.
 
     By default, it returns a DataFrame with one row per column and the following columns
