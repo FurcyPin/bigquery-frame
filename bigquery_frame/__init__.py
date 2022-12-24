@@ -4,4 +4,4 @@ from bigquery_frame.dataframe import DataFrame
 BigQueryBuilder = BigQueryBuilder
 DataFrame = DataFrame
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
