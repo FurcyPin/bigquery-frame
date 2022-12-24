@@ -626,6 +626,11 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 ## Release Notes
 
+### 0.4.4
+
+- Breaking change: The `flatten_schema` method has been moved from `transformations` to `data_type_utils`.
+
+
 ### 0.4.3
 
 - Added `functions.array_agg` method.
