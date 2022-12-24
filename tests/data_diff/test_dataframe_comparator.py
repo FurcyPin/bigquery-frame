@@ -200,7 +200,6 @@ def test_compare_df_with_empty_and_null_arrays(bq: BigQueryBuilder, df_comparato
     THEN no difference should be found
 
     Explanation: even if the results are not identical, they will be AFTER they are persisted
-    :return:
     """
     # fmt: off
     df_1 = bq.sql("""
@@ -230,7 +229,6 @@ def test_compare_df_with_missing_empty_and_null_arrays(bq: BigQueryBuilder, df_c
     THEN differences should be found
 
     Explanation: even if the results are not identical, they will be AFTER they are persisted
-    :return:
     """
     # fmt: off
     df_1 = bq.sql("""
