@@ -1,16 +1,5 @@
 import typing
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator

@@ -5,12 +5,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional, TypeVar, cast
 
 from google.api_core.exceptions import BadRequest, InternalServerError
-from google.cloud.bigquery import (
-    ConnectionProperty,
-    QueryJob,
-    QueryJobConfig,
-    SchemaField,
-)
+from google.cloud.bigquery import ConnectionProperty, QueryJob, QueryJobConfig, SchemaField
 from google.cloud.bigquery.client import Client
 from google.cloud.bigquery.table import RowIterator
 

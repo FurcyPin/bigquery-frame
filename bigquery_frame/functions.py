@@ -3,15 +3,7 @@ from typing import Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import (
-    ArrayColumn,
-    Column,
-    LitOrColumn,
-    StringOrColumn,
-    WhenColumn,
-    cols_to_str,
-    literal_col,
-)
+from bigquery_frame.column import ArrayColumn, Column, LitOrColumn, StringOrColumn, WhenColumn, cols_to_str, literal_col
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col, str_to_cols
 

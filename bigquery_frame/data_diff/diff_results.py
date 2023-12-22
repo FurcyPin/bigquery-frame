@@ -5,11 +5,7 @@ from bigquery_frame import functions as f
 from bigquery_frame.column import cols_to_str
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
 from bigquery_frame.data_diff.diff_stats import DiffStats
-from bigquery_frame.data_diff.package import (
-    EXISTS_COL_NAME,
-    IS_EQUAL_COL_NAME,
-    Predicates,
-)
+from bigquery_frame.data_diff.package import EXISTS_COL_NAME, IS_EQUAL_COL_NAME, Predicates
 from bigquery_frame.utils import quote, str_to_cols, strip_margin
 
 
