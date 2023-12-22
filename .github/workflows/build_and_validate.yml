@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
         poetry-version: ["1.1.14"]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -57,8 +57,6 @@ jobs:
         run: poetry run bandit .
       - name: Security safety
         run: poetry run safety check
-        # We run safety but ignore the warning as some require to drop support for Python 3.7.
-        continue-on-error: true
 
       - name: Run Unit Tests
         env:

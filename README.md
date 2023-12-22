@@ -624,7 +624,14 @@ Would anyone be interested in trying to POC an extension of this project to RedS
 or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 
-## Release Notes
+## Changelog
+
+### 0.5.0
+
+Breaking changes:
+
+- Dropped support for Python 3.7 
+
 
 ### 0.4.4
 
