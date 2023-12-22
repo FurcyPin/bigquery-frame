@@ -16,14 +16,14 @@ def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = Non
         return ", ".join(str_cols)
 
 
-def literal_col(val: LitOrColumn) -> "Column":
-    if val is None:
+def literal_col(col: LitOrColumn) -> "Column":
+    if col is None:
         return Column("NULL")
-    if type(val) == str:
-        return Column(f"'{val}'")
-    if type(val) in [bool, int, float]:
-        return Column(str(val))
-    raise IllegalArgumentException(f"lit({val}): The type {type(val)} is not supported yet.")
+    if type(col) == str:
+        return Column(f"'{col}'")
+    if type(col) in [bool, int, float]:
+        return Column(str(col))
+    raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported yet.")
 
 
 def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
