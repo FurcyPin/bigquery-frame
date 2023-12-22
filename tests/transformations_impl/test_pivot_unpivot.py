@@ -1,10 +1,6 @@
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame.transformations_impl.pivot_unpivot import (
-    __get_test_pivoted_df as get_test_pivoted_df,
-)
-from bigquery_frame.transformations_impl.pivot_unpivot import (
-    __get_test_unpivoted_df as get_test_unpivoted_df,
-)
+from bigquery_frame.transformations_impl.pivot_unpivot import __get_test_pivoted_df as get_test_pivoted_df
+from bigquery_frame.transformations_impl.pivot_unpivot import __get_test_unpivoted_df as get_test_unpivoted_df
 from bigquery_frame.transformations_impl.pivot_unpivot import pivot, unpivot
 
 

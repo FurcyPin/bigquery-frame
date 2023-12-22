@@ -10,12 +10,7 @@ from bigquery_frame import transformations as df_transformations
 from bigquery_frame.column import Column
 from bigquery_frame.data_diff.diff_format_options import DiffFormatOptions
 from bigquery_frame.data_diff.diff_results import DiffResult, SchemaDiffResult
-from bigquery_frame.data_diff.package import (
-    EXISTS_COL_NAME,
-    IS_EQUAL_COL_NAME,
-    STRUCT_SEPARATOR_ALPHA,
-    canonize_col,
-)
+from bigquery_frame.data_diff.package import EXISTS_COL_NAME, IS_EQUAL_COL_NAME, STRUCT_SEPARATOR_ALPHA, canonize_col
 from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 from bigquery_frame.dataframe import cols_to_str, is_nullable, is_repeated
 from bigquery_frame.transformations import harmonize_dataframes, normalize_arrays
