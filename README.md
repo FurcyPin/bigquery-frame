@@ -628,9 +628,20 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 ### 0.5.0
 
+Improvements:
+
+- `transformations.pivot` now support doing multiple aggregations at the same time.
+  It's signature has changed: The arguments `agg_fun` and `agg_col` have been replaced with `aggs`
+  and the argument `implem_version` has been removed: The first implementation version has been removed. 
+
+
+
 Breaking changes:
 
 - Dropped support for Python 3.7 
+- The signature of the `transformations.pivot` method has changed: 
+  The arguments `agg_fun` and `agg_col` have been replaced with `aggs` and the argument `implem_version` 
+  has been removed: The first implementation version has been removed. 
 
 
 ### 0.4.4
