@@ -727,14 +727,14 @@ class DataFrame:
         """
         return self.select(*resolve_nested_columns(columns))
 
-    def show(self, n: int = 20, format_args=None) -> None:
+    def show(self, n: int = 20, format_args=None, simplify_structs=False) -> None:
         """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
         <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
 
         Formating options may be set using `format_args`.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
         >>> df.show()
         +----+---------------------------+
@@ -748,13 +748,20 @@ class DataFrame:
         ╞══════╪═══════════════════════════╡
         │    1 │ {'a': 1, 'b': [{'c': 1}]} │
         ╘══════╧═══════════════════════════╛
+        >>> df.show(simplify_structs=True)
+        +----+------------+
+        | id |          s |
+        +----+------------+
+        |  1 | {1, [{1}]} |
+        +----+------------+
 
         :param n: Number of rows to show.
         :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
-        :return: Nothing
+        :param simplify_structs: if set to true, struct field names are not displayed
+        :return: None
         """
         res = self.limit(n + 1).collect_iterator()
-        print_results(res, format_args, limit=n)
+        print_results(res, format_args, limit=n, simplify_structs=simplify_structs)
 
     def sort(self, *cols: StringOrColumn):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
