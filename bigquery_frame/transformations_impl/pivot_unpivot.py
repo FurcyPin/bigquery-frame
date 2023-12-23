@@ -60,8 +60,8 @@ def pivot(df: DataFrame, pivot_column: str, aggs: List[StringOrColumn], pivoted_
     | 2019 | Carrots |   null |   200 |   null |
     +------+---------+--------+-------+--------+
     >>> pivot(
-    ...     df, 
-    ...     pivot_column="country", 
+    ...     df,
+    ...     pivot_column="country",
     ...     aggs=["sum(amount) as total_amount", f.count(f.col("year")).alias("nb_years")]
     ... ).show()
     +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
@@ -189,11 +189,11 @@ def unpivot_v1(
     # Create and explode an array of (column_name, column_value) structs
     struct_cols = [f'STRUCT("{col}" as {key_alias}, {col} as {value_alias})' for col in cols]
     exclude_nulls_str = f"WHERE {value_alias} IS NOT NULL" if exclude_nulls else ""
+    pivot_columns_str = "" if len(pivot_columns) == 0 else cols_to_str(pivot_columns, 2) + ",\n"
     query = strip_margin(
         f"""
         |SELECT
-        |{cols_to_str(pivot_columns, 2)},
-        |  pivoted.*
+        |{pivot_columns_str}pivoted.*
         |FROM {quote(df._alias)}
         |LEFT JOIN UNNEST([
         |{cols_to_str(struct_cols, 2)}
