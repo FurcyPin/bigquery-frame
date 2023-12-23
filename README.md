@@ -635,6 +635,7 @@ Improvements:
   and the argument `implem_version` has been removed: The first implementation version has been removed. 
 - Added new method `DataFrame.show_string` that returns the string resulting from `DataFrame.show`
   without printing it
+- Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
 
 
 Breaking changes:

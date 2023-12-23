@@ -879,6 +879,57 @@ class DataFrame:
         """
         return self.collect_iterator().to_dataframe(**kwargs)
 
+    def transform(
+        self, func: typing.Callable[..., "DataFrame"], *args: typing.Any, **kwargs: typing.Any
+    ) -> "DataFrame":
+        """Returns a new :class:`DataFrame`. Concise syntax for chaining custom transformations.
+
+        Args:
+            func: a function that takes and returns a :class:`DataFrame`.
+            *args: Positional arguments to pass to func.
+            **kwargs: Keyword arguments to pass to func.
+
+        Returns:
+            Transformed DataFrame.
+
+        Examples:
+            >>> from bigquery_frame import BigQueryBuilder
+            >>> from bigquery_frame import functions as f
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql("SELECT * FROM UNNEST([STRUCT(1 as int, 1.0 as float), STRUCT(2 as int, 2.0 as float)])")
+            >>> def cast_all_to_int(input_df):
+            ...     return input_df.select(
+            ...         [f.col(col_name).cast("int").alias(col_name) for col_name in input_df.columns]
+            ...     )
+            ...
+            >>> def sort_columns_asc(input_df):
+            ...     return input_df.select(*sorted(input_df.columns))
+            ...
+            >>> df.transform(cast_all_to_int).transform(sort_columns_asc).show()
+            +-------+-----+
+            | float | int |
+            +-------+-----+
+            |     1 |   1 |
+            |     2 |   2 |
+            +-------+-----+
+
+            >>> def add_n(input_df, n):
+            ...     return input_df.select([(f.col(col_name) + n).alias(col_name) for col_name in input_df.columns])
+            ...
+            >>> df.transform(add_n, 1).transform(add_n, n=10).show()
+            +-----+-------+
+            | int | float |
+            +-----+-------+
+            |  12 |  12.0 |
+            |  13 |  13.0 |
+            +-----+-------+
+        """
+        result = func(self, *args, **kwargs)
+        assert isinstance(
+            result, DataFrame
+        ), "Func returned an instance of type [%s], " "should have been DataFrame." % type(result)
+        return result
+
     def treeString(self):
         """Generates a string representing the schema in tree format"""
         return schema_to_tree_string(self.schema)
