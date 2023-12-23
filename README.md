@@ -637,6 +637,7 @@ Improvements:
   without printing it
 - Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
 - `functions.array_agg` now support passing multiple columns in the order_by argument.  
+- Added new method `functions.regexp_replace`.
 
 Breaking changes:
 
