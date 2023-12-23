@@ -27,7 +27,7 @@ def _struct_to_string_without_field_names(s: Any) -> str:
         return str(s)
 
 
-def print_results(it: RowIterator, format_args: dict = None, limit=None, simplify_structs=False):
+def tabulate_results(it: RowIterator, format_args: dict = None, limit=None, simplify_structs=False) -> str:
     if format_args is None:
         format_args = {
             "tablefmt": "pretty",
@@ -40,7 +40,8 @@ def print_results(it: RowIterator, format_args: dict = None, limit=None, simplif
     rows = rows[0:limit]
     if simplify_structs:
         rows = [[_struct_to_string_without_field_names(field) for field in row] for row in rows]
-    print(tabulate(rows, headers=headers, **format_args))
+    res = tabulate(rows, headers=headers, **format_args)
     if nb_rows > limit:
         plural = "s" if limit > 1 else ""
-        print(f"only showing top {limit} row{plural}")
+        res += f"\nonly showing top {limit} row{plural}"
+    return res

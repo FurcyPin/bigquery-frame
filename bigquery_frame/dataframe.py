@@ -6,7 +6,7 @@ from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
-from bigquery_frame.printing import print_results
+from bigquery_frame.printing import tabulate_results
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
 
 if TYPE_CHECKING:
@@ -761,8 +761,46 @@ class DataFrame:
         :param simplify_structs: if set to true, struct field names are not displayed
         :return: None
         """
+        print(self.show_string(n, format_args, simplify_structs))
+
+    def show_string(self, n: int = 20, format_args=None, simplify_structs=False) -> str:
+        """Returns a string representation of the first ``n`` rows.
+        This is equivalent to `DataFrame.show()` but it returns the result instead of printing it.
+
+        This uses the awesome Python library called `tabulate
+        <https://pythonrepo.com/repo/astanin-python-tabulate-python-generating-and-working-with-logs>`_.
+
+        Formating options may be set using `format_args`.
+
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+        >>> print(df.show_string())
+        +----+---------------------------+
+        | id |                         s |
+        +----+---------------------------+
+        |  1 | {'a': 1, 'b': [{'c': 1}]} |
+        +----+---------------------------+
+        >>> print(df.show_string(format_args={"tablefmt": 'fancy_grid'}))
+        ╒══════╤═══════════════════════════╕
+        │   id │ s                         │
+        ╞══════╪═══════════════════════════╡
+        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
+        ╘══════╧═══════════════════════════╛
+        >>> print(df.show_string(simplify_structs=True))
+        +----+------------+
+        | id |          s |
+        +----+------------+
+        |  1 | {1, [{1}]} |
+        +----+------------+
+
+        :param n: Number of rows to show.
+        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
+        :param simplify_structs: if set to true, struct field names are not displayed
+        :return: None
+        """
         res = self.limit(n + 1).collect_iterator()
-        print_results(res, format_args, limit=n, simplify_structs=simplify_structs)
+        return tabulate_results(res, format_args, limit=n, simplify_structs=simplify_structs)
 
     def sort(self, *cols: StringOrColumn):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
