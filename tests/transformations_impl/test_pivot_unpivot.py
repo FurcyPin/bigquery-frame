@@ -52,13 +52,13 @@ def test_pivot_v2_with_multiple_aggs(bq: BigQueryBuilder):
         Row(
             (9000, 8, 10200, 8, 9400, 8),
             {
-                'total_amount_Canada': 0,
-                'nb_years_Canada': 1,
-                'total_amount_China': 2,
-                'nb_years_China': 3,
-                'total_amount_Mexico': 4,
-                'nb_years_Mexico': 5
-            }
+                "total_amount_Canada": 0,
+                "nb_years_Canada": 1,
+                "total_amount_China": 2,
+                "nb_years_China": 3,
+                "total_amount_Mexico": 4,
+                "nb_years_Mexico": 5,
+            },
         )
     ]
     assert pivoted.collect() == expected
@@ -122,3 +122,31 @@ def test_unpivot_v2_exclude_nulls(bq: BigQueryBuilder):
     assert (
         unpivoted.sort("year", "product", "country").collect() == expected.sort("year", "product", "country").collect()
     )
+
+
+def test_unpivot_v1_with_no_pivot_column(bq: BigQueryBuilder):
+    df = get_test_pivoted_df(bq).drop("year", "product")
+    unpivoted = unpivot(
+        df,
+        pivot_columns=[],
+        key_alias="country",
+        value_alias="amount",
+        implem_version=1,
+    )
+    unpivoted.show()
+    expected = get_test_unpivoted_df(bq).select("country", "amount")
+    assert unpivoted.collect() == expected.collect()
+
+
+def test_unpivot_v2_with_no_pivot_column(bq: BigQueryBuilder):
+    df = get_test_pivoted_df(bq).drop("year", "product")
+    unpivoted = unpivot(
+        df,
+        pivot_columns=[],
+        key_alias="country",
+        value_alias="amount",
+        implem_version=2,
+    )
+    unpivoted = unpivoted.select("country", "amount")
+    expected = get_test_unpivoted_df(bq).select("country", "amount")
+    assert unpivoted.collect() == expected.collect()

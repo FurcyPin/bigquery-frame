@@ -635,13 +635,16 @@ Improvements:
   and the argument `implem_version` has been removed: The first implementation version has been removed. 
 
 
-
 Breaking changes:
 
 - Dropped support for Python 3.7 
 - The signature of the `transformations.pivot` method has changed: 
   The arguments `agg_fun` and `agg_col` have been replaced with `aggs` and the argument `implem_version` 
   has been removed: The first implementation version has been removed. 
+
+
+Bugfixes:
+- `transformations.unpivot` now works with an empty `pivot_columns` list.
 
 
 ### 0.4.4
