@@ -636,7 +636,7 @@ Improvements:
 - Added new method `DataFrame.show_string` that returns the string resulting from `DataFrame.show`
   without printing it
 - Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
-
+- `functions.array_agg` now support passing multiple columns in the order_by argument.  
 
 Breaking changes:
 
