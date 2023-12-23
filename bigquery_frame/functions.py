@@ -551,6 +551,56 @@ def max(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("MAX", col)
 
 
+def regexp_replace(value: StringOrColumn, regexp: LitOrColumn, replacement: LitOrColumn) -> Column:
+    r"""Returns a STRING where all substrings of `value` that match regular expression `regexp`
+    are replaced with `replacement`.
+
+    You can use backslashed-escaped digits (\1 to \9) within the `replacement` argument to insert text
+    matching the corresponding parenthesized group in the `regexp` pattern. Use \0 to refer to the entire matching text.
+
+    To add a backslash in your regular expression, you must first escape it.
+    For example, `SELECT REGEXP_REPLACE('abc', 'b(.)', 'X\\1');` returns aXc.
+    You can also use raw strings to remove one layer of escaping, for example
+    `SELECT REGEXP_REPLACE('abc', 'b(.)', r'X\1');`.
+
+    The REGEXP_REPLACE function only replaces non-overlapping matches.
+    For example, replacing `ana` within `banana` results in only one replacement, not two.
+
+    If the regexp argument is not a valid regular expression, this function returns an error.
+
+    !!! note
+        GoogleSQL provides regular expression support using the [re2](https://github.com/google/re2/wiki/Syntax)
+        library; see that documentation for its regular expression syntax.
+
+
+    >>> bq = BigQueryBuilder()
+    >>> df = bq.sql('''
+    ... SELECT '# Heading' as heading
+    ... UNION ALL
+    ... SELECT '# Another heading' as heading
+    ... ''')
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.regexp_replace("heading", r'^# ([a-zA-Z0-9\\s]+$)', r'<h1>\\1</h1>').alias('s')).show()
+    +--------------------------+
+    |                        s |
+    +--------------------------+
+    |         <h1>Heading</h1> |
+    | <h1>Another heading</h1> |
+    +--------------------------+
+
+    :param value: a :class:`Column` expression or a string column name
+    :param regexp: a :class:`Column` expression or a string literal
+    :param replacement: a :class:`Column` expression or a string literal
+    :return: a :class:`Column` expression
+    """
+    value = str_to_col(value)
+    if not isinstance(regexp, Column):
+        regexp = lit(regexp)
+    if not isinstance(replacement, Column):
+        replacement = lit(replacement)
+    return Column(f"REGEXP_REPLACE({value.expr}, {regexp.expr}, {replacement.expr})")
+
+
 def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_value: LitOrColumn) -> Column:
     """Replaces all occurrences of `from_value` with `to_value` in `original_value`.
     If `from_value` is empty, no replacement is made.
