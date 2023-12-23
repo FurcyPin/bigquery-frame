@@ -86,7 +86,7 @@ def array(*cols: Union[StringOrColumn, Sequence[StringOrColumn]]) -> Column:
 
 def array_agg(
     col: StringOrColumn,
-    order_by: Optional[StringOrColumn] = None,
+    order_by: Optional[Union[StringOrColumn, List[StringOrColumn]]] = None,
     distinct: bool = False,
     ignore_nulls: bool = False,
     limit: Optional[int] = None,
@@ -124,13 +124,20 @@ def array_agg(
     +-----------+
     | [1, 2, 3] |
     +-----------+
-    >>> null_if_even = f.when(f.col("c") % 2 == 0, f.lit(None)).otherwise(f.col("c"))
-    >>> df.select(f.array_agg(null_if_even, order_by="c", ignore_nulls=True).alias("a")).show()
+    >>> df2 = df.withColumn("is_even", f.col("c") % 2 == 0)
+    >>> null_if_even = f.when(f.col("is_even"), f.lit(None)).otherwise(f.col("c"))
+    >>> df2.select(f.array_agg(null_if_even, order_by="c", ignore_nulls=True).alias("a")).show()
     +--------------+
     |            a |
     +--------------+
     | [1, 3, 3, 3] |
     +--------------+
+    >>> df2.select(f.array_agg(f.col("c"), order_by=[f.col("is_even"), "c"]).alias("a")).show()
+    +--------------------+
+    |                  a |
+    +--------------------+
+    | [1, 3, 3, 3, 2, 2] |
+    +--------------------+
 
     :param col: a str (column name) or :class:`Column`
     :param order_by: (optional) sort the resulting array according to this column
@@ -139,6 +146,10 @@ def array_agg(
     :param limit: (optional) only keep this number of values in the resulting array
     :return:
     """
+    if order_by is None:
+        order_by = []
+    elif not isinstance(order_by, list):
+        order_by = [order_by]
     distinct_str = ""
     ignore_nulls_str = ""
     limit_str = ""
@@ -149,8 +160,8 @@ def array_agg(
         ignore_nulls_str = " IGNORE NULLS "
     if limit:
         limit_str = f" LIMIT {limit}"
-    if order_by is not None:
-        order_by_str = f" ORDER BY {str_to_col(order_by).expr}"
+    if len(order_by) != 0:
+        order_by_str = f" ORDER BY {cols_to_str(str_to_cols(order_by))}"
     col_str = str_to_col(col).expr
     return Column(f"ARRAY_AGG({distinct_str}{col_str}{ignore_nulls_str}{order_by_str}{limit_str})")
 
@@ -227,7 +238,7 @@ def coalesce(*cols: StringOrColumn) -> Column:
     | null |    2 |
     +------+------+
     >>> from bigquery_frame import functions as f
-    >>> df.withColumn("coalesce", f.coalesce("a", "b")).show()
+    >>> df.withColumn("coalesce", f.coalesce("a", f.col("b"))).show()
     +------+------+----------+
     |    a |    b | coalesce |
     +------+------+----------+
