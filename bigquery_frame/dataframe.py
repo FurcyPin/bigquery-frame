@@ -6,7 +6,6 @@ from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
-from bigquery_frame.nested import resolve_nested_columns
 from bigquery_frame.printing import print_results
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
 
@@ -725,6 +724,8 @@ class DataFrame:
         :param columns: a Dict[column_alias, column_expression] of columns to select
         :return:
         """
+        from bigquery_frame.nested import resolve_nested_columns
+
         return self.select(*resolve_nested_columns(columns))
 
     def show(self, n: int = 20, format_args=None, simplify_structs=False) -> None:
@@ -987,7 +988,7 @@ class DataFrame:
         - Corresponding column expressions must use the name `_` for array elements
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
@@ -1053,6 +1054,7 @@ class DataFrame:
         :return:
         """
         from bigquery_frame.data_type_utils import flatten_schema
+        from bigquery_frame.nested import resolve_nested_columns
 
         schema_flat = flatten_schema(
             self.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
