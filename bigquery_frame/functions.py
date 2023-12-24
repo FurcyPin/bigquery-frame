@@ -1,9 +1,18 @@
 import typing
-from typing import Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import ArrayColumn, Column, LitOrColumn, StringOrColumn, WhenColumn, cols_to_str, literal_col
+from bigquery_frame.column import (
+    Column,
+    LitOrColumn,
+    SortedArrayColumn,
+    StringOrColumn,
+    TransformedArrayColumn,
+    WhenColumn,
+    cols_to_str,
+    literal_col,
+)
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.utils import quote, str_to_col, str_to_cols
 
@@ -646,11 +655,14 @@ def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_val
     return Column(f"REPLACE({original_value.expr}, {from_value.expr}, {replace_value.expr})")
 
 
-def sort_array(array: Column, sort_cols: Union[Column, List[Column]]) -> ArrayColumn:
-    """Collection function: sorts the input array in ascending or descending order according to the natural ordering
-    of the array elements. Unlike in Spark, arrays cannot contain NULL element when they are serialized.
-
-    Array elements are implicitely called `_` and can be referred to as such.
+def sort_array(
+    array: StringOrColumn,
+    sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = None,
+) -> Column:
+    """Collection function: sorts the input array according to the natural ordering of the array elements,
+    or, if `sort_keys` specified, according to the `sort_keys`.
+    `sort_keys` is a function that takes as argument a Column representing the array's elements and returns
+    the Column or the list of Columns used for sorting (`asc` and `desc` can be used here).
 
     Examples
     --------
@@ -662,7 +674,7 @@ def sort_array(array: Column, sort_cols: Union[Column, List[Column]]) -> ArrayCo
     ...         STRUCT([] as data)])
     ... ''')
     >>> from bigquery_frame import functions as f
-    >>> df.select(f.sort_array(df['data'], f.col("_")).alias('r')).show()
+    >>> df.select(f.sort_array('data').alias('r')).show()
     +-----------+
     |         r |
     +-----------+
@@ -670,7 +682,7 @@ def sort_array(array: Column, sort_cols: Union[Column, List[Column]]) -> ArrayCo
     |       [1] |
     |        [] |
     +-----------+
-    >>> df.select(f.sort_array(df['data'], f.col("_").desc()).alias('r')).show()
+    >>> df.select(f.sort_array(df['data'], lambda c: c.desc()).alias('r')).show()
     +-----------+
     |         r |
     +-----------+
@@ -679,17 +691,27 @@ def sort_array(array: Column, sort_cols: Union[Column, List[Column]]) -> ArrayCo
     |        [] |
     +-----------+
 
+    >>> df = bq.sql('''SELECT [STRUCT(2 as a, "x" as b), STRUCT(1 as a, "z" as b), STRUCT(1 as a, "y" as b)] as s''')
+    >>> df.show(simplify_structs=True)
+    +--------------------------+
+    |                        s |
+    +--------------------------+
+    | [{2, x}, {1, z}, {1, y}] |
+    +--------------------------+
+    >>> df.select(f.sort_array("s", lambda s: [s["a"], s["b"]]).alias("s")).show(simplify_structs=True)
+    +--------------------------+
+    |                        s |
+    +--------------------------+
+    | [{1, y}, {1, z}, {2, x}] |
+    +--------------------------+
+
     :param array: `Column` or str name of column of type ARRAY
-    :param sort_cols: `Column` or str, or list of `Column` or str specifying how the array must be sorted.
-         Array elements can be referred to as `_`.
-    :return:
+    :param sort_keys: zero or more functions that take a column corresponding to the elements of the array
+        and return column expression used for ordering.
+    :return: a `Column` expression
     """
-    if not isinstance(sort_cols, Iterable):
-        sort_cols = [sort_cols]
-    if isinstance(array, ArrayColumn):
-        return array._copy(sort_cols=sort_cols)
-    else:
-        return ArrayColumn(array, sort_cols=sort_cols)
+    str_array = str_to_col(array)
+    return SortedArrayColumn(str_array, sort_keys=sort_keys)
 
 
 def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] = None) -> Column:
@@ -854,20 +876,15 @@ def to_base64(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("TO_BASE64", col)
 
 
-def transform(array: StringOrColumn, transform_col: Column) -> Column:
-    """Returns an array of elements after applying a transformation to each element in the input array.
-
-    The elements of the array are implicitely called `_`, and the `transform_col` can thus be any Column expression
-    referencing `_`.
-    For arrays of structs (a.k.a. repeated records), the `transform_col` may also directly
-    refer to the fields of the struct.
+def transform(array: StringOrColumn, func: Callable[[Column], Column]) -> Column:
+    """Return an array of elements after applying a transformation to each element in the input array.
 
     Examples
     --------
     >>> from bigquery_frame import functions as f
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 1 as key, [1, 2, 3, 4] as values")
-    >>> df.select(transform("values", f.col("_") * f.lit(2)).alias("doubled")).show()
+    >>> df.select(transform("values", lambda c: c * f.lit(2)).alias("doubled")).show()
     +--------------+
     |      doubled |
     +--------------+
@@ -876,8 +893,7 @@ def transform(array: StringOrColumn, transform_col: Column) -> Column:
 
     >>> def alternate(x, i):
     ...     return when(i % 2 == 0, x).otherwise(-x)
-    >>> x = f.col("_")
-    >>> df.select(transform("values", f.when(x % 2 == 0, x).otherwise(-x)).alias("alternated")).show()
+    >>> df.select(transform("values", lambda x: f.when(x % 2 == 0, x).otherwise(-x)).alias("alternated")).show()
     +----------------+
     |     alternated |
     +----------------+
@@ -892,7 +908,7 @@ def transform(array: StringOrColumn, transform_col: Column) -> Column:
     |   1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
     +-----+--------------------------------------+
     >>> df.select(transform("s",
-    ...     f.struct(
+    ...     lambda _ : f.struct(
     ...         f.expr("a * 2").alias("double_a"),
     ...         f.expr("b * 3").alias("triple_b")
     ...     )
@@ -904,15 +920,12 @@ def transform(array: StringOrColumn, transform_col: Column) -> Column:
     +-------------------------------------------------------------------+
 
     :param array: `Column` or str name of column of type ARRAY
-    :param transform_col: `Column` or str specifying the transformation to apply.
+    :param func: `Column` or str specifying the transformation to apply.
         Array elements can be referred to as `_`. If the elements are structs, their fields can be referred to directly.
     :return:
     """
-    if isinstance(array, ArrayColumn):
-        return array._copy(transform_col=transform_col)
-    else:
-        str_array = str_to_col(array)
-        return ArrayColumn(str_array, transform_col=transform_col)
+    str_array = str_to_col(array)
+    return TransformedArrayColumn(str_array, func=func)
 
 
 def when(condition: Column, value: Column) -> WhenColumn:

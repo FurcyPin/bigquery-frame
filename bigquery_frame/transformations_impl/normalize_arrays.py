@@ -1,5 +1,5 @@
 from bigquery_frame import DataFrame
-from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
+from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.nested import resolve_nested_columns
 
@@ -11,6 +11,7 @@ def normalize_arrays(df: DataFrame) -> DataFrame:
     >>> from bigquery_frame import BigQueryBuilder
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT [3, 2, 1] as a')
+
     >>> df.show()
     +-----------+
     |         a |
@@ -82,7 +83,7 @@ def normalize_arrays(df: DataFrame) -> DataFrame:
 
     def get_col_short_name(col: str) -> str:
         if col[-1] == REPETITION_MARKER:
-            return ELEMENT_COL_NAME
+            return lambda x: x
         else:
             return col.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1]
 

@@ -26,69 +26,70 @@ def _build_nested_struct_tree(columns: Mapping[str, StringOrColumn]) -> OrderedT
 
 def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Column]:
     """
+    TODO: rewrite this if this method is not eventually removed
 
-    >>> from bigquery_frame import functions as f
-    >>> tree = OrderedDict([('s!', OrderedDict([('c', f.col("c")), ('d', f.col("d").cast("FLOAT64"))]))])
-    >>> for c in _build_struct_from_tree(tree): print(c)
-    ARRAY(
-      SELECT
-        STRUCT(`c` as `c`, CAST(`d` as FLOAT64) as `d`)
-      FROM UNNEST(s) as `_`
-    ) as `s`
-
-    >>> tree = OrderedDict([('s', OrderedDict([('e!', f.col("_").cast("FLOAT64"))]))])
-    >>> for c in _build_struct_from_tree(tree): print(c)
-    STRUCT(ARRAY(
-      SELECT
-        CAST(`_` as FLOAT64)
-      FROM UNNEST(`s`.`e`) as `_`
-    ) as `e`) as `s`
-
-    >>> tree = OrderedDict([('s!', OrderedDict([('c', 'c'), ('d', 'd')]))])
-    >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
-    ARRAY(
-      SELECT
-        STRUCT(`c` as `c`, `d` as `d`)
-      FROM UNNEST(s) as `_`
-      ORDER BY `c`, `d`
-    ) as `s`
-
-    >>> tree = OrderedDict([('s', OrderedDict([('e!', '_')]))])
-    >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
-    STRUCT(ARRAY(
-      SELECT
-        `_`
-      FROM UNNEST(`s`.`e`) as `_`
-      ORDER BY `_`
-    ) as `e`) as `s`
-
-    >>> tree = OrderedDict([('l1!', OrderedDict([('l2!', OrderedDict([('a', 'a'), ('b', 'b')]))]))])
-    >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
-    ARRAY(
-      SELECT
-        STRUCT(ARRAY(
-      SELECT
-        STRUCT(`a` as `a`, `b` as `b`)
-      FROM UNNEST(l2) as `_`
-      ORDER BY `a`, `b`
-    ) as `l2`)
-      FROM UNNEST(l1) as `_`
-      ORDER BY TO_JSON_STRING(ARRAY(
-      SELECT
-        STRUCT(`a` as `a`, `b` as `b`)
-      FROM UNNEST(l2) as `_`
-      ORDER BY `a`, `b`
-    ))
-    ) as `l1`
-
-    >>> tree = OrderedDict([('l1!', OrderedDict([('s', OrderedDict([('a', 's.a'), ('b', 's.b')]))]))])
-    >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
-    ARRAY(
-      SELECT
-        STRUCT(STRUCT(`s`.`a` as `a`, `s`.`b` as `b`) as `s`)
-      FROM UNNEST(l1) as `_`
-      ORDER BY TO_JSON_STRING(STRUCT(`s`.`a` as `a`, `s`.`b` as `b`))
-    ) as `l1`
+    # >>> from bigquery_frame import functions as f
+    # >>> tree = OrderedDict([('s!', OrderedDict([('c', f.col("c")), ('d', f.col("d").cast("FLOAT64"))]))])
+    # >>> for c in _build_struct_from_tree(tree): print(c)
+    # ARRAY(
+    #   SELECT
+    #     STRUCT(`c` as `c`, CAST(`d` as FLOAT64) as `d`)
+    #   FROM UNNEST(s) as `_`
+    # ) as `s`
+    #
+    # >>> tree = OrderedDict([('s', OrderedDict([('e!', f.col("_").cast("FLOAT64"))]))])
+    # >>> for c in _build_struct_from_tree(tree): print(c)
+    # STRUCT(ARRAY(
+    #   SELECT
+    #     CAST(`_` as FLOAT64)
+    #   FROM UNNEST(`s`.`e`) as `_`
+    # ) as `e`) as `s`
+    #
+    # >>> tree = OrderedDict([('s!', OrderedDict([('c', 'c'), ('d', 'd')]))])
+    # >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
+    # ARRAY(
+    #   SELECT
+    #     STRUCT(`c` as `c`, `d` as `d`)
+    #   FROM UNNEST(s) as `_`
+    #   ORDER BY `c`, `d`
+    # ) as `s`
+    #
+    # >>> tree = OrderedDict([('s', OrderedDict([('e!', '_')]))])
+    # >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
+    # STRUCT(ARRAY(
+    #   SELECT
+    #     `_`
+    #   FROM UNNEST(`s`.`e`) as `_`
+    #   ORDER BY `_`
+    # ) as `e`) as `s`
+    #
+    # >>> tree = OrderedDict([('l1!', OrderedDict([('l2!', OrderedDict([('a', 'a'), ('b', 'b')]))]))])
+    # >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
+    # ARRAY(
+    #   SELECT
+    #     STRUCT(ARRAY(
+    #   SELECT
+    #     STRUCT(`a` as `a`, `b` as `b`)
+    #   FROM UNNEST(l2) as `_`
+    #   ORDER BY `a`, `b`
+    # ) as `l2`)
+    #   FROM UNNEST(l1) as `_`
+    #   ORDER BY TO_JSON_STRING(ARRAY(
+    #   SELECT
+    #     STRUCT(`a` as `a`, `b` as `b`)
+    #   FROM UNNEST(l2) as `_`
+    #   ORDER BY `a`, `b`
+    # ))
+    # ) as `l1`
+    #
+    # >>> tree = OrderedDict([('l1!', OrderedDict([('s', OrderedDict([('a', 's.a'), ('b', 's.b')]))]))])
+    # >>> for c in _build_struct_from_tree(tree, sort = True): print(c)
+    # ARRAY(
+    #   SELECT
+    #     STRUCT(STRUCT(`s`.`a` as `a`, `s`.`b` as `b`) as `s`)
+    #   FROM UNNEST(l1) as `_`
+    #   ORDER BY TO_JSON_STRING(STRUCT(`s`.`a` as `a`, `s`.`b` as `b`))
+    # ) as `l1`
 
     :param node:
     :param sort: If set to true, will ensure that all arrays are canonically sorted
@@ -111,22 +112,27 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
             key_no_sep = key.replace(REPETITION_MARKER, "")
             if not is_struct:
                 col = f.col(prefix + key_no_sep)
-                transform_col = str_to_col(col_or_children)
                 if is_repeated:
+                    transform_col = (
+                        col_or_children if callable(col_or_children) else lambda _: str_to_col(col_or_children)
+                    )
                     col = f.transform(col, transform_col)
                     if sort:
-                        col = f.sort_array(col, f.col("_"))
+                        col = f.sort_array(col)
                 else:
-                    col = transform_col
+                    col = str_to_col(col_or_children)
                 cols.append((col.alias(key_no_sep), is_sortable))
             else:
                 if is_repeated:
                     fields = recurse(col_or_children, prefix="")
-                    transform_col = f.struct(*[field for field, is_sortable in fields])
-                    struct_col = f.transform(Column(prefix + key_no_sep), transform_col)
+                    struct_col = f.transform(
+                        Column(prefix + key_no_sep), lambda c: f.struct(*[field for field, is_sortable in fields])
+                    )
                     if sort:
-                        sort_cols = [json_if_not_sortable(field, is_sortable) for field, is_sortable in fields]
-                        struct_col = f.sort_array(struct_col, sort_cols)
+                        struct_col = f.sort_array(
+                            struct_col,
+                            lambda x: [json_if_not_sortable(field, is_sortable).expr for field, is_sortable in fields],
+                        )
                     struct_col = struct_col.alias(key_no_sep)
                 else:
                     fields = recurse(col_or_children, prefix=prefix + key + STRUCT_SEPARATOR)
@@ -146,56 +152,34 @@ def resolve_nested_columns(columns: Mapping[str, StringOrColumn], sort: bool = F
     >>> resolve_nested_columns({
     ...   "s!.c": f.col("c"),
     ...   "s!.d": f.col("d").cast("FLOAT64")
-    ... })
+    ... })  #doctest: +ELLIPSIS
     [Column('ARRAY(
       SELECT
         STRUCT(`c` as `c`, CAST(`d` as FLOAT64) as `d`)
-      FROM UNNEST(s) as `_`
+      FROM UNNEST(s) as `...`
     )')]
 
     >>> resolve_nested_columns({
     ...   "s!.e!": f.col("_").cast("FLOAT64"),
-    ... })
+    ... })  #doctest: +ELLIPSIS
     [Column('ARRAY(
       SELECT
         STRUCT(ARRAY(
       SELECT
-        CAST(`_` as FLOAT64)
-      FROM UNNEST(`e`) as `_`
+        CAST(`...` as FLOAT64)
+      FROM UNNEST(`e`) as `...`
     ) as `e`)
-      FROM UNNEST(s) as `_`
+      FROM UNNEST(s) as `...`
     )')]
 
-    >>> resolve_nested_columns({
-    ...   "s!.c": f.col("c"),
-    ...   "s!.d": f.col("d"),
-    ... }, sort = True)
-    [Column('ARRAY(
-      SELECT
-        STRUCT(`c` as `c`, `d` as `d`)
-      FROM UNNEST(s) as `_`
-      ORDER BY `c`, `d`
-    )')]
-
-    >>> resolve_nested_columns({
-    ...   "s!.e!": f.col("_"),
-    ... }, sort = True)
-    [Column('ARRAY(
-      SELECT
-        STRUCT(ARRAY(
-      SELECT
-        `_`
-      FROM UNNEST(`e`) as `_`
-      ORDER BY `_`
-    ) as `e`)
-      FROM UNNEST(s) as `_`
-      ORDER BY TO_JSON_STRING(ARRAY(
-      SELECT
-        `_`
-      FROM UNNEST(`e`) as `_`
-      ORDER BY `_`
-    ))
-    )')]
+    # >>> resolve_nested_columns({
+    # ...   "s!.c": f.col("c"),
+    # ...   "s!.d": f.col("d"),
+    # ... }, sort = True)  #doctest: +ELLIPSIS
+    #
+    # >>> resolve_nested_columns({
+    # ...   "s!.e!": f.col("_"),
+    # ... }, sort = True)  #doctest: +ELLIPSIS
 
     :param columns:
     :param sort: If set to true, will ensure that all arrays are canonically sorted

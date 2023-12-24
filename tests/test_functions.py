@@ -140,81 +140,209 @@ class TestFunctions:
 
 
 class TestTransform:
-    def test_transform_on_array_of_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a array of structs
-        WHEN we transform it
-        THEN the compiled expression should be correct
-        """
-        transform_col = f.struct((f.col("a") + f.col("b")).alias("c"), (f.col("a") - f.col("b")).alias("d"))
-        actual = f.transform("s", transform_col)
-        expected = strip_margin(
-            """
-            |ARRAY(
-            |  SELECT
-            |    STRUCT((`a`) + (`b`) as `c`, (`a`) - (`b`) as `d`)
-            |  FROM UNNEST(`s`) as `_`
-            |)"""
-        )
-        assert actual.expr == expected
-
-    def test_transform_with_sort_array_on_array_of_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a array of structs
-        WHEN we transform and sort it, in whichever order
-        THEN the compiled expression should be the same
-        """
-        transform_col = f.struct((f.col("a") + f.col("b")).alias("c"), (f.col("a") - f.col("b")).alias("d"))
-        sort_cols = [f.col("a"), f.col("b")]
-        actual_1 = f.sort_array(f.transform("s", transform_col), sort_cols)
-        actual_2 = f.transform(f.sort_array("s", sort_cols), transform_col)
-        expected = strip_margin(
-            """
-            |ARRAY(
-            |  SELECT
-            |    STRUCT((`a`) + (`b`) as `c`, (`a`) - (`b`) as `d`)
-            |  FROM UNNEST(`s`) as `_`
-            |  ORDER BY `a`, `b`
-            |)"""
-        )
-        assert actual_1.expr == expected
-        assert actual_2.expr == expected
-
     def test_transform_on_simple_array(self, bq: BigQueryBuilder):
         """
         GIVEN a simple array
         WHEN we transform it
-        THEN the compiled expression should correct
+        THEN the result should correct
         """
-        actual = f.transform("s", f.col("_").cast("STRING"))
+        df = bq.sql("""SELECT ["x", "y"] as array_col""")
+        df = df.withColumn("array_col", f.transform("array_col", lambda s: f.concat(s, f.lit("a"))), replace=True)
         expected = strip_margin(
             """
-            |ARRAY(
-            |  SELECT
-            |    CAST(`_` as STRING)
-            |  FROM UNNEST(`s`) as `_`
-            |)"""
+            |+--------------+
+            ||    array_col |
+            |+--------------+
+            || ['xa', 'ya'] |
+            |+--------------+"""
         )
-        assert actual.expr == expected
+        assert df.show_string() == expected
 
     def test_transform_with_sort_array_on_simple_array(self, bq: BigQueryBuilder):
         """
         GIVEN a simple array
         WHEN we transform and sort it, in whichever order
-        THEN the compiled expression should be the same
+        THEN the result should be correct
         """
-        transform_col = f.col("_").cast("STRING")
-        sort_cols = f.col("_").desc()
-        actual_1 = f.sort_array(f.transform("s", transform_col), sort_cols)
-        actual_2 = f.transform(f.sort_array("s", sort_cols), transform_col)
+        df = bq.sql("""SELECT ["y", "x"] as array_col""")
+        df1 = df.withColumn(
+            "array_col", f.sort_array(f.transform(f.col("array_col"), lambda c: f.concat(c, f.lit("a")))), replace=True
+        )
+        df2 = df.withColumn(
+            "array_col", f.transform(f.sort_array(f.col("array_col")), lambda c: f.concat(c, f.lit("a"))), replace=True
+        )
         expected = strip_margin(
             """
-            |ARRAY(
-            |  SELECT
-            |    CAST(`_` as STRING)
-            |  FROM UNNEST(`s`) as `_`
-            |  ORDER BY `_` DESC
-            |)"""
+            |+--------------+
+            ||    array_col |
+            |+--------------+
+            || ['xa', 'ya'] |
+            |+--------------+"""
         )
-        assert actual_1.expr == expected
-        assert actual_2.expr == expected
+        assert df1.show_string() == expected
+        assert df2.show_string() == expected
+
+    def test_transform_on_array_of_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array of structs
+        WHEN we transform it
+        THEN the result should be correct
+        """
+        df = bq.sql(
+            """
+            SELECT * FROM UNNEST([
+                STRUCT(1 as key, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s),
+                STRUCT(2 as key, [STRUCT(5 as a, 6 as b), STRUCT(7 as a, 8 as b)] as s)
+            ])
+        """
+        )
+        df = df.withColumn(
+            "s",
+            f.transform("s", lambda s: f.struct((s["a"] + s["b"]).alias("c"), (s["a"] - s["b"]).alias("d"))),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+-----+------------------------------------------+
+            || key |                                        s |
+            |+-----+------------------------------------------+
+            ||   1 |   [{'c': 3, 'd': -1}, {'c': 7, 'd': -1}] |
+            ||   2 | [{'c': 11, 'd': -1}, {'c': 15, 'd': -1}] |
+            |+-----+------------------------------------------+"""
+        )
+        assert df.show_string() == expected
+
+    def test_transform_then_sort_array_on_array_of_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array of structs
+        WHEN we transform then sort it
+        THEN the result should be the same
+        """
+        df = bq.sql("""SELECT [STRUCT(5 as a, 1 as b), STRUCT(4 as a, 3 as b)] as s""")
+        df = df.withColumn(
+            "s",
+            f.sort_array(
+                f.transform("s", lambda s: f.struct((s["a"] + s["b"]).alias("c"), (s["a"] - s["b"]).alias("d"))),
+                lambda s: s["d"],
+            ),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+--------------------------------------+
+            ||                                    s |
+            |+--------------------------------------+
+            || [{'c': 7, 'd': 1}, {'c': 6, 'd': 4}] |
+            |+--------------------------------------+"""
+        )
+        assert df.show_string() == expected
+
+    def test_sort_array_then_transform_on_array_of_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array of structs
+        WHEN we transform then sort it
+        THEN the result should be the same
+        """
+        df = bq.sql("""SELECT [STRUCT(5 as a, 1 as b), STRUCT(4 as a, 3 as b)] as s""")
+        df = df.withColumn(
+            "s",
+            f.transform(
+                f.sort_array(f.col("s"), lambda s: s["a"]),
+                lambda s: f.struct((s["a"] + s["b"]).alias("c"), (s["a"] - s["b"]).alias("d")),
+            ),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+--------------------------------------+
+            ||                                    s |
+            |+--------------------------------------+
+            || [{'c': 7, 'd': 1}, {'c': 6, 'd': 4}] |
+            |+--------------------------------------+"""
+        )
+        assert df.show_string() == expected
+
+    def test_chained_transforms(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array
+        WHEN we chain two transformation on it
+        THEN the result should be correct
+        """
+        df = bq.sql("""SELECT ["x", "y"] as array_col""")
+        df = df.withColumn(
+            "array_col",
+            f.transform(f.transform("array_col", lambda s: f.concat(s, f.lit("a"))), lambda s: f.concat(s, f.lit("b"))),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+----------------+
+            ||      array_col |
+            |+----------------+
+            || ['xab', 'yab'] |
+            |+----------------+"""
+        )
+        assert df.show_string() == expected
+
+    def test_transform_inside_a_transform(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array of struct of arrays
+        WHEN we perform a transformation inside a transformation
+        THEN the result should be correct
+        """
+        df = bq.sql("""SELECT [STRUCT([1, 2] as b), STRUCT([3, 4] as b)] as a""")
+        df = df.withColumn(
+            "a",
+            f.transform("a", lambda a: f.struct(f.transform(a["b"], lambda b: b.cast("FLOAT64")).alias("a"))),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+------------------------------+
+            ||                            a |
+            |+------------------------------+
+            || [{[1.0, 2.0]}, {[3.0, 4.0]}] |
+            |+------------------------------+"""
+        )
+        df.show(simplify_structs=True)
+        assert df.show_string(simplify_structs=True) == expected
+
+    def test_chained_sorts(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array
+        WHEN we chain two sorts on it
+        THEN the result should be correct
+        """
+        df = bq.sql("""SELECT ["x", "y"] as array_col""")
+        df = df.withColumn(
+            "array_col",
+            f.sort_array(f.sort_array(f.col("array_col"), f.desc)),
+            replace=True,
+        )
+        expected = strip_margin(
+            """
+            |+------------+
+            ||  array_col |
+            |+------------+
+            || ['x', 'y'] |
+            |+------------+"""
+        )
+        assert df.show_string() == expected
+
+    def test_sort_array_on_array_of_struct_with_multiple_sort_keys(self, bq: BigQueryBuilder):
+        """
+        GIVEN an array of structs
+        WHEN we transform then sort it
+        THEN the result should be the same
+        """
+        df = bq.sql("""SELECT [STRUCT(2 as a, "x" as b), STRUCT(1 as a, "z" as b),STRUCT(1 as a, "y" as b)] as s""")
+        df = df.select(f.sort_array("s", lambda s: [s["a"], s["b"]]).alias("s"))
+        expected = strip_margin(
+            """
+            |+--------------------------+
+            ||                        s |
+            |+--------------------------+
+            || [{1, y}, {1, z}, {2, x}] |
+            |+--------------------------+"""
+        )
+        assert df.show_string(simplify_structs=True) == expected

@@ -5,7 +5,7 @@ from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
-from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
+from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
@@ -711,7 +711,7 @@ class DataFrame:
         +----+--------------------+
         |  1 | [{'e': [1, 2, 3]}] |
         +----+--------------------+
-        >>> df.select_nested_columns({"s!.e!": f.col("_").cast("FLOAT64")}).show()
+        >>> df.select_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
         +--------------------------+
         |                        s |
         +--------------------------+
@@ -1129,7 +1129,7 @@ class DataFrame:
         +----+--------------------+
         |  1 | [{'e': [1, 2, 3]}] |
         +----+--------------------+
-        >>> df.with_nested_columns({"s!.e!": f.col("_").cast("FLOAT64")}).show()
+        >>> df.with_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
         +----+--------------------------+
         | id |                        s |
         +----+--------------------------+
@@ -1148,7 +1148,7 @@ class DataFrame:
 
         def get_col_short_name(col: str):
             if col[-1] == REPETITION_MARKER:
-                return ELEMENT_COL_NAME
+                return lambda x: x
             else:
                 return col.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1]
 
