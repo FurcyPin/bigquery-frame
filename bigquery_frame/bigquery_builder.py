@@ -5,8 +5,8 @@ from google.cloud.bigquery.table import RowIterator
 
 import bigquery_frame
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.dataframe import DEFAULT_ALIAS_NAME, DEFAULT_TEMP_TABLE_NAME
 from bigquery_frame.has_bigquery_client import HasBigQueryClient
+from bigquery_frame.temp_names import _get_temp_table_name
 from bigquery_frame.utils import indent, quote, strip_margin
 
 if TYPE_CHECKING:
@@ -53,7 +53,7 @@ class BigQueryBuilder(HasBigQueryClient):
 
     def _registerDataFrameAsTempTable(self, df: "DataFrame", alias: Optional[str] = None) -> "DataFrame":
         if alias is None:
-            alias = self._get_temp_table_alias()
+            alias = _get_temp_table_name()
         query = f"CREATE OR REPLACE TEMP TABLE {quote(alias)} AS \n" + df.compile()
         self._execute_query(query)
         return self.table(alias)
@@ -67,14 +67,6 @@ class BigQueryBuilder(HasBigQueryClient):
             )
             for alias, df in self._views.items()
         }
-
-    def _get_alias(self) -> str:
-        self._alias_count += 1
-        return "{" + DEFAULT_ALIAS_NAME.format(num=self._alias_count) + "}"
-
-    def _get_temp_table_alias(self) -> str:
-        self._temp_table_count += 1
-        return DEFAULT_TEMP_TABLE_NAME.format(num=self._temp_table_count)
 
     def _check_alias(self, new_alias, deps: List[Tuple[str, "DataFrame"]]) -> None:
         """Checks that the alias follows BigQuery constraints, such as:

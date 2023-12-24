@@ -7,6 +7,7 @@ from google.cloud.bigquery.table import RowIterator
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
 from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.printing import tabulate_results
+from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
 
 if TYPE_CHECKING:
@@ -14,10 +15,6 @@ if TYPE_CHECKING:
 
 A = TypeVar("A")
 B = TypeVar("B")
-
-DEFAULT_ALIAS_NAME = "_default_alias_{num}"
-DEFAULT_TEMP_TABLE_NAME = "_default_temp_table_{num}"
-DEFAULT_TEMP_COLUMN_NAME = "_default_temp_column_{num}"
 
 SUPPORTED_JOIN_TYPES = {
     "inner": "INNER",
@@ -134,7 +131,7 @@ class DataFrame:
         deps_with_aliases = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
         self._deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
         if alias is None:
-            alias = bigquery._get_alias()
+            alias = _get_alias()
         else:
             bigquery._check_alias(alias, self._deps)
         self._alias = alias
@@ -520,7 +517,7 @@ class DataFrame:
         """
         # The ANTI JOIN syntax doesn't exist in BigQuery, so to simulate it we add an extra column that is always
         # equal to 1 in the other DataFrame and apply a filter where this column is NULL
-        anti_join_presence_col_name = DEFAULT_TEMP_COLUMN_NAME.format(num="0")
+        anti_join_presence_col_name = _get_temp_column_name()
         semi = False
         anti = False
         if how is not None:
