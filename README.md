@@ -638,6 +638,8 @@ Improvements:
 - Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
 - `functions.array_agg` now support passing multiple columns in the order_by argument.  
 - Added new method `functions.regexp_replace`.
+- Improved `functions.sort_array` and `functions.transform`, they can now be correctly used together. 
+  But their signature has changed. They now take functions as arguments instead of strings.
 
 Breaking changes:
 
@@ -645,6 +647,11 @@ Breaking changes:
 - The signature of the `transformations.pivot` method has changed: 
   The arguments `agg_fun` and `agg_col` have been replaced with `aggs` and the argument `implem_version` 
   has been removed: The first implementation version has been removed. 
+- The signature of the `functions.sort_array` method has changed.
+  The second argument `sort_cols: Union[Column, List[Column]]` was replaced 
+  with `sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = None`.
+- The signature of the `functions.transform` method has changed.
+  The second argument `transform_col: Column` was replaced with `func: Callable[[Column], Column]`
 
 
 Bugfixes:
@@ -716,7 +723,7 @@ Several new features that make working with nested structure easier were added.
 
 - Improved typing of `Column.when.otherwise`. Now `functions.when` returns a `WhenColumn`, a
   special type of `Column` with two extra methods: `when` and `otherwise`.
-- Changed `functions.sort_arrays`'s signature to make it consistent with `transform`
+- Changed `functions.sort_array`'s signature to make it consistent with `transform`
 
 
 ### 0.3.4

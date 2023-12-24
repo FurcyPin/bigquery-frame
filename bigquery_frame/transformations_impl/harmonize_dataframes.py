@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Tuple
 from bigquery_frame import DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.column import Column
-from bigquery_frame.conf import ELEMENT_COL_NAME, REPETITION_MARKER, STRUCT_SEPARATOR
+from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 
 
@@ -44,13 +44,16 @@ def harmonize_dataframes(
 
     def build_col(col_name: str, col_type: Optional[str]) -> Column:
         if col_name[-1] == REPETITION_MARKER:
-            col = f.col(ELEMENT_COL_NAME)
+            if col_type is not None:
+                return lambda col: col.cast(col_type)
+            else:
+                return lambda col: col
         else:
             col = f.col(col_name.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1])
-        if col_type is not None:
-            return col.cast(col_type)
-        else:
-            return col
+            if col_type is not None:
+                return col.cast(col_type)
+            else:
+                return col
 
     common_columns_dict = {col_name: build_col(col_name, col_type) for (col_name, col_type) in common_columns}
     return left_df.select_nested_columns(common_columns_dict), right_df.select_nested_columns(common_columns_dict)

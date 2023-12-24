@@ -1,7 +1,6 @@
 # This file may be edited by the user.
 # Please read AUTH.md first before changing anything.
 
-ELEMENT_COL_NAME = "_"
 STRUCT_SEPARATOR = "."
 REPETITION_MARKER = "!"
 
