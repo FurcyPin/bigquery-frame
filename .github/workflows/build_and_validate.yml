@@ -59,7 +59,7 @@ jobs:
       - name: Run Unit Tests
         env:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-        run: poetry run pytest
+        run: poetry run pytest -n 6
       - name: Create coverage.xml
         run: poetry run coverage xml
 
