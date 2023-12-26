@@ -2,7 +2,7 @@ from typing import Callable, Iterable, List, Optional, Tuple, Union
 
 from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.temp_names import _get_temp_column_name
-from bigquery_frame.utils import indent, lit_to_col, quote, str_to_col, strip_margin
+from bigquery_frame.utils import indent, lit_to_col, lit_to_cols, quote, str_to_col, strip_margin
 
 LitOrColumn = Union[object, "Column"]
 StringOrColumn = Union[str, "Column"]
@@ -287,6 +287,42 @@ class Column:
         if not isinstance(other, Column):
             other = literal_col(other)
         return (self.isNull() & other.isNull()) | (self.isNotNull() & other.isNotNull() & (self == other))
+
+    def isin(self, *cols: LitOrColumn) -> "Column":
+        """A boolean expression that is evaluated to true if the value of this
+        expression is contained by the evaluated values of the arguments.
+
+        Examples
+        --------
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql('''
+        ...     SELECT * FROM UNNEST ([
+        ...         STRUCT("Alice" as name, 2 as age),
+        ...         STRUCT("Bob" as name, 5 as age)
+        ...    ])
+        ... ''')
+        >>> df.show()
+        +-------+-----+
+        |  name | age |
+        +-------+-----+
+        | Alice |   2 |
+        |   Bob |   5 |
+        +-------+-----+
+        >>> from bigquery_frame import functions as f
+        >>> df.filter(df["name"].isin("Bob", "Mike")).show()
+        +------+-----+
+        | name | age |
+        +------+-----+
+        |  Bob |   5 |
+        +------+-----+
+
+        :param cols: One or more column expression to compare this column against
+        :return: Column expression of Boolean type that evaluates to true when the value of this column matches
+            one of the values of `cols`
+        """
+        cols = lit_to_cols(cols)
+        return Column(f"(({self.expr}) IN ({cols_to_str(cols)}))")
 
     def isNull(self) -> "Column":
         """True if the current expression is null.

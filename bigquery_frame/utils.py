@@ -135,6 +135,20 @@ def lit_to_col(args: "LitOrColumn") -> "Column":
         return f.lit(args)
 
 
+def lit_to_cols(args: Iterable["LitOrColumn"]) -> List["Column"]:
+    """Converts literal string or Column argument to Column type
+
+    Examples:
+
+    >>> lit_to_cols(["id", "c"])
+    [Column(''id''), Column(''c'')]
+    >>> from bigquery_frame import functions as f
+    >>> lit_to_cols([f.expr("COUNT(1)"), "*"])
+    [Column('COUNT(1)'), Column(''*'')]
+    """
+    return [lit_to_col(arg) for arg in args]
+
+
 def number_lines(string: str, starting_index: int = 1) -> str:
     """Given a multi-line string, return a new string where each line is prepended with its number
 
