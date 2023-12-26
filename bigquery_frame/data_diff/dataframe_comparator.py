@@ -1,5 +1,5 @@
 import difflib
-from typing import Dict, Generator, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Dict, List, Optional, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import SchemaField
 from tqdm import tqdm
@@ -28,41 +28,38 @@ class CombinatorialExplosionError(DataframeComparatorException):
 A = TypeVar("A")
 
 
-def shard_column_list_but_keep_arrays_grouped(
-    columns: List[Tuple[str, A]], n: int
-) -> Generator[List[Tuple[str, A]], None, None]:
+def shard_column_dict_but_keep_arrays_grouped(columns: Dict[str, A], n: int) -> List[Dict[str, A]]:
     """
 
     >>> cols = {"a": None, "b": None, "s!.a": None, "s!.b": None, "s!.c": None, "c": None, "d": None}
-    >>> list(shard_column_list_but_keep_arrays_grouped(list(cols.items()), 3))
-    [[('a', None), ('b', None)], [('s!.a', None), ('s!.b', None), ('s!.c', None), ('c', None)], [('d', None)]]
+    >>> list(shard_column_dict_but_keep_arrays_grouped(cols, 3))
+    [{'a': None, 'b': None}, {'s!.a': None, 's!.b': None, 's!.c': None, 'c': None}, {'d': None}]
 
     :param columns:
     :param n:
     :return:
     """
-    res: List[Tuple[str, A]] = []
-    group: List[Tuple[str, A]] = []
+    res: Dict[str, A] = {}
+    group: Dict[str, A] = {}
     last_col_group = None
 
-    for i in range(0, len(columns)):
-        (col, tpe) = columns[i]
+    for col, tpe in columns.items():
         col_group = col.split("!.")[0]
         if col_group != last_col_group:
             if len(res) > 0 and len(res) + len(group) >= n:
                 yield res
-                res = []
+                res = {}
             else:
-                res += group
-                group = []
+                res = {**res, **group}
+                group = {}
         last_col_group = col_group
-        group.append((col, tpe))
+        group[col] = tpe
         if len(res) >= n:
             yield res
-            res = []
+            res = {}
     if len(res) + len(group) < n:
-        res = res + group
-        group = []
+        res = {**res, **group}
+        group = {}
     if len(res) > 0:
         yield res
     if len(group) > 0:
@@ -514,7 +511,7 @@ class DataframeComparator:
         self,
         left_flat: DataFrame,
         right_flat: DataFrame,
-        common_column_shard: List[Tuple[str, Optional[str]]],
+        common_column_shard: Dict[str, Optional[str]],
         join_cols: List[str],
         skip_make_dataframes_comparable: bool,
     ):
@@ -528,7 +525,7 @@ class DataframeComparator:
         self,
         left_df: DataFrame,
         right_df: DataFrame,
-        common_columns: Sequence[Tuple[str, Optional[str]]],
+        common_columns: Dict[str, Optional[str]],
         join_cols: List[str],
         same_schema: bool,
     ) -> List[DataFrame]:
@@ -572,7 +569,7 @@ class DataframeComparator:
         |  2 |  b |  4 |
         |  4 |  f |  3 |
         +----+----+----+
-        >>> shards = DataframeComparator(_shard_size=10)._build_diff_dataframe_shards(left_df, right_df,[('id', None), ('c1', None), ('c2', None)],['id'], same_schema=True)
+        >>> shards = DataframeComparator(_shard_size=10)._build_diff_dataframe_shards(left_df, right_df,{'id': None, 'c1':None, 'c2':None},['id'], same_schema=True)
         >>> for shard in shards: shard.orderBy('id').show()  # noqa: E501
         +----+-------------------------------------------------------------+-----------------------------------------------------------+--------------------------------------------+--------------+
         | id |                                                          c1 |                                                        c2 |                                 __EXISTS__ | __IS_EQUAL__ |
@@ -582,7 +579,7 @@ class DataframeComparator:
         |  3 | {'left_value': 'c', 'right_value': None, 'is_equal': False} | {'left_value': 3, 'right_value': None, 'is_equal': False} | {'left_value': True, 'right_value': False} |        False |
         |  4 | {'left_value': None, 'right_value': 'f', 'is_equal': False} | {'left_value': None, 'right_value': 3, 'is_equal': False} | {'left_value': False, 'right_value': True} |        False |
         +----+-------------------------------------------------------------+-----------------------------------------------------------+--------------------------------------------+--------------+
-        >>> shards = DataframeComparator(_shard_size=1)._build_diff_dataframe_shards(left_df, right_df,[('id', None), ('c1', None), ('c2', None)],['id'], same_schema=False)
+        >>> shards = DataframeComparator(_shard_size=1)._build_diff_dataframe_shards(left_df, right_df,{'id': None, 'c1':None, 'c2':None},['id'], same_schema=False)
         >>> for shard in shards: shard.orderBy('id').show()
         +----+-------------------------------------------------------------+--------------------------------------------+--------------+
         | id |                                                          c1 |                                 __EXISTS__ | __IS_EQUAL__ |
@@ -607,16 +604,16 @@ class DataframeComparator:
         :return: a DataFrame containing all the columns that differ, and a dictionary that gives the number of
             differing rows for each column
         """
-        join_columns = [(col, tpe) for (col, tpe) in common_columns if col in join_cols]
-        non_join_columns = [(col, tpe) for (col, tpe) in common_columns if col not in join_cols]
+        join_columns = {col: tpe for col, tpe in common_columns.items() if col in join_cols}
+        non_join_columns = {col: tpe for col, tpe in common_columns.items() if col not in join_cols}
         nb_cols = len(non_join_columns)
         if nb_cols <= self._shard_size:
             skip_make_dataframes_comparable = same_schema
         else:
             skip_make_dataframes_comparable = False
         columns_shard = [
-            join_columns + shard
-            for shard in shard_column_list_but_keep_arrays_grouped(non_join_columns, self._shard_size)
+            {**join_columns, **shard}
+            for shard in shard_column_dict_but_keep_arrays_grouped(non_join_columns, self._shard_size)
         ]
         dfs = [
             self._build_diff_dataframe_for_shard(
@@ -738,7 +735,7 @@ class DataframeComparator:
             right_schema_flat = flatten_schema(right_flat.schema, explode=True)
             common_columns = get_common_columns(left_schema_flat, right_schema_flat)
         else:
-            common_columns = [(field.name, None) for field in left_schema_flat]
+            common_columns = {field.name: None for field in left_schema_flat}
 
         diff_shards = self._build_diff_dataframe_shards(
             left_flat, right_flat, common_columns, join_cols, schema_diff_result.same_schema
