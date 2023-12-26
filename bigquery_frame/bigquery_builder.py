@@ -18,8 +18,6 @@ class BigQueryBuilder(HasBigQueryClient):
         if client is None:
             client = get_bq_client()
         super().__init__(client, use_session)
-        self._alias_count = 0
-        self._temp_table_count = 0
         self._views: Dict[str, "DataFrame"] = {}
         self._temp_tables: Set[str] = set()
         self.debug = debug
