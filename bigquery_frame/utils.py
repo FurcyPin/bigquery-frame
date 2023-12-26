@@ -79,12 +79,12 @@ def str_to_col(args: "StringOrColumn") -> "Column":
     Examples:
 
     >>> str_to_col("id")
-    Column('`id`')
+    Column<'`id`'>
     >>> from bigquery_frame import functions as f
     >>> str_to_col(f.expr("COUNT(1)"))
-    Column('COUNT(1)')
+    Column<'COUNT(1)'>
     >>> str_to_col("*")
-    Column('*')
+    Column<'*'>
 
     """
     from bigquery_frame import functions as f
@@ -101,12 +101,12 @@ def str_to_cols(args: Iterable["StringOrColumn"]) -> List["Column"]:
     Examples:
 
     >>> str_to_cols(["c1", "c2"])
-    [Column('`c1`'), Column('`c2`')]
+    [Column<'`c1`'>, Column<'`c2`'>]
     >>> from bigquery_frame import functions as f
     >>> str_to_col(f.expr("COUNT(1)"))
-    Column('COUNT(1)')
+    Column<'COUNT(1)'>
     >>> str_to_col("*")
-    Column('*')
+    Column<'*'>
 
     """
     return [str_to_col(arg) for arg in args]
@@ -118,12 +118,12 @@ def lit_to_col(args: "LitOrColumn") -> "Column":
     Examples:
 
     >>> lit_to_col("id")
-    Column(''id'')
+    Column<''id''>
     >>> from bigquery_frame import functions as f
     >>> lit_to_col(f.expr("COUNT(1)"))
-    Column('COUNT(1)')
+    Column<'COUNT(1)'>
     >>> lit_to_col("*")
-    Column(''*'')
+    Column<''*''>
 
     """
     from bigquery_frame import functions as f
@@ -141,10 +141,10 @@ def lit_to_cols(args: Iterable["LitOrColumn"]) -> List["Column"]:
     Examples:
 
     >>> lit_to_cols(["id", "c"])
-    [Column(''id''), Column(''c'')]
+    [Column<''id''>, Column<''c''>]
     >>> from bigquery_frame import functions as f
     >>> lit_to_cols([f.expr("COUNT(1)"), "*"])
-    [Column('COUNT(1)'), Column(''*'')]
+    [Column<'COUNT(1)'>, Column<''*''>]
     """
     return [lit_to_col(arg) for arg in args]
 
