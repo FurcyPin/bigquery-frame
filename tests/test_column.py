@@ -527,3 +527,27 @@ def test_ge(bq: BigQueryBuilder):
         b = f.col("b").alias("b")
         df.withColumn("c", a >= b).withColumn("d", a >= 2).withColumn("e", 2 >= a).show()
         assert stdout.getvalue() == expected
+
+
+def test_isin(bq: BigQueryBuilder):
+    df = bq.sql(
+        """
+        SELECT
+            *
+        FROM UNNEST ([
+            STRUCT(1 as id, 1 as a, 2 as b),
+            STRUCT(2 as id, 1 as a, 3 as b)
+        ])
+    """
+    )
+    actual = df.withColumn("id_equal_a_or_b", f.col("id").isin(f.col("a"), f.col("b")))
+    expected = strip_margin(
+        """
+        |+----+---+---+-----------------+
+        || id | a | b | id_equal_a_or_b |
+        |+----+---+---+-----------------+
+        ||  1 | 1 | 2 |            True |
+        ||  2 | 1 | 3 |           False |
+        |+----+---+---+-----------------+"""
+    )
+    assert actual.show_string() == expected
