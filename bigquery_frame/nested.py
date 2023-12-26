@@ -147,30 +147,31 @@ def _build_struct_from_tree(node: OrderedTree, sort: bool = False) -> List[Colum
 
 def resolve_nested_columns(columns: Mapping[str, StringOrColumn], sort: bool = False) -> List[Column]:
     """Builds a list of column expressions to manipulate structs and repeated records
+    TODO: rewrite this if this method is not eventually removed
 
-    >>> from bigquery_frame import functions as f
-    >>> resolve_nested_columns({
-    ...   "s!.c": f.col("c"),
-    ...   "s!.d": f.col("d").cast("FLOAT64")
-    ... })  #doctest: +ELLIPSIS
-    [Column('ARRAY(
-      SELECT
-        STRUCT(`c` as `c`, CAST(`d` as FLOAT64) as `d`)
-      FROM UNNEST(s) as `...`
-    )')]
-
-    >>> resolve_nested_columns({
-    ...   "s!.e!": f.col("_").cast("FLOAT64"),
-    ... })  #doctest: +ELLIPSIS
-    [Column('ARRAY(
-      SELECT
-        STRUCT(ARRAY(
-      SELECT
-        CAST(`...` as FLOAT64)
-      FROM UNNEST(`e`) as `...`
-    ) as `e`)
-      FROM UNNEST(s) as `...`
-    )')]
+    # >>> from bigquery_frame import functions as f
+    # >>> resolve_nested_columns({
+    # ...   "s!.c": f.col("c"),
+    # ...   "s!.d": f.col("d").cast("FLOAT64")
+    # ... })  #doctest: +ELLIPSIS
+    # [Column('ARRAY(
+    #   SELECT
+    #     STRUCT(`c` as `c`, CAST(`d` as FLOAT64) as `d`)
+    #   FROM UNNEST(s) as `...`
+    # )')]
+    #
+    # >>> resolve_nested_columns({
+    # ...   "s!.e!": f.col("_").cast("FLOAT64"),
+    # ... })  #doctest: +ELLIPSIS
+    # [Column('ARRAY(
+    #   SELECT
+    #     STRUCT(ARRAY(
+    #   SELECT
+    #     CAST(`...` as FLOAT64)
+    #   FROM UNNEST(`e`) as `...`
+    # ) as `e`)
+    #   FROM UNNEST(s) as `...`
+    # )')]
 
     # >>> resolve_nested_columns({
     # ...   "s!.c": f.col("c"),

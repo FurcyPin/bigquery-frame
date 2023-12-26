@@ -61,11 +61,11 @@ class Column:
     def __str__(self):
         res = self.expr
         if self._alias is not None:
-            res += f" as {self._alias}"
+            res += f" AS {self._alias}"
         return res
 
     def __repr__(self):
-        return f"Column('{self.expr}')"
+        return f"Column<'{str(self)}'>"
 
     __add__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
     __radd__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
