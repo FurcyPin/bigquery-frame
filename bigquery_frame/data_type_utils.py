@@ -1,4 +1,4 @@
-from typing import Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional
 
 from google.cloud.bigquery import SchemaField
 
@@ -136,9 +136,7 @@ def find_common_type_for_fields(left_field: SchemaField, right_field: SchemaFiel
         return find_wider_type_for_string_types(left_field.field_type, right_field.field_type)
 
 
-def get_common_columns(
-    left_schema: List[SchemaField], right_schema: List[SchemaField]
-) -> List[Tuple[str, Optional[str]]]:
+def get_common_columns(left_schema: List[SchemaField], right_schema: List[SchemaField]) -> Dict[str, Optional[str]]:
     """Return a list of common Columns between two DataFrame schemas, along with the widest common type for the
     two columns.
 
@@ -157,7 +155,7 @@ def get_common_columns(
         >>> df1 = bq.sql('''SELECT 'A' as id, CAST(1 as BIGINT) as a, 'a' as b, 'x' as c''')
         >>> df2 = bq.sql('''SELECT 'A' as id, CAST(1 as FLOAT64) as a, ['a'] as b, 'x' as d''')
         >>> get_common_columns(df1.schema, df2.schema)
-        [('id', None), ('a', 'FLOAT64'), ('b', None)]
+        {'id': None, 'a': 'FLOAT64', 'b': None}
     """
     left_fields = {field.name: field for field in left_schema}
     right_fields = {field.name: field for field in right_schema}
@@ -168,7 +166,7 @@ def get_common_columns(
                 right_field: SchemaField = right_fields[name]
                 yield name, find_common_type_for_fields(left_field, right_field)
 
-    return list(get_columns())
+    return dict(get_columns())
 
 
 def flatten_schema(
