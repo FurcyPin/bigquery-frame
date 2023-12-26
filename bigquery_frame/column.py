@@ -19,9 +19,9 @@ def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = Non
 def literal_col(col: LitOrColumn) -> "Column":
     if col is None:
         return Column("NULL")
-    if type(col) == str:
+    elif type(col) == str:
         return Column(f"'{col}'")
-    if type(col) in [bool, int, float]:
+    elif type(col) in [bool, int, float, bytes]:
         return Column(str(col))
     raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported yet.")
 
