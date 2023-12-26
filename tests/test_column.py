@@ -540,11 +540,11 @@ def test_isin(bq: BigQueryBuilder):
         ])
     """
     )
-    actual = df.withColumn("id_equal_a_or_b", f.col("id").isin(f.col("a"), f.col("b")))
+    actual = df.withColumn("id equal a or b", f.col("id").isin(f.col("a"), f.col("b")))
     expected = strip_margin(
         """
         |+----+---+---+-----------------+
-        || id | a | b | id_equal_a_or_b |
+        || id | a | b | id equal a or b |
         |+----+---+---+-----------------+
         ||  1 | 1 | 2 |            True |
         ||  2 | 1 | 3 |           False |

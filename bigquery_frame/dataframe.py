@@ -622,7 +622,7 @@ class DataFrame:
             (`a`) + (1)
           FROM `_default_alias_1`
         )
-        SELECT *, a + b AS c FROM `_default_alias_2`
+        SELECT *, a + b AS `c` FROM `_default_alias_2`
 
         """
         print(self.compile())
@@ -1055,9 +1055,9 @@ class DataFrame:
         :return: a new :class:`DataFrame`
         """
         if replace:
-            query = f"SELECT * REPLACE ({col_expr} AS {col_name}) FROM {quote(self._alias)}"
+            query = f"SELECT * REPLACE ({col_expr} AS {quote(col_name)}) FROM {quote(self._alias)}"
         else:
-            query = f"SELECT *, {col_expr} AS {col_name} FROM {quote(self._alias)}"
+            query = f"SELECT *, {col_expr} AS {quote(col_name)} FROM {quote(self._alias)}"
         return self._apply_query(query)
 
     def with_nested_columns(self, columns: Dict[str, StringOrColumn]) -> "DataFrame":
