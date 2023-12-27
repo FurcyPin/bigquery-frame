@@ -1,4 +1,5 @@
 import typing
+import warnings
 from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 from google.cloud.bigquery import Row, SchemaField
@@ -644,7 +645,7 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def select_nested_columns(self, columns: Mapping[str, StringOrColumn]) -> "DataFrame":
+    def select_nested_columns(self, fields: Mapping[str, StringOrColumn]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
         Unlike the :func:`select` method, this method works on repeated elements
         and records (arrays and arrays of struct).
@@ -657,7 +658,7 @@ class DataFrame:
         - Corresponding column expressions must use the name `_` for array elements
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = bq.sql('''
         ...  SELECT * FROM UNNEST([
@@ -718,12 +719,17 @@ class DataFrame:
         | [{'e': [1.0, 2.0, 3.0]}] |
         +--------------------------+
 
-        :param columns: a Dict[column_alias, column_expression] of columns to select
+        :param fields: a Dict[column_alias, column_expression] of columns to select
         :return:
         """
-        from bigquery_frame.nested import resolve_nested_columns
+        warning_message = (
+            "The method DataFrame.select_nested_columns is deprecated since version 0.5.0. "
+            "Please use bigquery_frame.nested.select instead."
+        )
+        warnings.warn(warning_message, category=DeprecationWarning)
+        from bigquery_frame import nested
 
-        return self.select(*resolve_nested_columns(columns))
+        return nested.select(self, fields)
 
     def show(self, n: int = 20, format_args=None, simplify_structs=False) -> None:
         """Prints the first ``n`` rows to the console. This uses the awesome Python library called `tabulate
