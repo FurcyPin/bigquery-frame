@@ -6,7 +6,6 @@ from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame.column import Column, StringOrColumn, cols_to_str
-from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
@@ -657,6 +656,11 @@ class DataFrame:
         - Corresponding column expressions must use short field names for repeated structs
         - Corresponding column expressions must use the name `_` for array elements
 
+        !!! warning
+            This method is deprecated since version 0.5.0 and will be removed in version 0.6.0.
+            Please use bigquery_frame.nested.select instead.
+
+
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
@@ -723,7 +727,8 @@ class DataFrame:
         :return:
         """
         warning_message = (
-            "The method DataFrame.select_nested_columns is deprecated since version 0.5.0. "
+            "The method DataFrame.select_nested_columns is deprecated since version 0.5.0 "
+            "and will be removed in version 0.6.0. "
             "Please use bigquery_frame.nested.select instead."
         )
         warnings.warn(warning_message, category=DeprecationWarning)
@@ -958,8 +963,6 @@ class DataFrame:
         This is different from both `UNION ALL` and `UNION DISTINCT` in SQL. To do a SQL-style set
         union (that does deduplication of elements), use this function followed by :func:`distinct`.
 
-        .. versionadded:: 2.3.0
-
         Examples
         --------
         The difference between this function and :func:`union` is that this function
@@ -1066,7 +1069,7 @@ class DataFrame:
             query = f"SELECT *, {col_expr} AS {quote(col_name)} FROM {quote(self._alias)}"
         return self._apply_query(query)
 
-    def with_nested_columns(self, columns: Dict[str, StringOrColumn]) -> "DataFrame":
+    def with_nested_columns(self, fields: Dict[str, StringOrColumn]) -> "DataFrame":
         """Returns a new :class:`DataFrame` by adding or replacing (when they already exist) columns.
 
         Unlike the :func:`withColumn` method, this method works on repeated elements
@@ -1078,6 +1081,10 @@ class DataFrame:
         - Corresponding column expressions must use the complete field names for non-repeated structs
         - Corresponding column expressions must use short field names for repeated structs
         - Corresponding column expressions must use the name `_` for array elements
+
+        !!! warning
+            This methtod is deprecated since version 0.5.0 and will be removed in version 0.6.0.
+            Please use bigquery_frame.nested.with_fields instead.
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> bq = BigQueryBuilder()
@@ -1142,25 +1149,18 @@ class DataFrame:
         |  1 | [{'e': [1.0, 2.0, 3.0]}] |
         +----+--------------------------+
 
-        :param columns: a Dict[column_alias, column_expression] of columns to select
+        :param fields: a Dict[column_alias, column_expression] of columns to select
         :return:
         """
-        from bigquery_frame.data_type_utils import flatten_schema
-        from bigquery_frame.nested import resolve_nested_columns
-
-        schema_flat = flatten_schema(
-            self.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
+        warning_message = (
+            "The method DataFrame.with_nested_columns is deprecated since version 0.5.0 "
+            "and will be removed in version 0.6.0. "
+            "Please use bigquery_frame.nested.with_fields instead."
         )
+        warnings.warn(warning_message, category=DeprecationWarning)
+        from bigquery_frame import nested
 
-        def get_col_short_name(col: str):
-            if col[-1] == REPETITION_MARKER:
-                return lambda x: x
-            else:
-                return col.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1]
-
-        default_columns = {field.name: get_col_short_name(field.name) for field in schema_flat}
-        columns = {**default_columns, **columns}
-        return self.select(*resolve_nested_columns(columns))
+        return nested.with_fields(self, fields)
 
     @property
     def write(self):
