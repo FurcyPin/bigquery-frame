@@ -174,16 +174,19 @@ def flatten_schema(
     explode: bool,
     struct_separator: str = STRUCT_SEPARATOR,
     repetition_marker: str = REPETITION_MARKER,
+    keep_non_leaf_fields: bool = False,
 ) -> List[SchemaField]:
     """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
     The field names are kept, with a '.' separator for struct fields.
-    If `explode` option is set, arrays are exploded with a '!' separator.
+
+    If `explode` option is set, explode arrays and append their names with a '!' repetition marker.
 
     Args:
         schema: A DataFrame schema
-        explode: If set, arrays are exploded and an `repetition_marker` is appended to their name
-        struct_separator: String used to delimit structs
+        explode: If set, arrays are exploded and a `repetition_marker` is appended to their name
+        struct_separator: String used to separate structs from their field
         repetition_marker: String used to mark repeated fields
+        keep_non_leaf_fields: If set, the fields of type array or struct are also included in the result
 
     Returns:
         A flattened version of the schema
@@ -192,50 +195,82 @@ def flatten_schema(
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame.dataframe import schema_to_simple_string
         >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
+        >>> df = bq.sql('SELECT 1 as id, STRUCT(2 as a, [STRUCT(3 as c, 4 as d, [5] as e)] as b) as s')
         >>> schema_to_simple_string(df.schema)
-        'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
+        'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER,e:ARRAY<INTEGER>>>>'
         >>> schema_to_simple_string(flatten_schema(df.schema, explode=True))
-        'id:INTEGER,s.a:INTEGER,s.b!.c:INTEGER,s.b!.d:INTEGER,s.e!:INTEGER'
+        'id:INTEGER,s.a:INTEGER,s.b!.c:INTEGER,s.b!.d:INTEGER,s.b!.e!:INTEGER'
         >>> schema_to_simple_string(flatten_schema(df.schema, explode=False))
-        'id:INTEGER,s.a:INTEGER,s.b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,s.e:ARRAY<INTEGER>'
+        'id:INTEGER,s.a:INTEGER,s.b:ARRAY<STRUCT<c:INTEGER,d:INTEGER,e:ARRAY<INTEGER>>>'
+        >>> [field.name for field in flatten_schema(df.schema, explode=True)]
+        ['id', 's.a', 's.b!.c', 's.b!.d', 's.b!.e!']
+        >>> [field.name for field in flatten_schema(df.schema, explode=True, keep_non_leaf_fields=True)]
+        ['id', 's', 's.a', 's.b', 's.b!', 's.b!.c', 's.b!.d', 's.b!.e', 's.b!.e!']
+
+
     """
     from bigquery_frame.dataframe import is_nullable, is_repeated, is_struct
 
-    def flatten_schema_field(prefix: str, schema_field: SchemaField, nullable: bool) -> List[SchemaField]:
+    def flatten_schema_field(
+        schema_field: SchemaField,
+        nullable: bool,
+        prefix: str,
+    ) -> Generator[SchemaField, None, None]:
+        if keep_non_leaf_fields:
+            yield SchemaField(
+                name=prefix,
+                field_type=schema_field.field_type,
+                mode=schema_field.mode,
+                description=schema_field.description,
+                fields=schema_field.fields,
+            )
         if is_struct(schema_field) and is_repeated(schema_field) and explode:
-            return flatten_struct_type(
+            if keep_non_leaf_fields:
+                yield SchemaField(
+                    name=prefix + repetition_marker,
+                    field_type=schema_field.field_type,
+                    mode="NULLABLE" if nullable or is_nullable(schema_field) else "REQUIRED",
+                    description=schema_field.description,
+                    fields=schema_field.fields,
+                )
+            yield from flatten_struct_type(
                 schema_field.fields,
                 nullable or is_nullable(schema_field),
                 prefix + repetition_marker + struct_separator,
             )
         elif is_struct(schema_field) and not is_repeated(schema_field):
-            return flatten_struct_type(
+            yield from flatten_struct_type(
                 schema_field.fields,
                 nullable or is_nullable(schema_field),
                 prefix + struct_separator,
             )
-        else:
+        elif is_repeated(schema_field) and explode:
+            prefix += repetition_marker
             mode = "NULLABLE" if nullable or is_nullable(schema_field) else "REQUIRED"
-            if is_repeated(schema_field):
-                if explode:
-                    prefix += repetition_marker
-                else:
-                    mode = "REPEATED"
-            return [
-                SchemaField(
-                    name=prefix,
-                    field_type=schema_field.field_type,
-                    mode=mode,
-                    description=schema_field.description,
-                    fields=schema_field.fields,
-                )
-            ]
+            yield SchemaField(
+                name=prefix,
+                field_type=schema_field.field_type,
+                mode=mode,
+                description=schema_field.description,
+                fields=schema_field.fields,
+            )
+        elif not keep_non_leaf_fields:
+            yield SchemaField(
+                name=prefix,
+                field_type=schema_field.field_type,
+                mode=schema_field.mode,
+                description=schema_field.description,
+                fields=schema_field.fields,
+            )
 
-    def flatten_struct_type(schema: List[SchemaField], nullable: bool = False, prefix: str = "") -> List[SchemaField]:
-        res = []
+    def flatten_struct_type(
+        schema: List[SchemaField], previous_nullable: bool = False, prefix: str = ""
+    ) -> Generator[SchemaField, None, None]:
         for schema_field in schema:
-            res += flatten_schema_field(prefix + schema_field.name, schema_field, nullable)
-        return res
+            yield from flatten_schema_field(
+                schema_field,
+                previous_nullable or is_nullable(schema_field),
+                prefix + schema_field.name,
+            )
 
-    return flatten_struct_type(schema)
+    return list(flatten_struct_type(schema))
