@@ -48,7 +48,7 @@ def indent(str, nb) -> str:
     return " " * nb + str.replace("\n", "\n" + " " * nb)
 
 
-def quote(str) -> str:
+def quote(string) -> str:
     """Add quotes around a column or table names to prevent collision with SQL keywords.
     This method is idempotent: it does not add new quotes to an already quoted string.
     If the column name is a reference to a nested column (i.e. if it contains dots), each part is quoted separately.
@@ -65,7 +65,7 @@ def quote(str) -> str:
     '*'
 
     """
-    return ".".join(["`" + s + "`" if s != "*" else "*" for s in str.replace("`", "").split(".")])
+    return ".".join(["`" + s + "`" if s != "*" else "*" for s in string.replace("`", "").split(".")])
 
 
 def quote_columns(columns: List[str]) -> List[str]:
