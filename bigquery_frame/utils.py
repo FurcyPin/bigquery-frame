@@ -1,9 +1,12 @@
 import math
 import re
-from typing import TYPE_CHECKING, Iterable, List, Union
+from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, TypeVar, Union
 
 if TYPE_CHECKING:
     from bigquery_frame.column import Column, LitOrColumn, StringOrColumn
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 
 def strip_margin(text: str):
@@ -46,6 +49,32 @@ def strip_margin(text: str):
 
 def indent(str, nb) -> str:
     return " " * nb + str.replace("\n", "\n" + " " * nb)
+
+
+def group_by_key(items: Iterable[Tuple[K, V]]) -> Dict[K, List[V]]:
+    """Group the values of a list of tuples by their key.
+
+    Args:
+        items: An iterable of tuples (key, value).
+
+    Returns:
+        A dictionary where the keys are the keys from the input tuples,
+        and the values are lists of the corresponding values.
+
+    Examples:
+        >>> items = [('a', 1), ('b', 2), ('a', 3), ('c', 4), ('b', 5)]
+        >>> group_by_key(items)
+        {'a': [1, 3], 'b': [2, 5], 'c': [4]}
+        >>> group_by_key([])
+        {}
+    """
+    result: Dict[K, List[V]] = {}
+    for key, value in items:
+        if key in result:
+            result[key].append(value)
+        else:
+            result[key] = [value]
+    return result
 
 
 def quote(string) -> str:
@@ -197,3 +226,7 @@ def assert_true(assertion: bool, error: Union[str, BaseException] = None) -> Non
             raise AssertionError(error)
         else:
             raise AssertionError()
+
+
+def _ref(_: object) -> None:
+    """Dummy function used to prevent 'optimize import' from dropping the methods imported"""
