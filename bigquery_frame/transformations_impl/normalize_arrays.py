@@ -1,12 +1,16 @@
+import warnings
+
 from bigquery_frame import DataFrame
-from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
-from bigquery_frame.data_type_utils import flatten_schema
-from bigquery_frame.nested import resolve_nested_columns
+from bigquery_frame.transformations_impl.sort_all_arrays import sort_all_arrays
 
 
 def normalize_arrays(df: DataFrame) -> DataFrame:
     """Given a DataFrame, sort all columns of type arrays (even nested ones) in a canonical order,
     making them comparable
+
+    !!! warning
+    This method is deprecated since version 0.5.0 and will be removed in version 0.6.0.
+    Please use transformations.sort_all_arrays instead.
 
     >>> from bigquery_frame import BigQueryBuilder
     >>> bq = BigQueryBuilder()
@@ -77,15 +81,10 @@ def normalize_arrays(df: DataFrame) -> DataFrame:
 
     :return:
     """
-    schema_flat = flatten_schema(
-        df.schema, explode=True, struct_separator=STRUCT_SEPARATOR, repetition_marker=REPETITION_MARKER
+    warning_message = (
+        "The method bigquery_frame.transformations.normalize_arrays is deprecated since version 0.5.0 "
+        "and will be removed in version 0.6.0. "
+        "Please use transformations.sort_all_arrays instead."
     )
-
-    def get_col_short_name(col: str) -> str:
-        if col[-1] == REPETITION_MARKER:
-            return lambda x: x
-        else:
-            return col.split(REPETITION_MARKER + STRUCT_SEPARATOR)[-1]
-
-    columns = {field.name: get_col_short_name(field.name) for field in schema_flat}
-    return df.select(*resolve_nested_columns(columns, sort=True))
+    warnings.warn(warning_message, category=DeprecationWarning)
+    return sort_all_arrays(df)
