@@ -3,6 +3,8 @@
 
 STRUCT_SEPARATOR = "."
 REPETITION_MARKER = "!"
+STRUCT_SEPARATOR_REPLACEMENT = "__STRUCT__"
+REPETITION_MARKER_REPLACEMENT = "__ARRAY__"
 
 # Method 1. Set this variable here or set it as an environment variable
 GCP_PROJECT = "Name of your BigQuery project"
