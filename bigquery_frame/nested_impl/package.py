@@ -827,6 +827,8 @@ def unnest_fields(
         |                                          3 |                                          4 |
         +--------------------------------------------+--------------------------------------------+
     """  # noqa: E501
+    from bigquery_frame import nested
+
     if keep_fields is None:
         keep_columns_dict = {}
     else:
@@ -836,6 +838,8 @@ def unnest_fields(
         }
     if isinstance(fields, str):
         fields = [fields]
+
+    validate_nested_field_names(*fields, known_fields=nested.fields(df))
 
     def recurse_node_with_multiple_items(
         node: OrderedTree,
