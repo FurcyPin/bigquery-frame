@@ -119,7 +119,7 @@ def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
 
 class DataFrame:
 
-    _deps: List[Tuple[str, "DataFrame"]]
+    __deps: List[Tuple[str, "DataFrame"]]
     _alias: str
 
     def __init__(
@@ -128,12 +128,12 @@ class DataFrame:
         self.__query = query
         if deps is None:
             deps = []
-        deps_with_aliases = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
-        self._deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
+        deps_with_aliases = [dep for df in deps for dep in df.__deps] + [(df._alias, df) for df in deps]
+        self.__deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
         if alias is None:
             alias = _get_alias()
         else:
-            bigquery._check_alias(alias, self._deps)
+            bigquery._check_alias(alias, self.__deps)
         self._alias = alias
         self.bigquery: "BigQueryBuilder" = bigquery
         self._schema: Optional[List[SchemaField]] = None
@@ -212,7 +212,7 @@ class DataFrame:
                 |{indent(cte.__query, 2)}
                 |)"""
             )
-            for (alias, cte) in self._deps
+            for (alias, cte) in self.__deps
         }
 
     def _compile_with_ctes(self, ctes: Dict[str, str]) -> str:
@@ -245,7 +245,7 @@ class DataFrame:
 
     def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
-        return DataFrame(self.__query, alias, self.bigquery, deps=[df for alias, df in self._deps])
+        return DataFrame(self.__query, alias, self.bigquery, deps=[df for alias, df in self.__deps])
 
     def collect(self) -> List[Row]:
         """Returns all the records as list of :class:`Row`."""
