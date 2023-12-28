@@ -102,14 +102,16 @@ class HasBigQueryClient:
     ) -> ReturnType:
         job_config = QueryJobConfig(use_query_cache=use_query_cache, dry_run=dry_run)
 
-        self._set_session_id_before_query(job_config)
-        job = self.__client.query(query=query, job_config=job_config)
-        self._get_session_id_after_query(job)
-
         try:
+            self._set_session_id_before_query(job_config)
+            job = self.__client.query(query=query, job_config=job_config)
+            self._get_session_id_after_query(job)
             res = action(job)
         except BadRequest as e:
-            e.message += "\nQuery:\n" + number_lines(query, 1)
+            if len(query) < 1024 * 1000:
+                e.message += "\nQuery:\n" + number_lines(query, 1)
+            else:
+                e.message += "\n(The query is too large to be displayed)\n"
             raise e
         except InternalServerError as e:
             try_count += 1
