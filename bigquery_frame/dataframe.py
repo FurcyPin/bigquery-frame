@@ -125,7 +125,7 @@ class DataFrame:
     def __init__(
         self, query: str, alias: Optional[str], bigquery: "BigQueryBuilder", deps: Optional[List["DataFrame"]] = None
     ):
-        self.query = query
+        self.__query = query
         if deps is None:
             deps = []
         deps_with_aliases = [dep for df in deps for dep in df._deps] + [(df._alias, df) for df in deps]
@@ -147,7 +147,7 @@ class DataFrame:
         self.bigquery._get_query_schema(self.compile())
 
     def __repr__(self):
-        return f"""DataFrame('{self.query}) as {self._alias}')"""
+        return f"""DataFrame('{self.__query}) as {self._alias}')"""
 
     def __getitem__(self, item: Union[StringOrColumn, Iterable[StringOrColumn], int]):
         """Returns the column as a :class:`Column`.
@@ -209,7 +209,7 @@ class DataFrame:
         return {
             alias: strip_margin(
                 f"""{quote(alias)} AS (
-                |{indent(cte.query, 2)}
+                |{indent(cte.__query, 2)}
                 |)"""
             )
             for (alias, cte) in self._deps
@@ -217,9 +217,9 @@ class DataFrame:
 
     def _compile_with_ctes(self, ctes: Dict[str, str]) -> str:
         if len(ctes) > 0:
-            query = "WITH " + "\n, ".join(ctes.values()) + "\n" + self.query
+            query = "WITH " + "\n, ".join(ctes.values()) + "\n" + self.__query
         else:
-            query = self.query
+            query = self.__query
         deps_replacements = {
             alias[1:-1]: DEFAULT_ALIAS_NAME.format(num=i + 1)
             for (i, (alias, _)) in enumerate(ctes.items())
@@ -245,7 +245,7 @@ class DataFrame:
 
     def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
-        return DataFrame(self.query, alias, self.bigquery, deps=[df for alias, df in self._deps])
+        return DataFrame(self.__query, alias, self.bigquery, deps=[df for alias, df in self._deps])
 
     def collect(self) -> List[Row]:
         """Returns all the records as list of :class:`Row`."""
