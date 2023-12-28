@@ -201,6 +201,30 @@ def asc(col: StringOrColumn) -> Column:
     return Column(f"{str_to_col(col).expr} ASC")
 
 
+def avg(col: StringOrColumn) -> Column:
+    """Aggregate function: returns the average of the values in a group.
+
+    >>> df = _get_test_df_3()
+    >>> df.show()
+    +------+
+    | col1 |
+    +------+
+    |    2 |
+    |    1 |
+    | null |
+    |    3 |
+    +------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.avg("col1").alias("avg_col1")).show()
+    +----------+
+    | avg_col1 |
+    +----------+
+    |      2.0 |
+    +----------+
+    """
+    return _invoke_function_over_column("AVG", col)
+
+
 def cast(col: StringOrColumn, tpe: str) -> Column:
     """Converts a column to the specified type.
 
@@ -506,31 +530,41 @@ def length(col: StringOrColumn) -> Column:
 lit = literal_col
 
 
-def min(col: StringOrColumn) -> Column:
-    """Aggregate function: returns the minimum value of the expression in a group.
+def lower(col: StringOrColumn) -> Column:
+    """Converts a BYTES or STRING expression to lower case.
 
-    >>> df = _get_test_df_1()
-    >>> df.show()
-    +------+------+
-    | col1 | col2 |
-    +------+------+
-    |    1 |    a |
-    |    1 |    b |
-    |    2 | null |
-    +------+------+
-    >>> from bigquery_frame import functions as f
-    >>> df.select(
-    ...   f.min('col1').alias('min_col1'),
-    ...   f.min('col2').alias('min_col2'),
-    ... ).show()
-    +----------+----------+
-    | min_col1 | min_col2 |
-    +----------+----------+
-    |        1 |        a |
-    +----------+----------+
+    For STRING arguments, returns the original string with all alphabetic characters in lowercase.
+    Mapping between lowercase and uppercase is done according to the
+    [Unicode Character Database](https://unicode.org/ucd/) without taking into account language-specific mappings.
 
+    For BYTES arguments, the argument is treated as ASCII text, with all bytes greater than 127 left intact.
+
+    Args:
+        col: Target column to work on.
+
+    Examples:
+        >>> bq = BigQueryBuilder()
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''SELECT item FROM UNNEST(['FOO', 'BAR', 'BAZ']) as item''')
+        >>> df.show()
+        +------+
+        | item |
+        +------+
+        |  FOO |
+        |  BAR |
+        |  BAZ |
+        +------+
+
+        >>> df.select(f.lower("item").alias("item")).show()
+        +------+
+        | item |
+        +------+
+        |  foo |
+        |  bar |
+        |  baz |
+        +------+
     """
-    return _invoke_function_over_column("MIN", col)
+    return _invoke_function_over_column("LOWER", col)
 
 
 def max(col: StringOrColumn) -> Column:
@@ -558,6 +592,57 @@ def max(col: StringOrColumn) -> Column:
 
     """
     return _invoke_function_over_column("MAX", col)
+
+
+def mean(col: StringOrColumn) -> Column:
+    """Aggregate function: returns the average of the values in a group.
+
+    >>> df = _get_test_df_3()
+    >>> df.show()
+    +------+
+    | col1 |
+    +------+
+    |    2 |
+    |    1 |
+    | null |
+    |    3 |
+    +------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(f.mean("col1").alias("mean_col1")).show()
+    +-----------+
+    | mean_col1 |
+    +-----------+
+    |       2.0 |
+    +-----------+
+    """
+    return _invoke_function_over_column("AVG", col)
+
+
+def min(col: StringOrColumn) -> Column:
+    """Aggregate function: returns the minimum value of the expression in a group.
+
+    >>> df = _get_test_df_1()
+    >>> df.show()
+    +------+------+
+    | col1 | col2 |
+    +------+------+
+    |    1 |    a |
+    |    1 |    b |
+    |    2 | null |
+    +------+------+
+    >>> from bigquery_frame import functions as f
+    >>> df.select(
+    ...   f.min('col1').alias('min_col1'),
+    ...   f.min('col2').alias('min_col2'),
+    ... ).show()
+    +----------+----------+
+    | min_col1 | min_col2 |
+    +----------+----------+
+    |        1 |        a |
+    +----------+----------+
+
+    """
+    return _invoke_function_over_column("MIN", col)
 
 
 def regexp_replace(value: StringOrColumn, regexp: LitOrColumn, replacement: LitOrColumn) -> Column:
@@ -926,6 +1011,43 @@ def transform(array: StringOrColumn, func: Callable[[Column], Column]) -> Column
     """
     str_array = str_to_col(array)
     return TransformedArrayColumn(str_array, func=func)
+
+
+def upper(col: StringOrColumn) -> Column:
+    """Converts a BYTES or STRING expression to upper case.
+
+    For STRING arguments, returns the original string with all alphabetic characters in uppercase.
+    Mapping between uppercase and uppercase is done according to the
+    [Unicode Character Database](https://unicode.org/ucd/) without taking into account language-specific mappings.
+
+    For BYTES arguments, the argument is treated as ASCII text, with all bytes greater than 127 left intact.
+
+    Args:
+        col: Target column to work on.
+
+    Examples:
+        >>> bq = BigQueryBuilder()
+        >>> from bigquery_frame import functions as f
+        >>> df = bq.sql('''SELECT item FROM UNNEST(['foo', 'bar', 'baz']) as item''')
+        >>> df.show()
+        +------+
+        | item |
+        +------+
+        |  foo |
+        |  bar |
+        |  baz |
+        +------+
+
+        >>> df.select(f.upper("item").alias("item")).show()
+        +------+
+        | item |
+        +------+
+        |  FOO |
+        |  BAR |
+        |  BAZ |
+        +------+
+    """
+    return _invoke_function_over_column("UPPER", col)
 
 
 def when(condition: Column, value: Column) -> WhenColumn:

@@ -637,7 +637,12 @@ Improvements:
   without printing it
 - Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
 - `functions.array_agg` now support passing multiple columns in the order_by argument.  
-- Added new method `functions.regexp_replace`.
+- Added new `functions`:
+  - `avg`
+  - `lower`
+  - `mean`
+  - `regexp_replace`
+  - `upper`
 - Added new method `Column.isin`.
 - Improved `functions.sort_array` and `functions.transform`, they can now be correctly used together. 
   But their signature has changed. They now take functions as arguments instead of strings.
