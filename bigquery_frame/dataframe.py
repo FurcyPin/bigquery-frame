@@ -12,6 +12,7 @@ from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_
 
 if TYPE_CHECKING:
     from bigquery_frame.bigquery_builder import BigQueryBuilder
+    from bigquery_frame.grouped_data import GroupedData
 
 A = TypeVar("A")
 B = TypeVar("B")
@@ -36,6 +37,10 @@ SUPPORTED_JOIN_TYPES = {
     "leftanti": "LEFT",
     "left_anti": "LEFT",
 }
+
+
+def is_numeric(schema_field: SchemaField) -> bool:
+    return schema_field.field_type in ["INTEGER", "NUMERIC", "BIGNUMERIC", "FLOAT"]
 
 
 def is_repeated(schema_field: SchemaField) -> bool:
@@ -171,7 +176,7 @@ class DataFrame:
         |  2 |   Ivysaur |
         |  3 |  Venusaur |
         +----+-----------+
-        >>> df[ df["id"] > 1 ].show()
+        >>> df[df["id"] > 1 ].show()
         +----+----------+
         | id |     name |
         +----+----------+
@@ -242,6 +247,33 @@ class DataFrame:
         if self._schema is None:
             self._schema = self._compute_schema()
         return self._schema
+
+    def agg(self, *cols: Column) -> "DataFrame":
+        """Aggregate on the entire :class:`DataFrame` without groups (shorthand for `df.groupBy().agg()`).
+
+        Args:
+            *cols: Columns or expressions to aggregate DataFrame by.
+
+        Returns:
+            Aggregated DataFrame.
+
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> from bigquery_frame import functions as f
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''
+            ...     SELECT 2 as age, "Alice" as name
+            ...     UNION ALL
+            ...     SELECT 5 as age, "Bob" as name
+            ...  ''')
+            >>> df.agg(f.max("age").alias("max_age"), f.min("age").alias("min_age")).show()
+            +---------+---------+
+            | max_age | min_age |
+            +---------+---------+
+            |       5 |       2 |
+            +---------+---------+
+        """
+        return self.groupBy().agg(*cols)  # type: ignore[arg-type]
 
     def alias(self, alias) -> "DataFrame":
         """Returns a new :class:`DataFrame` with an alias set."""
@@ -359,6 +391,72 @@ class DataFrame:
             |WHERE {str(condition)}"""
         )
         return self._apply_query(query)
+
+    def groupBy(self, *cols: StringOrColumn) -> "GroupedData":
+        """Groups the :class:`DataFrame` using the specified columns, so we can run aggregation on them.
+        See :class:`GroupedData` for all the available aggregate functions.
+
+        Args:
+            *cols: Columns to group by.
+                Each element should be a column name (string) or an expression (:class:`Column`).
+
+        Returns:
+            Grouped data by given columns.
+
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''
+            ...     SELECT * FROM UNNEST([
+            ...         STRUCT(2 as age, "Alice" as name, 80 as height),
+            ...         STRUCT(2 as age, "Alice" as name, 100 as height),
+            ...         STRUCT(2 as age, "Bob" as name, 120 as height),
+            ...         STRUCT(5 as age, "Bob" as name, 140 as height)
+            ...     ])
+            ... ''')
+            >>> df.show()
+            +-----+-------+--------+
+            | age |  name | height |
+            +-----+-------+--------+
+            |   2 | Alice |     80 |
+            |   2 | Alice |    100 |
+            |   2 |   Bob |    120 |
+            |   5 |   Bob |    140 |
+            +-----+-------+--------+
+
+            Empty grouping columns triggers a global aggregation.
+
+            >>> df.groupBy().avg().show()
+            +---------+------------+
+            | avg_age | avg_height |
+            +---------+------------+
+            |    2.75 |      110.0 |
+            +---------+------------+
+
+            Group-by 'name', and calculate maximum values.
+
+            >>> df.groupBy(df["name"]).max().sort("name").show()
+            +-------+---------+------------+
+            |  name | max_age | max_height |
+            +-------+---------+------------+
+            | Alice |       2 |        100 |
+            |   Bob |       5 |        140 |
+            +-------+---------+------------+
+
+            Group-by 'name' and 'age', and calculate the number of rows in each group.
+
+            >>> df.groupBy("name", df["age"]).count().sort("name", "age").show()
+            +-------+-----+-------+
+            |  name | age | count |
+            +-------+-----+-------+
+            | Alice |   2 |     2 |
+            |   Bob |   2 |     1 |
+            |   Bob |   5 |     1 |
+            +-------+-----+-------+
+        """
+        from bigquery_frame.grouped_data import GroupedData
+
+        return GroupedData(self, list(cols))
 
     def join(
         self,
