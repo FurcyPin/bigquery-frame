@@ -1,6 +1,5 @@
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
-from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.temp_names import _get_temp_column_name
 from bigquery_frame.utils import indent, lit_to_col, lit_to_cols, quote, str_to_col, strip_margin
 
@@ -14,16 +13,6 @@ def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = Non
         return indent(f"{sep}\n".join(str_cols), indentation)
     else:
         return ", ".join(str_cols)
-
-
-def literal_col(col: LitOrColumn) -> "Column":
-    if col is None:
-        return Column("NULL")
-    elif type(col) == str:
-        return Column(f"'{col}'")
-    elif type(col) in [bool, int, float, bytes]:
-        return Column(str(col))
-    raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported yet.")
 
 
 def _bin_op(op: str) -> Callable[["Column", LitOrColumn], "Column"]:
@@ -284,8 +273,10 @@ class Column:
         :param other: a :class:`Column` expression or a literal.
         :return: a :class:`Column` expression.
         """
+        from bigquery_frame import functions as f
+
         if not isinstance(other, Column):
-            other = literal_col(other)
+            other = f.lit(other)
         return (self.isNull() & other.isNull()) | (self.isNotNull() & other.isNotNull() & (self == other))
 
     def isin(self, *cols: LitOrColumn) -> "Column":

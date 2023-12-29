@@ -1,8 +1,9 @@
+import datetime
+import decimal
 import typing
-from typing import Callable, Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame.column import (
     Column,
     LitOrColumn,
@@ -11,10 +12,13 @@ from bigquery_frame.column import (
     TransformedArrayColumn,
     WhenColumn,
     cols_to_str,
-    literal_col,
 )
 from bigquery_frame.dataframe import DataFrame
+from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.utils import quote, str_to_col, str_to_cols
+
+RawType = Union[str, bool, int, float, bytes, decimal.Decimal, datetime.date, datetime.time, datetime.datetime]
+ComplexType = Union[RawType, List["ComplexType"], Dict[str, "ComplexType"]]
 
 
 def _invoke_function_over_column(function_name: str, col: StringOrColumn):
@@ -527,7 +531,113 @@ def length(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("LENGTH", col)
 
 
-lit = literal_col
+def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
+    """Creates a :class:`Column` of literal value.
+
+    The data type mapping between Python types and BigQuery types is as follows:
+
+    - `None` : `NULL`
+    - `str` : `STRING`
+    - `bool` : `BOOL`
+    - `int` : `INTEGER`
+    - `float` : `FLOAT64`
+    - `bytes` : `BYTES`
+    - `decimal`.Decimal : `BIGNUMERIC`
+    - `datetime.date` : `DATE`
+    - `datetime.time` : `TIME`
+    - `datetime.timestamp` : `DATETIME`, or `TIMESTAMP` if a timezone is defined
+    - `list[T]` : `ARRAY<T>`
+    - `dict[K, V]` : `STRUCT<k1: V1, k2: V2, ...>`
+
+    !!! note
+        Type `NUMERIC` can not be generated with this method, as the corresponding Python type is `decimal.Decimal`
+        which is converted into `BIGNUMERIC`.
+        If you need NUMERIC type specifically, you can call `.cast("NUMERIC")` from the result.
+
+    Args:
+        col : A basic Python type to convert into BigQuery literal.
+        If a column is passed, it returns the column as is.
+
+    Returns:
+        The literal instance.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id")
+        >>> df.select(
+        ...     f.lit(f.col("id")),
+        ...     f.lit(None).alias("null_col"),
+        ...     f.lit("a string").alias("string_col"),
+        ...     f.lit(True).alias("bool_col"),
+        ...     f.lit(1).alias("int_col"),
+        ...     f.lit(1.0).alias("float_col"),
+        ...     f.lit(b"\x01").alias("bytes_col"),
+        ...     f.lit(decimal.Decimal("123456789.123456789e3")).alias("bignumeric_col"),
+        ...     f.lit(datetime.date.fromisoformat("2024-01-01")).alias("date_col"),
+        ...     f.lit(datetime.time.fromisoformat("13:37:00")).alias("time_col"),
+        ...     f.lit(datetime.datetime.fromisoformat("2024-01-01T02:00:00")).alias("datetime_col"),
+        ...     f.lit(datetime.datetime.fromisoformat("2024-01-01T12:34:56.789012+02:00")).alias("timestamp_col"),
+        ... ).printSchema()
+        root
+         |-- id: INTEGER (NULLABLE)
+         |-- null_col: INTEGER (NULLABLE)
+         |-- string_col: STRING (NULLABLE)
+         |-- bool_col: BOOLEAN (NULLABLE)
+         |-- int_col: INTEGER (NULLABLE)
+         |-- float_col: FLOAT (NULLABLE)
+         |-- bytes_col: BYTES (NULLABLE)
+         |-- bignumeric_col: BIGNUMERIC (NULLABLE)
+         |-- date_col: DATE (NULLABLE)
+         |-- time_col: TIME (NULLABLE)
+         |-- datetime_col: DATETIME (NULLABLE)
+         |-- timestamp_col: TIMESTAMP (NULLABLE)
+        <BLANKLINE>
+
+        Create a literal from a list.
+
+        >>> df.select(lit([1, 2, 3]).alias("int_array_col")).show()
+        +---------------+
+        | int_array_col |
+        +---------------+
+        |     [1, 2, 3] |
+        +---------------+
+
+        Create a literal from a dict.
+
+        >>> df.select(lit({"age": 2, "name": "Alice", "friends": ["Bob", "Joe"]}).alias("struct_col")).show()
+        +--------------------------------------------------------+
+        |                                             struct_col |
+        +--------------------------------------------------------+
+        | {'age': 2, 'name': 'Alice', 'friends': ['Bob', 'Joe']} |
+        +--------------------------------------------------------+
+    """
+    if col is None:
+        return Column("NULL")
+    elif isinstance(col, list):
+        return array(*[lit(c) for c in col])
+    elif isinstance(col, dict):
+        return struct(*[lit(c).alias(alias) for alias, c in col.items()])
+    elif isinstance(col, Column):
+        return col
+    elif isinstance(col, str):
+        safe_col = col.replace('"', r"\"")
+        return Column(f'''r"""{safe_col}"""''')
+    elif isinstance(col, (bool, int, float, bytes)):
+        return Column(str(col))
+    elif isinstance(col, decimal.Decimal):
+        return Column(f"BIGNUMERIC '{str(col)}'")
+    elif isinstance(col, datetime.datetime):
+        if col.tzinfo is None:
+            return Column(f"DATETIME '{col.isoformat()}'")
+        else:
+            return Column(f"TIMESTAMP '{col.isoformat()}'")
+    elif isinstance(col, datetime.date):
+        return Column(f"DATE '{col.isoformat()}'")
+    elif isinstance(col, datetime.time):
+        return Column(f"TIME '{col.isoformat()}'")
+    raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported yet.")
 
 
 def lower(col: StringOrColumn) -> Column:
@@ -674,7 +784,7 @@ def regexp_replace(value: StringOrColumn, regexp: LitOrColumn, replacement: LitO
     ... SELECT '# Another heading' as heading
     ... ''')
     >>> from bigquery_frame import functions as f
-    >>> df.select(f.regexp_replace("heading", r'^# ([a-zA-Z0-9\\s]+$)', r'<h1>\\1</h1>').alias('s')).show()
+    >>> df.select(f.regexp_replace("heading", r'^# ([a-zA-Z0-9\s]+$)', r'<h1>\1</h1>').alias('s')).show()
     +--------------------------+
     |                        s |
     +--------------------------+
@@ -1075,7 +1185,7 @@ def when(condition: Column, value: Column) -> WhenColumn:
 
 
 def _get_test_df_1() -> DataFrame:
-    bq = BigQueryBuilder(get_bq_client())
+    bq = BigQueryBuilder()
     query = """
         SELECT * FROM UNNEST ([
             STRUCT(1 as col1, "a" as col2),
@@ -1087,7 +1197,7 @@ def _get_test_df_1() -> DataFrame:
 
 
 def _get_test_df_2() -> DataFrame:
-    bq = BigQueryBuilder(get_bq_client())
+    bq = BigQueryBuilder()
     query = """
         SELECT * FROM UNNEST ([
             STRUCT(NULL as a, NULL as b),
@@ -1099,7 +1209,7 @@ def _get_test_df_2() -> DataFrame:
 
 
 def _get_test_df_3() -> DataFrame:
-    bq = BigQueryBuilder(get_bq_client())
+    bq = BigQueryBuilder()
     query = """
         SELECT * FROM UNNEST ([
             STRUCT(2 as col1),
