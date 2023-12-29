@@ -13,90 +13,6 @@ from bigquery_frame.field_utils import substring_after_last_occurrence
 from bigquery_frame.utils import assert_true, quote, str_to_cols, strip_margin
 
 
-def _aliased_lit(col: Any, field_type: str) -> Column:
-    """Creates a :class:`Column` of literal value with an alias, when possible.
-
-    If the passed value is a :class:`Column`, it is returned as is.
-
-    When the values used in PIVOT are passed as literal, BigQuery automatically generates aliases for them,
-    when possible.
-
-    Some data types are not supported, such as FLOAT, TIME, DATETIME, TIMESTAMP and BYTES.
-    In this case an alias must be specified by the user.
-
-    Supported types are:
-        - `NULL`
-        - `STRING`
-        - `BOOL`
-        - `INTEGER`
-        - `NUMERIC`
-        - `BIGNUMERIC`
-        - `DATE`
-
-    Args:
-        col : A basic Python type to convert into BigQuery literal.
-
-    Returns:
-        The literal instance with a compatible alias
-
-    Examples:
-        >>> from bigquery_frame import BigQueryBuilder
-        >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql("SELECT 1 as id")
-        >>> df.select(
-        ...     _aliased_lit(None, "STRING"),
-        ...     _aliased_lit(True, "BOOLEAN"),
-        ...     _aliased_lit("a+b", "STRING"),
-        ...     _aliased_lit(1, "INTEGER"),
-        ...     _aliased_lit(decimal.Decimal("123456789.123456789e3"), "NUMERIC"),
-        ...     _aliased_lit(decimal.Decimal("123456789.123456789e3"), "BIGNUMERIC"),
-        ...     _aliased_lit(datetime.date.fromisoformat("2024-01-01"), "DATE"),
-        ... ).printSchema()
-        root
-         |-- NULL: INTEGER (NULLABLE)
-         |-- true: BOOLEAN (NULLABLE)
-         |-- a+b: STRING (NULLABLE)
-         |-- 1: INTEGER (NULLABLE)
-         |-- 123456789123_point_456789: NUMERIC (NULLABLE)
-         |-- 123456789123_point_456789_1: BIGNUMERIC (NULLABLE)
-         |-- 2024_01_01: DATE (NULLABLE)
-        <BLANKLINE>
-
-        Create a literal from a list.
-    """
-    if col is None:
-        return Column("NULL").alias("NULL")
-    elif isinstance(col, Column):
-        return col
-    elif isinstance(col, str):
-        safe_col = col.replace('"', r"\"")
-        return Column(f'''r"""{safe_col}"""''').alias(quote(col))
-    elif isinstance(col, bool):
-        return Column(str(col)).alias(str(col).lower())
-    elif isinstance(col, int):
-        return Column(str(col)).alias(str(col))
-    elif isinstance(col, decimal.Decimal):
-        allowed_types = ["NUMERIC", "BIGNUMERIC"]
-        assert_true(
-            field_type in allowed_types,
-            UnexpectedException(
-                f"field_type is not one of the expected type {allowed_types} but is instead: {field_type}"
-            ),
-        )
-        return Column(f"{field_type} '{str(col)}'").alias(
-            str(col).replace(".", "_point_"),
-        )
-    elif isinstance(col, datetime.date):
-        return Column(f"DATE '{col.isoformat()}'").alias(col.isoformat().replace("-", "_"))
-    raise AnalysisException(
-        f"Pivoted columns type {field_type} "
-        f"can not be automatically inferred. "
-        f"Their values must be provided manually as aliased columns "
-        f"via the pivoted_columns argument"
-    )
-
-
 class GroupedData:
     def __init__(
         self,
@@ -122,6 +38,9 @@ class GroupedData:
 
         Args:
             cols : A list of aggregate :class:`Column` expressions.
+
+        Raises:
+            bigquery_frame.exceptions.AnalysisException: If incorrect arguments are detected.
 
         Examples:
             >>> from bigquery_frame.grouped_data import _get_test_df
@@ -450,8 +369,12 @@ class GroupedData:
             pivot_column:
             pivoted_columns:
 
+        Raises:
+            bigquery_frame.exceptions.UnsupportedOperationException: if `.pivot(...)` is called multiple times
+
         Returns:
 
+            >>> from bigquery_frame import functions as f
             >>> from bigquery_frame import BigQueryBuilder
             >>> bq = BigQueryBuilder()
             >>> df1 = bq.sql('''
@@ -483,11 +406,24 @@ class GroupedData:
             | 2012 | 20000 |  15000 |
             | 2013 | 30000 |  48000 |
             +------+-------+--------+
+
+            >>> df1.groupBy(f.col("year")).pivot("course").agg(
+            ...     f.min("earnings").alias("min_earnings"),
+            ...     f.max("earnings").alias("max_earnings")
+            ... ).show()
+            +------+-------------------+---------------------+-------------------+---------------------+
+            | year | min_earnings_Java | min_earnings_dotNET | max_earnings_Java | max_earnings_dotNET |
+            +------+-------------------+---------------------+-------------------+---------------------+
+            | 2012 |             20000 |                5000 |             20000 |               10000 |
+            | 2013 |             30000 |               48000 |             30000 |               48000 |
+            +------+-------------------+---------------------+-------------------+---------------------+
         """
-        if self.__pivot_column is not None:
-            raise UnsupportedOperationException(
+        assert_true(
+            self.__pivot_column is None,
+            UnsupportedOperationException(
                 "[REPEATED_CLAUSE] The PIVOT clause may be used at most once per SUBQUERY operation."
-            )
+            ),
+        )
         return GroupedData(self.__df, self.__grouped_columns, pivot_column, pivoted_columns)
 
     def __generate_group_by_query(self, *agg_cols: Column) -> str:
@@ -571,6 +507,98 @@ class GroupedData:
                     for col in cols
                 ]
             )
+
+
+def _aliased_lit(col: Any, field_type: str) -> Column:
+    """Creates a :class:`Column` of literal value with an alias, when possible.
+
+    If the passed value is a :class:`Column`, it is returned as is.
+
+    When the values used in PIVOT are passed as literal, BigQuery automatically generates aliases for them,
+    when possible.
+
+    Some data types are not supported, such as FLOAT, TIME, DATETIME, TIMESTAMP and BYTES.
+    In this case an alias must be specified by the user.
+
+    Supported types are:
+        - `NULL`
+        - `STRING`
+        - `BOOL`
+        - `INTEGER`
+        - `NUMERIC`
+        - `BIGNUMERIC`
+        - `DATE`
+
+    Args:
+        col : A basic Python type to convert into BigQuery literal.
+
+    Returns:
+        The literal instance with a compatible alias
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id")
+        >>> df.select(
+        ...     _aliased_lit(f.col("id"), "INTEGER"),
+        ...     _aliased_lit(None, "STRING"),
+        ...     _aliased_lit(True, "BOOLEAN"),
+        ...     _aliased_lit("a+b", "STRING"),
+        ...     _aliased_lit(1, "INTEGER"),
+        ...     _aliased_lit(decimal.Decimal("123456789.123456789e3"), "NUMERIC"),
+        ...     _aliased_lit(decimal.Decimal("123456789.123456789e3"), "BIGNUMERIC"),
+        ...     _aliased_lit(datetime.date.fromisoformat("2024-01-01"), "DATE"),
+        ... ).printSchema()
+        root
+         |-- id: INTEGER (NULLABLE)
+         |-- NULL: INTEGER (NULLABLE)
+         |-- true: BOOLEAN (NULLABLE)
+         |-- a+b: STRING (NULLABLE)
+         |-- 1: INTEGER (NULLABLE)
+         |-- 123456789123_point_456789: NUMERIC (NULLABLE)
+         |-- 123456789123_point_456789_1: BIGNUMERIC (NULLABLE)
+         |-- 2024_01_01: DATE (NULLABLE)
+        <BLANKLINE>
+
+        >>> df.select(_aliased_lit(b"A", "BYTES"))
+        Traceback (most recent call last):
+          ...
+        bigquery_frame.exceptions.AnalysisException: Pivoted columns type BYTES can not be automatically inferred.
+        Their values must be provided manually as aliased columns via the pivoted_columns argument.
+
+        Create a literal from a list.
+    """  # noqa E502
+    if col is None:
+        return Column("NULL").alias("NULL")
+    elif isinstance(col, Column):
+        return col
+    elif isinstance(col, str):
+        safe_col = col.replace('"', r"\"")
+        return Column(f'''r"""{safe_col}"""''').alias(quote(col))
+    elif isinstance(col, bool):
+        return Column(str(col)).alias(str(col).lower())
+    elif isinstance(col, int):
+        return Column(str(col)).alias(str(col))
+    elif isinstance(col, decimal.Decimal):
+        allowed_types = ["NUMERIC", "BIGNUMERIC"]
+        assert_true(
+            field_type in allowed_types,
+            UnexpectedException(
+                f"field_type is not one of the expected type {allowed_types} but is instead: {field_type}"
+            ),
+        )
+        return Column(f"{field_type} '{str(col)}'").alias(
+            str(col).replace(".", "_point_"),
+        )
+    elif isinstance(col, datetime.date):
+        return Column(f"DATE '{col.isoformat()}'").alias(col.isoformat().replace("-", "_"))
+    raise AnalysisException(
+        f"Pivoted columns type {field_type} "
+        f"can not be automatically inferred.\n"
+        f"Their values must be provided manually as aliased columns "
+        f"via the pivoted_columns argument."
+    )
 
 
 def _get_test_df() -> DataFrame:

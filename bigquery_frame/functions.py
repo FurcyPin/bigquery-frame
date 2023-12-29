@@ -561,6 +561,9 @@ def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
     Returns:
         The literal instance.
 
+    Raises:
+        bigquery_frame.exceptions.IllegalArgumentException: if the argument's type is not supported
+
     Examples:
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame import functions as f
@@ -597,7 +600,7 @@ def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
 
         Create a literal from a list.
 
-        >>> df.select(lit([1, 2, 3]).alias("int_array_col")).show()
+        >>> df.select(f.lit([1, 2, 3]).alias("int_array_col")).show()
         +---------------+
         | int_array_col |
         +---------------+
@@ -606,12 +609,25 @@ def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
 
         Create a literal from a dict.
 
-        >>> df.select(lit({"age": 2, "name": "Alice", "friends": ["Bob", "Joe"]}).alias("struct_col")).show()
+        >>> df.select(f.lit({"age": 2, "name": "Alice", "friends": ["Bob", "Joe"]}).alias("struct_col")).show()
         +--------------------------------------------------------+
         |                                             struct_col |
         +--------------------------------------------------------+
         | {'age': 2, 'name': 'Alice', 'friends': ['Bob', 'Joe']} |
         +--------------------------------------------------------+
+
+
+        >>> df.select(f.lit({"age": 2, "name": "Alice", "friends": ["Bob", "Joe"]}).alias("struct_col")).show()
+        +--------------------------------------------------------+
+        |                                             struct_col |
+        +--------------------------------------------------------+
+        | {'age': 2, 'name': 'Alice', 'friends': ['Bob', 'Joe']} |
+        +--------------------------------------------------------+
+
+        >>> df.select(f.lit(range(0, 1)))
+        Traceback (most recent call last):
+            ...
+        bigquery_frame.exceptions.IllegalArgumentException: lit(range(0, 1)): The type <class 'range'> is not supported.
     """
     if col is None:
         return Column("NULL")
@@ -637,7 +653,7 @@ def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
         return Column(f"DATE '{col.isoformat()}'")
     elif isinstance(col, datetime.time):
         return Column(f"TIME '{col.isoformat()}'")
-    raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported yet.")
+    raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported.")
 
 
 def lower(col: StringOrColumn) -> Column:
