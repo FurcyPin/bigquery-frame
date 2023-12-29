@@ -630,7 +630,7 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 Improvements:
 
-- Added support for `DataFrame.groupBy`.
+- Added support for `DataFrame.groupBy`. It also supports `DataFrame.groupBy(...).pivot(...)`.
 - `transformations.pivot` now support doing multiple aggregations at the same time.
   It's signature has changed: The arguments `agg_fun` and `agg_col` have been replaced with `aggs`
   and the argument `implem_version` has been removed: The first implementation version has been removed. 

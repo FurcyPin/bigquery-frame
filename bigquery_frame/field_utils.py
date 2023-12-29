@@ -224,4 +224,21 @@ def substring_before_last_occurrence(s: str, sep: str) -> str:
     if index == -1:
         return ""
     else:
-        return s[0:index]
+        return s[:index]
+
+
+def substring_after_last_occurrence(s: str, sep: str) -> str:
+    """
+    >>> substring_after_last_occurrence("abc", ".")
+    'abc'
+    >>> substring_after_last_occurrence("abc.d", ".")
+    'd'
+    >>> substring_after_last_occurrence("abc.d.e", ".")
+    'e'
+
+    """
+    index = s.rfind(sep)
+    if index == -1:
+        return s
+    else:
+        return s[index + 1 :]
