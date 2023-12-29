@@ -644,10 +644,14 @@ Improvements:
   - `mean`
   - `regexp_replace`
   - `upper`
+- method `functions.lit` can now generate most BigQuery types:
+  - STRING, BYTES
+  - DATE, TIME, DATETIME, TIMESTAMP
+  - INT, FLOAT, BIGNUMERIC
+  - ARRAY and STRUCTS
 - Added new method `Column.isin`.
 - Improved `functions.sort_array` and `functions.transform`, they can now be correctly used together. 
   But their signature has changed. They now take functions as arguments instead of strings.
-- method `functions.lit` not support the `bytes` type.
 
 Breaking changes:
 
