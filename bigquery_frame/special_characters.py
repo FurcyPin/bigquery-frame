@@ -1,5 +1,5 @@
+from bigquery_frame import Column
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column
 from bigquery_frame.conf import (
     REPETITION_MARKER,
     REPETITION_MARKER_REPLACEMENT,

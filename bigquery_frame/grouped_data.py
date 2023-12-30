@@ -3,8 +3,8 @@ import decimal
 from functools import cached_property
 from typing import Any, Callable, List, Optional
 
-from bigquery_frame import DataFrame, functions
-from bigquery_frame.column import Column, ColumnOrName, LitOrColumn, cols_to_str
+from bigquery_frame import Column, DataFrame, functions
+from bigquery_frame.column import ColumnOrName, LitOrColumn, cols_to_str
 from bigquery_frame.conf import STRUCT_SEPARATOR
 from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import is_numeric

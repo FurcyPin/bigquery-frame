@@ -3,7 +3,8 @@ import re
 from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, TypeVar, Union
 
 if TYPE_CHECKING:
-    from bigquery_frame.column import Column, ColumnOrName, LitOrColumn
+    from bigquery_frame import Column
+    from bigquery_frame.column import ColumnOrName, LitOrColumn
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -154,8 +155,8 @@ def lit_to_col(args: "LitOrColumn") -> "Column":
         >>> lit_to_col("*")
         Column<'r\"\"\"*\"\"\"'>
     """
+    from bigquery_frame import Column
     from bigquery_frame import functions as f
-    from bigquery_frame.column import Column
 
     if isinstance(args, Column):
         return args

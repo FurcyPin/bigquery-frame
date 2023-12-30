@@ -4,10 +4,9 @@ import pytest
 
 import bigquery_frame
 import bigquery_frame.exceptions
-from bigquery_frame import BigQueryBuilder
+from bigquery_frame import BigQueryBuilder, Column
 from bigquery_frame import functions as f
 from bigquery_frame import nested
-from bigquery_frame.column import Column
 from bigquery_frame.fp.printable_function import PrintableFunction
 from bigquery_frame.nested_impl.package import (
     _build_nested_struct_tree,

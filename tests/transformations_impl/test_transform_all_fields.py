@@ -2,8 +2,7 @@ from typing import Optional
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import BigQueryBuilder, nested
-from bigquery_frame.column import Column
+from bigquery_frame import BigQueryBuilder, Column, nested
 from bigquery_frame.transformations import transform_all_fields
 from bigquery_frame.utils import strip_margin
 

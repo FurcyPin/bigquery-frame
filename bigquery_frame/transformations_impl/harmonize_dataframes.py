@@ -1,8 +1,7 @@
 from typing import Dict, Optional, Tuple
 
-from bigquery_frame import DataFrame
+from bigquery_frame import Column, DataFrame
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column
 from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 

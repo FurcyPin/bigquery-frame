@@ -2,10 +2,10 @@ from typing import Callable, List, Optional, Union
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import BigQueryBuilder, DataFrame
+from bigquery_frame import BigQueryBuilder, Column, DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column, ColumnOrName, cols_to_str
+from bigquery_frame.column import ColumnOrName, cols_to_str
 from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.transformations_impl import analyze_aggs

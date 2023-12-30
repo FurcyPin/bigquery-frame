@@ -1,8 +1,7 @@
 from typing import Any, Callable, List, Optional
 
-from bigquery_frame import DataFrame, fp
+from bigquery_frame import Column, DataFrame, fp
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column
 from bigquery_frame.fp import PrintableFunction
 from bigquery_frame.utils import quote
 from bigquery_frame.utils import str_to_col as _str_to_col

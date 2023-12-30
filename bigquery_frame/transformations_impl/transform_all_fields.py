@@ -2,8 +2,7 @@ from typing import Callable, Optional
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import DataFrame
-from bigquery_frame.column import Column
+from bigquery_frame import Column, DataFrame
 from bigquery_frame.nested_impl.package import build_transformation_from_schema
 
 

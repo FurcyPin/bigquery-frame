@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Seque
 from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
-from bigquery_frame.column import Column, ColumnOrName, cols_to_str
+from bigquery_frame import Column
+from bigquery_frame.column import ColumnOrName, cols_to_str
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, list_or_tuple_to_list, quote, str_to_cols, strip_margin
