@@ -108,6 +108,23 @@ def test_select(bq: BigQueryBuilder):
         df.select(["c1"], ["c2"])
 
 
+def test_select_with_structs(bq: BigQueryBuilder):
+    """Select should work with field names inside structs"""
+    df = bq.sql("""SELECT STRUCT(1 as c1, 2 as c2) as s""")
+    expected = [SchemaField("c1", "INTEGER", "NULLABLE"), SchemaField("c2", "INTEGER", "NULLABLE")]
+
+    assert df.select("s.c1", "s.c2").schema == expected
+
+
+def test_select_with_special_chars_in_col_names(bq: BigQueryBuilder):
+    """Select should work when columns have special characters in their name"""
+    df = bq.sql("""SELECT STRUCT(1 as `c+1`, 2 as `c+2`) as `s+0`""")
+
+    expected = [SchemaField("c+1", "INTEGER", "NULLABLE"), SchemaField("c+2", "INTEGER", "NULLABLE")]
+
+    assert df.select("s+0.c+1", "s+0.c+2").schema == expected
+
+
 def test_bare_strings(bq: BigQueryBuilder):
     df = bq.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col""")
     df2 = df.select("id", "name", "types")

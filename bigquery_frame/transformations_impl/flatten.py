@@ -3,6 +3,7 @@ from typing import List
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import DataFrame
+from bigquery_frame import functions as f
 from bigquery_frame.dataframe import is_repeated, is_struct
 
 
@@ -51,7 +52,9 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
             if is_struct(field) and not is_repeated(field):
                 expand_struct(field.fields, col_stack + [field.name])
             else:
-                column = ".".join(col_stack + [field.name]) + " as " + struct_separator.join(col_stack + [field.name])
+                col_expr = ".".join(col_stack + [field.name])
+                col_alias = struct_separator.join(col_stack + [field.name])
+                column = f.col(col_expr).alias(col_alias)
                 cols.append(column)
 
     expand_struct(df.schema, col_stack=[])
