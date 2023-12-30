@@ -727,8 +727,42 @@ class DataFrame:
         """
         print(self.compile())
 
-    def select(self, *columns: Union[Sequence[ColumnOrName], ColumnOrName]) -> "DataFrame":
-        """Projects a set of expressions and returns a new :class:`DataFrame`."""
+    def select(self, *columns: Union[ColumnOrName, List[ColumnOrName]]) -> "DataFrame":
+        """Projects a set of expressions and returns a new :class:`DataFrame`.
+
+        Args:
+            *columns: Column names (string) or expressions (:class:`Column`), or list of those.
+                If one of the column names is '*', that column is expanded to include all columns
+                in the current :class:`DataFrame`.
+
+        Returns:
+            A DataFrame with subset (or all) of columns.
+
+        Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT * FROM UNNEST([STRUCT(2 as age, 'Alice' as name), STRUCT(5 as age, 'Bob' as name)])")
+
+        Select all columns in the DataFrame.
+
+        >>> df.select('*').show()
+        +-----+-------+
+        | age |  name |
+        +-----+-------+
+        |   2 | Alice |
+        |   5 |   Bob |
+        +-----+-------+
+
+        Select a column with other expressions in the DataFrame.
+
+        >>> df.select(df["name"], (df["age"] + 10).alias('age')).show()
+        +-------+-----+
+        |  name | age |
+        +-------+-----+
+        | Alice |  12 |
+        |   Bob |  15 |
+        +-------+-----+
+        """
         cols = list_or_tuple_to_list(*columns)
         cols = str_to_cols(cols)
         query = strip_margin(
