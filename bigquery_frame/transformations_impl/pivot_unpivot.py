@@ -1,12 +1,12 @@
 from typing import List
 
 from bigquery_frame import BigQueryBuilder, DataFrame
-from bigquery_frame.column import StringOrColumn, cols_to_str
+from bigquery_frame.column import ColumnOrName, cols_to_str
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.utils import quote
 
 
-def pivot(df: DataFrame, pivot_column: str, aggs: List[StringOrColumn], pivoted_columns: List[str] = None) -> DataFrame:
+def pivot(df: DataFrame, pivot_column: str, aggs: List[ColumnOrName], pivoted_columns: List[str] = None) -> DataFrame:
     """Pivots a column of the current :class:`DataFrame` and performs the specified aggregation.
     There are two versions of pivot function: one that requires the caller to specify the list
     of distinct values to pivot on, and one that does not. The latter is more concise but less

@@ -4,7 +4,7 @@ from functools import cached_property
 from typing import Any, Callable, List, Optional
 
 from bigquery_frame import DataFrame, functions
-from bigquery_frame.column import Column, LitOrColumn, StringOrColumn, cols_to_str
+from bigquery_frame.column import Column, ColumnOrName, LitOrColumn, cols_to_str
 from bigquery_frame.conf import STRUCT_SEPARATOR
 from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import is_numeric
@@ -17,12 +17,12 @@ class GroupedData:
     def __init__(
         self,
         df: DataFrame,
-        grouped_columns: List[StringOrColumn],
+        grouped_columns: List[ColumnOrName],
         pivot_column: Optional[str] = None,
         pivoted_columns: Optional[List[LitOrColumn]] = None,
     ):
         self.__df = df
-        self.__grouped_columns: List[StringOrColumn] = grouped_columns
+        self.__grouped_columns: List[ColumnOrName] = grouped_columns
         self.__pivot_column = pivot_column
         self.__pivoted_columns: Optional[List[LitOrColumn]] = pivoted_columns
 

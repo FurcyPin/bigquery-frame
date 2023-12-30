@@ -3,7 +3,7 @@ import re
 from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, TypeVar, Union
 
 if TYPE_CHECKING:
-    from bigquery_frame.column import Column, LitOrColumn, StringOrColumn
+    from bigquery_frame.column import Column, ColumnOrName, LitOrColumn
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -102,7 +102,7 @@ def quote_columns(columns: List[str]) -> List[str]:
     return [quote(col) for col in columns]
 
 
-def str_to_col(args: "StringOrColumn") -> "Column":
+def str_to_col(args: "ColumnOrName") -> "Column":
     """Converts string or Column argument to Column types
 
     Examples:
@@ -124,7 +124,7 @@ def str_to_col(args: "StringOrColumn") -> "Column":
         return args
 
 
-def str_to_cols(args: Iterable["StringOrColumn"]) -> List["Column"]:
+def str_to_cols(args: Iterable["ColumnOrName"]) -> List["Column"]:
     """Converts string or Column arguments to Column types
 
     Examples:
