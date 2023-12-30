@@ -2,9 +2,8 @@ from typing import Optional
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import DataFrame
+from bigquery_frame import Column, DataFrame
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column
 from bigquery_frame.dataframe import is_repeated, is_struct
 from bigquery_frame.transformations_impl.transform_all_fields import transform_all_fields
 

@@ -4,9 +4,9 @@ from typing import Callable, Dict, Generator, Iterable, List, Mapping, Optional,
 
 from google.cloud.bigquery import SchemaField
 
-from bigquery_frame import fp
+from bigquery_frame import Column, fp
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column, cols_to_str
+from bigquery_frame.column import cols_to_str
 from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.dataframe import DataFrame, is_repeated, is_struct
 from bigquery_frame.exceptions import AnalysisException

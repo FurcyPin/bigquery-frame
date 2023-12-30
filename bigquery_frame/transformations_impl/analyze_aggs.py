@@ -1,7 +1,7 @@
 from google.cloud.bigquery import SchemaField
 
+from bigquery_frame import Column
 from bigquery_frame import functions as f
-from bigquery_frame.column import Column
 
 
 def _to_string(col: Column, field_type: str):
