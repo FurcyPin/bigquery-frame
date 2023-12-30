@@ -655,7 +655,9 @@ Improvements:
 
 Breaking changes:
 
-- Dropped support for Python 3.7 
+- Dropped support for Python 3.7
+- `DataFrame.join` does not supports string expression. For instance `df1.join(df2, on="col1 == col2")` 
+  must be rewritten `df1.join(df2, on=df1["col1"] == df2["col2"])`
 - The signature of the `transformations.pivot` method has changed: 
   The arguments `agg_fun` and `agg_col` have been replaced with `aggs` and the argument `implem_version` 
   has been removed: The first implementation version has been removed. 
