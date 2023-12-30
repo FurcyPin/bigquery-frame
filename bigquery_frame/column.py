@@ -4,10 +4,10 @@ from bigquery_frame.temp_names import _get_temp_column_name
 from bigquery_frame.utils import indent, lit_to_col, lit_to_cols, quote, str_to_col, strip_margin
 
 LitOrColumn = Union[object, "Column"]
-StringOrColumn = Union[str, "Column"]
+ColumnOrName = Union[str, "Column"]
 
 
-def cols_to_str(cols: Iterable[StringOrColumn], indentation: Optional[int] = None, sep: str = ",") -> str:
+def cols_to_str(cols: Iterable[ColumnOrName], indentation: Optional[int] = None, sep: str = ",") -> str:
     str_cols = [str(col) for col in cols]
     if indentation is not None:
         return indent(f"{sep}\n".join(str_cols), indentation)

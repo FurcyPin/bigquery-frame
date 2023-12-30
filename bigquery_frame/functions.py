@@ -6,9 +6,9 @@ from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tupl
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.column import (
     Column,
+    ColumnOrName,
     LitOrColumn,
     SortedArrayColumn,
-    StringOrColumn,
     TransformedArrayColumn,
     WhenColumn,
     cols_to_str,
@@ -21,13 +21,13 @@ RawType = Union[str, bool, int, float, bytes, decimal.Decimal, datetime.date, da
 ComplexType = Union[RawType, List["ComplexType"], Dict[str, "ComplexType"]]
 
 
-def _invoke_function_over_column(function_name: str, col: StringOrColumn):
+def _invoke_function_over_column(function_name: str, col: ColumnOrName):
     """Invoke a SQL function with 1 argument"""
     col = str_to_col(col)
     return Column(f"{function_name}({col.expr})")
 
 
-def approx_count_distinct(col: StringOrColumn) -> Column:
+def approx_count_distinct(col: ColumnOrName) -> Column:
     """Aggregate function: returns a new :class:`bigquery_frame.column.Column` for approximate distinct count
     of column `col`.
 
@@ -55,7 +55,7 @@ def approx_count_distinct(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
 
 
-def array(*cols: Union[StringOrColumn, Sequence[StringOrColumn]]) -> Column:
+def array(*cols: Union[ColumnOrName, Sequence[ColumnOrName]]) -> Column:
     """Creates a new array column.
 
     Limitations
@@ -88,18 +88,18 @@ def array(*cols: Union[StringOrColumn, Sequence[StringOrColumn]]) -> Column:
     :param cols: a list or set of str (column names) or :class:`Column` that have the same data type.
     :return:
     """
-    columns: Iterable[StringOrColumn]
+    columns: Iterable[ColumnOrName]
     if len(cols) == 1 and isinstance(cols[0], (List, Set)):
         columns = cols[0]
     else:
-        columns = typing.cast(Tuple[StringOrColumn], cols)
+        columns = typing.cast(Tuple[ColumnOrName], cols)
     str_cols = [col.expr for col in str_to_cols(columns)]
     return Column(f"[{cols_to_str(str_cols)}]")
 
 
 def array_agg(
-    col: StringOrColumn,
-    order_by: Optional[Union[StringOrColumn, List[StringOrColumn]]] = None,
+    col: ColumnOrName,
+    order_by: Optional[Union[ColumnOrName, List[ColumnOrName]]] = None,
     distinct: bool = False,
     ignore_nulls: bool = False,
     limit: Optional[int] = None,
@@ -179,7 +179,7 @@ def array_agg(
     return Column(f"ARRAY_AGG({distinct_str}{col_str}{ignore_nulls_str}{order_by_str}{limit_str})")
 
 
-def asc(col: StringOrColumn) -> Column:
+def asc(col: ColumnOrName) -> Column:
     """Returns a sort expression based on the ascending order of the given column.
 
     >>> df = _get_test_df_3()
@@ -205,7 +205,7 @@ def asc(col: StringOrColumn) -> Column:
     return Column(f"{str_to_col(col).expr} ASC")
 
 
-def avg(col: StringOrColumn) -> Column:
+def avg(col: ColumnOrName) -> Column:
     """Aggregate function: returns the average of the values in a group.
 
     >>> df = _get_test_df_3()
@@ -229,7 +229,7 @@ def avg(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("AVG", col)
 
 
-def cast(col: StringOrColumn, tpe: str) -> Column:
+def cast(col: ColumnOrName, tpe: str) -> Column:
     """Converts a column to the specified type.
 
     Available types are listed here:
@@ -259,7 +259,7 @@ def cast(col: StringOrColumn, tpe: str) -> Column:
     return Column(f"CAST({str_col.expr} as {tpe.upper()})")
 
 
-def coalesce(*cols: StringOrColumn) -> Column:
+def coalesce(*cols: ColumnOrName) -> Column:
     """Returns the first column that is not null.
 
     Available types are listed here:
@@ -293,7 +293,7 @@ def col(expr: str) -> Column:
     return Column(expr=quote(expr))
 
 
-def concat(*cols: StringOrColumn) -> Column:
+def concat(*cols: ColumnOrName) -> Column:
     """Concatenates one or more values into a single result. All values must be BYTES or data types
     that can be cast to STRING. The function returns NULL if any input argument is NULL.
 
@@ -316,7 +316,7 @@ def concat(*cols: StringOrColumn) -> Column:
     return Column(f"CONCAT({cols_to_str(str_cols)})")
 
 
-def count(col: StringOrColumn) -> Column:
+def count(col: ColumnOrName) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
     >>> df = _get_test_df_1()
@@ -345,7 +345,7 @@ def count(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("COUNT", col)
 
 
-def count_distinct(col: StringOrColumn) -> Column:
+def count_distinct(col: ColumnOrName) -> Column:
     """Aggregate function: returns the number of distinct non-null values
 
     >>> df = _get_test_df_1()
@@ -373,7 +373,7 @@ def count_distinct(col: StringOrColumn) -> Column:
     return Column(f"COUNT(DISTINCT {str_col.expr})")
 
 
-def desc(col: StringOrColumn) -> Column:
+def desc(col: ColumnOrName) -> Column:
     """Returns a sort expression based on the descending order of the given column.
 
     >>> df = _get_test_df_3()
@@ -418,7 +418,7 @@ def expr(expr: str) -> Column:
     return Column(expr)
 
 
-def from_base32(col: StringOrColumn) -> Column:
+def from_base32(col: ColumnOrName) -> Column:
     """Converts the base32-encoded input string_expr into BYTES format.
     To convert BYTES to a base32-encoded STRING, use :func:`to_base32`.
 
@@ -438,7 +438,7 @@ def from_base32(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("FROM_BASE32", col)
 
 
-def from_base64(col: StringOrColumn) -> Column:
+def from_base64(col: ColumnOrName) -> Column:
     """Converts the base64-encoded input string_expr into BYTES format.
     To convert BYTES to a base64-encoded STRING, use :func:`to_base64`.
 
@@ -494,7 +494,7 @@ def hash(*cols: Union[str, Column]) -> Column:
     return expr(f"FARM_FINGERPRINT(TO_JSON_STRING(STRUCT({cols_to_str(str_cols)})))")
 
 
-def isnull(col: StringOrColumn) -> Column:
+def isnull(col: ColumnOrName) -> Column:
     """An expression that returns true iff the column is null.
 
     >>> df = _get_test_df_1()
@@ -511,7 +511,7 @@ def isnull(col: StringOrColumn) -> Column:
     return Column(f"{str_to_col(col).expr} IS NULL")
 
 
-def length(col: StringOrColumn) -> Column:
+def length(col: ColumnOrName) -> Column:
     """Computes the character length of string data or number of bytes of binary data.
     The length of character data includes the trailing spaces. The length of binary data
     includes binary zeros.
@@ -656,7 +656,7 @@ def lit(col: Union[None, Column, RawType, ComplexType]) -> Column:
     raise IllegalArgumentException(f"lit({col}): The type {type(col)} is not supported.")
 
 
-def lower(col: StringOrColumn) -> Column:
+def lower(col: ColumnOrName) -> Column:
     """Converts a BYTES or STRING expression to lower case.
 
     For STRING arguments, returns the original string with all alphabetic characters in lowercase.
@@ -693,7 +693,7 @@ def lower(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("LOWER", col)
 
 
-def max(col: StringOrColumn) -> Column:
+def max(col: ColumnOrName) -> Column:
     """Aggregate function: returns the maximum value of the expression in a group.
 
     >>> df = _get_test_df_1()
@@ -720,7 +720,7 @@ def max(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("MAX", col)
 
 
-def mean(col: StringOrColumn) -> Column:
+def mean(col: ColumnOrName) -> Column:
     """Aggregate function: returns the average of the values in a group.
 
     >>> df = _get_test_df_3()
@@ -744,7 +744,7 @@ def mean(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("AVG", col)
 
 
-def min(col: StringOrColumn) -> Column:
+def min(col: ColumnOrName) -> Column:
     """Aggregate function: returns the minimum value of the expression in a group.
 
     >>> df = _get_test_df_1()
@@ -771,7 +771,7 @@ def min(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("MIN", col)
 
 
-def regexp_replace(value: StringOrColumn, regexp: LitOrColumn, replacement: LitOrColumn) -> Column:
+def regexp_replace(value: ColumnOrName, regexp: LitOrColumn, replacement: LitOrColumn) -> Column:
     r"""Returns a STRING where all substrings of `value` that match regular expression `regexp`
     are replaced with `replacement`.
 
@@ -821,7 +821,7 @@ def regexp_replace(value: StringOrColumn, regexp: LitOrColumn, replacement: LitO
     return Column(f"REGEXP_REPLACE({value.expr}, {regexp.expr}, {replacement.expr})")
 
 
-def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_value: LitOrColumn) -> Column:
+def replace(original_value: ColumnOrName, from_value: LitOrColumn, replace_value: LitOrColumn) -> Column:
     """Replaces all occurrences of `from_value` with `to_value` in `original_value`.
     If `from_value` is empty, no replacement is made.
 
@@ -867,7 +867,7 @@ def replace(original_value: StringOrColumn, from_value: LitOrColumn, replace_val
 
 
 def sort_array(
-    array: StringOrColumn,
+    array: ColumnOrName,
     sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = None,
 ) -> Column:
     """Collection function: sorts the input array according to the natural ordering of the array elements,
@@ -925,7 +925,7 @@ def sort_array(
     return SortedArrayColumn(str_array, sort_keys=sort_keys)
 
 
-def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] = None) -> Column:
+def substring(col: ColumnOrName, pos: LitOrColumn, len: Optional[LitOrColumn] = None) -> Column:
     """Return the substring that starts at `pos` and is of length `len`.
     If `len` is not specified, returns the substring that starts at `pos` until the end of the string
 
@@ -968,7 +968,7 @@ def substring(col: StringOrColumn, pos: LitOrColumn, len: Optional[LitOrColumn] 
         return Column(f"SUBSTRING({str_col.expr}, {pos.expr})")
 
 
-def sum(col: StringOrColumn) -> Column:
+def sum(col: ColumnOrName) -> Column:
     """Aggregate function: returns the number of rows where the specified column is not null
 
     >>> df = _get_test_df_1()
@@ -994,7 +994,7 @@ def sum(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("SUM", col)
 
 
-def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn]]) -> Column:
+def struct(*cols: Union[ColumnOrName, List[ColumnOrName], Set[ColumnOrName]]) -> Column:
     """Creates a new struct column.
 
     Examples
@@ -1021,16 +1021,16 @@ def struct(*cols: Union[StringOrColumn, List[StringOrColumn], Set[StringOrColumn
     :param cols: a list or set of str (column names) or :class:`Column` to be added to the output struct.
     :return:
     """
-    columns: Iterable[StringOrColumn]
+    columns: Iterable[ColumnOrName]
     if len(cols) == 1 and isinstance(cols[0], (List, Set)):
         columns = cols[0]
     else:
-        columns = typing.cast(Tuple[StringOrColumn], cols)
+        columns = typing.cast(Tuple[ColumnOrName], cols)
     # Unlike other functions (e.g. coalesce) we keep the column aliases here.
     return Column(f"STRUCT({cols_to_str(columns)})")
 
 
-def to_base32(col: StringOrColumn) -> Column:
+def to_base32(col: ColumnOrName) -> Column:
     """Converts a sequence of BYTES into a base32-encoded STRING.
     To convert a base32-encoded STRING into BYTES, use :func:`from_base32`.
 
@@ -1050,7 +1050,7 @@ def to_base32(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("TO_BASE32", col)
 
 
-def to_base64(col: StringOrColumn) -> Column:
+def to_base64(col: ColumnOrName) -> Column:
     """Converts a sequence of BYTES into a base64-encoded STRING.
     To convert a base64-encoded STRING into BYTES, use :func:`from_base64`.
 
@@ -1087,7 +1087,7 @@ def to_base64(col: StringOrColumn) -> Column:
     return _invoke_function_over_column("TO_BASE64", col)
 
 
-def transform(array: StringOrColumn, func: Callable[[Column], Column]) -> Column:
+def transform(array: ColumnOrName, func: Callable[[Column], Column]) -> Column:
     """Return an array of elements after applying a transformation to each element in the input array.
 
     Examples
@@ -1139,7 +1139,7 @@ def transform(array: StringOrColumn, func: Callable[[Column], Column]) -> Column
     return TransformedArrayColumn(str_array, func=func)
 
 
-def upper(col: StringOrColumn) -> Column:
+def upper(col: ColumnOrName) -> Column:
     """Converts a BYTES or STRING expression to upper case.
 
     For STRING arguments, returns the original string with all alphabetic characters in uppercase.

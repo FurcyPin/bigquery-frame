@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Seque
 from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
 
-from bigquery_frame.column import Column, StringOrColumn, cols_to_str
+from bigquery_frame.column import Column, ColumnOrName, cols_to_str
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
@@ -154,7 +154,7 @@ class DataFrame:
     def __repr__(self):
         return f"""DataFrame('{self.__query}) as {self._alias}')"""
 
-    def __getitem__(self, item: Union[StringOrColumn, Iterable[StringOrColumn], int]):
+    def __getitem__(self, item: Union[ColumnOrName, Iterable[ColumnOrName], int]):
         """Returns the column as a :class:`Column`.
 
         Examples
@@ -382,7 +382,7 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def filter(self, condition: StringOrColumn) -> "DataFrame":
+    def filter(self, condition: ColumnOrName) -> "DataFrame":
         """Filters rows using the given condition."""
         query = strip_margin(
             f"""
@@ -392,7 +392,7 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def groupBy(self, *cols: StringOrColumn) -> "GroupedData":
+    def groupBy(self, *cols: ColumnOrName) -> "GroupedData":
         """Groups the :class:`DataFrame` using the specified columns, so we can run aggregation on them.
         See :class:`GroupedData` for all the available aggregate functions.
 
@@ -461,7 +461,7 @@ class DataFrame:
     def join(
         self,
         other: "DataFrame",
-        on: Optional[Union[StringOrColumn, Sequence[StringOrColumn]]] = None,
+        on: Optional[Union[ColumnOrName, Sequence[ColumnOrName]]] = None,
         how: Optional[str] = None,
     ):
         """Joins with another :class:`DataFrame`, using the given join expression.
@@ -725,16 +725,16 @@ class DataFrame:
         """
         print(self.compile())
 
-    def select(self, *columns: Union[Sequence[StringOrColumn], StringOrColumn]) -> "DataFrame":
+    def select(self, *columns: Union[Sequence[ColumnOrName], ColumnOrName]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
-        cols: Sequence[StringOrColumn]
+        cols: Sequence[ColumnOrName]
         if isinstance(columns[0], list):
             if len(columns) == 1:
                 cols = columns[0]
             else:
                 raise TypeError(f"Wrong argument type: {type(columns)}")
         else:
-            cols = typing.cast(Tuple[StringOrColumn], columns)
+            cols = typing.cast(Tuple[ColumnOrName], columns)
         query = strip_margin(
             f"""SELECT
             |{cols_to_str(cols, 2)}
@@ -742,7 +742,7 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def select_nested_columns(self, fields: Mapping[str, StringOrColumn]) -> "DataFrame":
+    def select_nested_columns(self, fields: Mapping[str, ColumnOrName]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
         Unlike the :func:`select` method, this method works on repeated elements
         and records (arrays and arrays of struct).
@@ -908,7 +908,7 @@ class DataFrame:
         res = self.limit(n + 1).collect_iterator()
         return tabulate_results(res, format_args, limit=n, simplify_structs=simplify_structs)
 
-    def sort(self, *cols: StringOrColumn):
+    def sort(self, *cols: ColumnOrName):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
 
         >>> df = __get_test_df_2()
@@ -1167,7 +1167,7 @@ class DataFrame:
             query = f"SELECT *, {col_expr} AS {quote(col_name)} FROM {quote(self._alias)}"
         return self._apply_query(query)
 
-    def with_nested_columns(self, fields: Dict[str, StringOrColumn]) -> "DataFrame":
+    def with_nested_columns(self, fields: Dict[str, ColumnOrName]) -> "DataFrame":
         """Returns a new :class:`DataFrame` by adding or replacing (when they already exist) columns.
 
         Unlike the :func:`withColumn` method, this method works on repeated elements

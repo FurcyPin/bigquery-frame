@@ -5,7 +5,7 @@ from google.cloud.bigquery import SchemaField
 from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.column import Column, StringOrColumn, cols_to_str
+from bigquery_frame.column import Column, ColumnOrName, cols_to_str
 from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.transformations_impl import analyze_aggs
@@ -102,7 +102,7 @@ def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[Column]] =
         return df
 
 
-def _select_group_by(df: DataFrame, *columns: StringOrColumn, group_by: List[Column]) -> "DataFrame":
+def _select_group_by(df: DataFrame, *columns: ColumnOrName, group_by: List[Column]) -> "DataFrame":
     """Projects a set of expressions and returns a new :class:`DataFrame`."""
     group_by_str = ""
     if len(group_by) > 0:
