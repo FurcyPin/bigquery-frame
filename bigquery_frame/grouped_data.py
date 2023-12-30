@@ -363,11 +363,15 @@ class GroupedData:
         return self.__numeric_agg(functions.sum, "sum", *cols)
 
     def pivot(self, pivot_column: str, pivoted_columns: Optional[List[LitOrColumn]] = None) -> "GroupedData":
-        """
+        """Pivots a column of the current :class:`DataFrame` and perform the specified aggregation.
+        There are two versions of the pivot function: one that requires the caller
+        to specify the list of distinct values to pivot on, and one that does not.
+        The latter is more concise but less efficient, because we need to first compute
+        the list of distinct values internally.
 
         Args:
-            pivot_column:
-            pivoted_columns:
+            pivot_column: Name of the column to pivot.
+            pivoted_columns: List of values that will be translated to columns in the output DataFrame.
 
         Raises:
             bigquery_frame.exceptions.UnsupportedOperationException: if `.pivot(...)` is called multiple times
