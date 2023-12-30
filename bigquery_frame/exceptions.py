@@ -27,7 +27,7 @@ class UnexpectedException(Exception):
 
     def __init__(self, error: str) -> None:
         msg = (
-            f"An unexpected error occurred: "
+            f"An unexpected error occurred: {error}"
             f"\nPlease report a bug with the complete stacktrace at {self.issue_submit_url}"
         )
         Exception.__init__(self, msg)
