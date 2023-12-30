@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, TypeVar, Union
 if TYPE_CHECKING:
     from bigquery_frame.column import Column, ColumnOrName, LitOrColumn
 
+T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
 
@@ -224,6 +225,26 @@ def assert_true(assertion: bool, error: Union[str, BaseException] = None) -> Non
             raise AssertionError(error)
         else:
             raise AssertionError()
+
+
+def list_or_tuple_to_list(*columns: Union[List[T], T]) -> List[T]:
+    """
+    >>> list_or_tuple_to_list(1, 2)
+    [1, 2]
+    >>> list_or_tuple_to_list([1, 2])
+    [1, 2]
+    >>> list_or_tuple_to_list([1, 2], [4, 5])
+    Traceback (most recent call last):
+        ...
+    TypeError: Wrong argument type: <class 'tuple'>
+    """
+    if isinstance(columns[0], list):
+        if len(columns) == 1:
+            return columns[0]
+        else:
+            raise TypeError(f"Wrong argument type: {type(columns)}")
+    else:
+        return list(columns)
 
 
 def _ref(_: object) -> None:

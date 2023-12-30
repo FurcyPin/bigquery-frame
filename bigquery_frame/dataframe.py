@@ -8,7 +8,7 @@ from google.cloud.bigquery.table import RowIterator
 from bigquery_frame.column import Column, ColumnOrName, cols_to_str
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
-from bigquery_frame.utils import assert_true, indent, quote, str_to_cols, strip_margin
+from bigquery_frame.utils import assert_true, indent, list_or_tuple_to_list, quote, str_to_cols, strip_margin
 
 if TYPE_CHECKING:
     from bigquery_frame.bigquery_builder import BigQueryBuilder
@@ -707,8 +707,10 @@ class DataFrame:
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
             >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''SELECT 1 as a''').select(
-        ...   'a', f.col('a') + f.lit(1).alias('b')).withColumn('c', f.expr('a + b')
+        >>> df = (
+        ...     bq.sql('''SELECT 1 as a''')
+        ...     .select('a', f.col('a') + f.lit(1).alias('b'))
+        ...     .withColumn('c', f.expr('a + b'))
         ... )
         >>> df.print_query()
         WITH `_default_alias_1` AS (
@@ -716,7 +718,7 @@ class DataFrame:
         )
         , `_default_alias_2` AS (
           SELECT
-            a,
+            `a`,
             (`a`) + (1)
           FROM `_default_alias_1`
         )
@@ -727,14 +729,8 @@ class DataFrame:
 
     def select(self, *columns: Union[Sequence[ColumnOrName], ColumnOrName]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`."""
-        cols: Sequence[ColumnOrName]
-        if isinstance(columns[0], list):
-            if len(columns) == 1:
-                cols = columns[0]
-            else:
-                raise TypeError(f"Wrong argument type: {type(columns)}")
-        else:
-            cols = typing.cast(Tuple[ColumnOrName], columns)
+        cols = list_or_tuple_to_list(*columns)
+        cols = str_to_cols(cols)
         query = strip_margin(
             f"""SELECT
             |{cols_to_str(cols, 2)}
