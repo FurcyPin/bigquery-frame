@@ -1,7 +1,7 @@
 import datetime
 import decimal
 import typing
-from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.column import (
@@ -15,7 +15,7 @@ from bigquery_frame.column import (
 )
 from bigquery_frame.dataframe import DataFrame
 from bigquery_frame.exceptions import IllegalArgumentException
-from bigquery_frame.utils import quote, str_to_col, str_to_cols
+from bigquery_frame.utils import list_or_tuple_to_list, quote, str_to_col, str_to_cols
 
 RawType = Union[str, bool, int, float, bytes, decimal.Decimal, datetime.date, datetime.time, datetime.datetime]
 ComplexType = Union[RawType, List["ComplexType"], Dict[str, "ComplexType"]]
@@ -55,7 +55,7 @@ def approx_count_distinct(col: ColumnOrName) -> Column:
     return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
 
 
-def array(*cols: Union[ColumnOrName, Sequence[ColumnOrName]]) -> Column:
+def array(*cols: Union[List[ColumnOrName], ColumnOrName]) -> Column:
     """Creates a new array column.
 
     Limitations
@@ -1021,13 +1021,9 @@ def struct(*cols: Union[ColumnOrName, List[ColumnOrName], Set[ColumnOrName]]) ->
     :param cols: a list or set of str (column names) or :class:`Column` to be added to the output struct.
     :return:
     """
-    columns: Iterable[ColumnOrName]
-    if len(cols) == 1 and isinstance(cols[0], (List, Set)):
-        columns = cols[0]
-    else:
-        columns = typing.cast(Tuple[ColumnOrName], cols)
+    cols = list_or_tuple_to_list(*cols)
     # Unlike other functions (e.g. coalesce) we keep the column aliases here.
-    return Column(f"STRUCT({cols_to_str(columns)})")
+    return Column(f"STRUCT({cols_to_str(cols)})")
 
 
 def to_base32(col: ColumnOrName) -> Column:

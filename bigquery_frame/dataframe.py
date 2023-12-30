@@ -392,7 +392,7 @@ class DataFrame:
         )
         return self._apply_query(query)
 
-    def groupBy(self, *cols: ColumnOrName) -> "GroupedData":
+    def groupBy(self, *cols: Union[ColumnOrName, List[ColumnOrName]]) -> "GroupedData":
         """Groups the :class:`DataFrame` using the specified columns, so we can run aggregation on them.
         See :class:`GroupedData` for all the available aggregate functions.
 
@@ -445,7 +445,7 @@ class DataFrame:
 
             Group-by 'name' and 'age', and calculate the number of rows in each group.
 
-            >>> df.groupBy("name", df["age"]).count().sort("name", "age").show()
+            >>> df.groupBy(["name", df["age"]]).count().sort("name", "age").show()
             +-------+-----+-------+
             |  name | age | count |
             +-------+-----+-------+
@@ -454,164 +454,166 @@ class DataFrame:
             |   Bob |   5 |     1 |
             +-------+-----+-------+
         """
+        cols = list_or_tuple_to_list(*cols)
         from bigquery_frame.grouped_data import GroupedData
 
-        return GroupedData(self, list(cols))
+        return GroupedData(self, cols)
 
     def join(
         self,
         other: "DataFrame",
-        on: Optional[Union[ColumnOrName, Sequence[ColumnOrName]]] = None,
+        on: Optional[Union[List[ColumnOrName], ColumnOrName]] = None,
         how: Optional[str] = None,
     ):
         """Joins with another :class:`DataFrame`, using the given join expression.
 
-        Limitations compared to Spark
-        -----------------------------
-        This method has several limitations when compared to Spark:
-        - When doing a select after a join, table prefixes MUST always be used on column names.
-          For this reason, users SHOULD always make sure the DataFrames they are joining on are properly aliased
-        - When chaining multiple joins, the name of the first DataFrame is not available in the select clause
+        !!! warning: "Limitations compared to Spark"
+            This method has several limitations when compared to Spark:
+            - When doing a select after a join, table prefixes MUST always be used on column names.
+              For this reason, users SHOULD always make sure the DataFrames they are joining on are properly aliased
+            - When chaining multiple joins, the name of the first DataFrame is not available in the select clause
 
-        Some of these limitations might be removed in future versions.
+            Some of these limitations might be removed in future versions.
 
-        Examples
-        --------
-        The following performs a full outer join between ``df1`` and ``df2``.
-        >>> from bigquery_frame import functions as f
-        >>> df1, df2, df3, df4 = __get_test_dfs()
-        >>> df1 = df1.alias("df1")
-        >>> df2 = df2.alias("df2")
-        >>> df3 = df3.alias("df3")
-        >>> df4 = df4.alias("df4")
-        >>> df1.show()
-        +-----+-------+
-        | age |  name |
-        +-----+-------+
-        |   2 | Alice |
-        |   5 |   Bob |
-        +-----+-------+
-        >>> df2.show()
-        +--------+------+
-        | height | name |
-        +--------+------+
-        |     80 |  Tom |
-        |     85 |  Bob |
-        +--------+------+
-        >>> df3.show()
-        +-----+-------+
-        | age |  name |
-        +-----+-------+
-        |   2 | Alice |
-        |   5 |   Bob |
-        +-----+-------+
-        >>> df4.show()
-        +------+--------+-------+
-        |  age | height |  name |
-        +------+--------+-------+
-        |   10 |     80 | Alice |
-        |    5 |   null |   Bob |
-        | null |   null |   Tom |
-        | null |   null |  null |
-        +------+--------+-------+
-        >>> (df1.join(df2, f.col("df1.name") == f.col("df2.name"), "left")
-        ...      .select(f.col("df1.name"), f.col("df2.height"))
-        ...      .sort(f.desc("name"))).show()
-        +-------+--------+
-        |  name | height |
-        +-------+--------+
-        |   Bob |     85 |
-        | Alice |   null |
-        +-------+--------+
-        >>> df1.join(df2, "name", "left").select(f.col("df1.name"), f.col("df2.height")).sort(f.desc("name")).show()
-        +-------+--------+
-        |  name | height |
-        +-------+--------+
-        |   Bob |     85 |
-        | Alice |   null |
-        +-------+--------+
+        Args:
+            other: Right side of the join
+            on: A string for the join column name, a list of column names,
+                a join expression (Column), or a list of Columns.
+                If `on` is a string or a list of strings indicating the name of the join column(s),
+                the column(s) must exist on both sides, and this performs an equi-join.
+            how: (default `inner`). Must be one of: `inner`, `cross`, `outer`,
+            `full`, `fullouter`, `full_outer`, `left`, `leftouter`, `left_outer`,
+            `right`, `rightouter`, `right_outer`, `semi`, `leftsemi`, `left_semi`,
+            `anti`, `leftanti` and `left_anti`.
 
-        >>> df1.join(df2, 'name', 'outer').select('df1.name', 'df2.height').sort(f.desc("name")).show()
-        +-------+--------+
-        |  name | height |
-        +-------+--------+
-        |   Bob |     85 |
-        | Alice |   null |
-        |  null |     80 |
-        +-------+--------+
+        Returns:
+            Joined DataFrame.
 
-        >>> df1.join(df2, 'name', 'semi').select('df1.name').sort(f.desc("name")).show()
-        +-------+
-        |  name |
-        +-------+
-        |   Bob |
-        | Alice |
-        +-------+
+        Examples:
+            The following performs a full outer join between ``df1`` and ``df2``.
+            >>> from bigquery_frame import functions as f
+            >>> df1, df2, df3, df4 = __get_test_dfs()
+            >>> df1 = df1.alias("df1")
+            >>> df2 = df2.alias("df2")
+            >>> df3 = df3.alias("df3")
+            >>> df4 = df4.alias("df4")
 
-        >>> df1.join(df2, 'name', 'anti').select('df1.name').sort(f.desc("name")).show()
-        +-------+
-        |  name |
-        +-------+
-        | Alice |
-        +-------+
+            >>> df1.show()
+            +-----+-------+
+            | age |  name |
+            +-----+-------+
+            |   2 | Alice |
+            |   5 |   Bob |
+            +-----+-------+
+            >>> df2.show()
+            +--------+------+
+            | height | name |
+            +--------+------+
+            |     80 |  Tom |
+            |     85 |  Bob |
+            +--------+------+
+            >>> df3.show()
+            +-----+-------+
+            | age |  name |
+            +-----+-------+
+            |   2 | Alice |
+            |   5 |   Bob |
+            +-----+-------+
+            >>> df4.show()
+            +------+--------+-------+
+            |  age | height |  name |
+            +------+--------+-------+
+            |   10 |     80 | Alice |
+            |    5 |   null |   Bob |
+            | null |   null |   Tom |
+            | null |   null |  null |
+            +------+--------+-------+
+            >>> (df1.join(df2, f.col("df1.name") == f.col("df2.name"), "left")
+            ...      .select(f.col("df1.name"), f.col("df2.height"))
+            ...      .sort(f.desc("name"))).show()
+            +-------+--------+
+            |  name | height |
+            +-------+--------+
+            |   Bob |     85 |
+            | Alice |   null |
+            +-------+--------+
+            >>> df1.join(df2, "name", "left").select(f.col("df1.name"), f.col("df2.height")).sort(f.desc("name")).show()
+            +-------+--------+
+            |  name | height |
+            +-------+--------+
+            |   Bob |     85 |
+            | Alice |   null |
+            +-------+--------+
 
-        >>> df1.join(df2, 'name').select("df1.name", "df2.height").show()
-        +------+--------+
-        | name | height |
-        +------+--------+
-        |  Bob |     85 |
-        +------+--------+
-        >>> df1.join(df4, ["name", "age"]).select("df1.name", "df1.age").show()
-        +------+-----+
-        | name | age |
-        +------+-----+
-        |  Bob |   5 |
-        +------+-----+
+            >>> df1.join(df2, 'name', 'outer').select('df1.name', 'df2.height').sort(f.desc("name")).show()
+            +-------+--------+
+            |  name | height |
+            +-------+--------+
+            |   Bob |     85 |
+            | Alice |   null |
+            |  null |     80 |
+            +-------+--------+
 
-        Examples of limitations compared to Spark
-        -----------------------------------------
+            >>> df1.join(df2, 'name', 'semi').select('df1.name').sort(f.desc("name")).show()
+            +-------+
+            |  name |
+            +-------+
+            |   Bob |
+            | Alice |
+            +-------+
 
-        Unlike in Spark, the following examples do not work:
-        - Not specifying the table prefix in the select clause after a join (even for "JOIN ... USING (...)")
-        >>> df1.join(df2, "name", 'outer').select("name").show()  # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-          ...
-        google.api_core.exceptions.BadRequest: 400 ...
+            >>> df1.join(df2, 'name', 'anti').select('df1.name').sort(f.desc("name")).show()
+            +-------+
+            |  name |
+            +-------+
+            | Alice |
+            +-------+
 
-        - Specifying multiple boolean columns for the "on"
-        >>> (df1.join(df3, on=["df1.name = df3.name", "df1.age = df3.age"])
-        ...     .select("df1.name", "df3.age")).show() # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-          ...
-        google.api_core.exceptions.BadRequest: 400 ...
+            >>> df1.join(df2, 'name').select("df1.name", "df2.height").show()
+            +------+--------+
+            | name | height |
+            +------+--------+
+            |  Bob |     85 |
+            +------+--------+
+            >>> df1.join(df4, ["name", "age"]).select("df1.name", "df1.age").show()
+            +------+-----+
+            | name | age |
+            +------+-----+
+            |  Bob |   5 |
+            +------+-----+
+            >>> df1.join(
+            ...     df4,
+            ...     on = [df1["name"] == df4["name"], df1["age"] == df4["age"]]
+            ... ).select("df1.name", "df1.age").show()
+            +------+-----+
+            | name | age |
+            +------+-----+
+            |  Bob |   5 |
+            +------+-----+
 
-        - When chaining multiple joins, the name of the first DataFrame is not available in the select clause
-        >>> df1.join(df2, "name").join(df3, "name").select("df1.name").show()  # doctest: +ELLIPSIS
-        Traceback (most recent call last):
-          ...
-        google.api_core.exceptions.BadRequest: 400 ...
+        Examples: Examples of limitations compared to Spark
 
-        To work around this, one can do:
-        >>> df12 = df1.join(df2, "name").select("df1.*", "df2.height").alias("df12")
-        >>> df12.join(df3, "name").select("df12.name", "df12.height", "df3.age").show()
-        +------+--------+-----+
-        | name | height | age |
-        +------+--------+-----+
-        |  Bob |     85 |   5 |
-        +------+--------+-----+
+            Unlike in Spark, the following examples do not work:
+            - Not specifying the table prefix in the select clause after a join (even for "JOIN ... USING (...)")
+            >>> df1.join(df2, "name", 'outer').select("name").show()  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+              ...
+            google.api_core.exceptions.BadRequest: 400 ...
 
-        :param other: Right side of the join
-        :param on: str, list or :class:`Column`, optional
-            a string for the join column name, a list of column names,
-            a join expression (Column), or a list of Columns.
-            If `on` is a string or a list of strings indicating the name of the join column(s),
-            the column(s) must exist on both sides, and this performs an equi-join.
-        :param how: str, optional
-            default ``inner``. Must be one of: ``inner``, ``cross``, ``outer``,
-            ``full``, ``fullouter``, ``full_outer``, ``left``, ``leftouter``, ``left_outer``,
-            ``right``, ``rightouter``, ``right_outer``, ``semi``, ``leftsemi``, ``left_semi``,
-            ``anti``, ``leftanti`` and ``left_anti``.
-        :return:
+            - When chaining multiple joins, the name of the first DataFrame is not available in the select clause
+            >>> df1.join(df2, "name").join(df3, "name").select("df1.name").show()  # doctest: +ELLIPSIS
+            Traceback (most recent call last):
+              ...
+            google.api_core.exceptions.BadRequest: 400 ...
+
+            To work around this, one can do:
+            >>> df12 = df1.join(df2, "name").select("df1.*", "df2.height").alias("df12")
+            >>> df12.join(df3, "name").select("df12.name", "df12.height", "df3.age").show()
+            +------+--------+-----+
+            | name | height | age |
+            +------+--------+-----+
+            |  Bob |     85 |   5 |
+            +------+--------+-----+
         """
         # The ANTI JOIN syntax doesn't exist in BigQuery, so to simulate it we add an extra column that is always
         # equal to 1 in the other DataFrame and apply a filter where this column is NULL
@@ -632,14 +634,17 @@ class DataFrame:
                 other = other.withColumn(anti_join_presence_col_name, Column("TRUE"))
         else:
             join_str = "JOIN"
-        if isinstance(on, str):
-            on = [on]
         on_clause = ""
         if on is not None:
-            if isinstance(on, list):
-                on_clause = f"\nUSING ({cols_to_str(on)})"
-            else:
-                on_clause = f"\nON {on}"
+            on = list_or_tuple_to_list(on)
+            if len(on) > 0:
+                if isinstance(on[0], Column):
+                    bool_clause = on[0]
+                    for col in on[1:]:
+                        bool_clause &= col
+                    on_clause = f"\nON {bool_clause}"
+                else:
+                    on_clause = f"\nUSING ({cols_to_str(on)})"
         self_short_alias = quote(self._alias.replace("`", "").split(".")[-1])
         other_short_alias = quote(other._alias.replace("`", "").split(".")[-1])
         if semi or anti:
@@ -938,39 +943,44 @@ class DataFrame:
         res = self.limit(n + 1).collect_iterator()
         return tabulate_results(res, format_args, limit=n, simplify_structs=simplify_structs)
 
-    def sort(self, *cols: ColumnOrName):
+    def sort(self, *cols: Union[ColumnOrName, List[ColumnOrName]]):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
 
-        >>> df = __get_test_df_2()
-        >>> df.show()
-        +------+-------------+
-        | name | nb_children |
-        +------+-------------+
-        | John |           0 |
-        | Mary |           1 |
-        | Jack |           1 |
-        +------+-------------+
-        >>> from bigquery_frame import functions as f
-        >>> df.sort("name").show()
-        +------+-------------+
-        | name | nb_children |
-        +------+-------------+
-        | Jack |           1 |
-        | John |           0 |
-        | Mary |           1 |
-        +------+-------------+
-        >>> df.sort("nb_children", df["name"]).show()
-        +------+-------------+
-        | name | nb_children |
-        +------+-------------+
-        | John |           0 |
-        | Jack |           1 |
-        | Mary |           1 |
-        +------+-------------+
+        Args:
+            *cols: List of :class:`Column` or column names to sort by.
 
-        :param cols:
-        :return:
+        Returns:
+            Sorted DataFrame.
+
+        Examples:
+            >>> df = __get_test_df_2()
+            >>> df.show()
+            +------+-------------+
+            | name | nb_children |
+            +------+-------------+
+            | John |           0 |
+            | Mary |           1 |
+            | Jack |           1 |
+            +------+-------------+
+            >>> from bigquery_frame import functions as f
+            >>> df.sort("name").show()
+            +------+-------------+
+            | name | nb_children |
+            +------+-------------+
+            | Jack |           1 |
+            | John |           0 |
+            | Mary |           1 |
+            +------+-------------+
+            >>> df.sort(["nb_children", df["name"]]).show()
+            +------+-------------+
+            | name | nb_children |
+            +------+-------------+
+            | John |           0 |
+            | Jack |           1 |
+            | Mary |           1 |
+            +------+-------------+
         """
+        cols = list_or_tuple_to_list(*cols)
         str_cols = [col.expr for col in str_to_cols(cols)]
         query = strip_margin(
             f"""

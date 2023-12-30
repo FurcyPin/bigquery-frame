@@ -229,6 +229,8 @@ def assert_true(assertion: bool, error: Union[str, BaseException] = None) -> Non
 
 def list_or_tuple_to_list(*columns: Union[List[T], T]) -> List[T]:
     """
+    >>> list_or_tuple_to_list()
+    []
     >>> list_or_tuple_to_list(1, 2)
     [1, 2]
     >>> list_or_tuple_to_list([1, 2])
@@ -238,6 +240,9 @@ def list_or_tuple_to_list(*columns: Union[List[T], T]) -> List[T]:
         ...
     TypeError: Wrong argument type: <class 'tuple'>
     """
+    assert_true(isinstance(columns, (list, tuple)), TypeError(f"Wrong argument type: {type(columns)}"))
+    if len(columns) == 0:
+        return []
     if isinstance(columns[0], list):
         if len(columns) == 1:
             return columns[0]
