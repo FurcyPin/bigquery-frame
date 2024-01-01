@@ -563,4 +563,4 @@ def test_operation_after_explode(bq: BigQueryBuilder):
     df = bq.sql("""SELECT [1, 2, 3] as int_list""")
     with pytest.raises(AnalysisException) as e:
         df.select(f.explode("int_list") + f.lit(1)).show()
-    assert f"Exploded columns cannot be transformed in the same select clause." in e.value.args
+    assert "Exploded columns cannot be transformed in the same select clause." in e.value.args
