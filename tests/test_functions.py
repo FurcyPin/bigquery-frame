@@ -7,6 +7,113 @@ from tests.utils import captured_output
 
 
 class TestFunctions:
+    def test_explode_with_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN a DataFrame with structs
+        WHEN we use explode on it
+        THEN the result should be correct
+        """
+        from bigquery_frame import functions as f
+
+        df = bq.sql("SELECT 1 as id, STRUCT([1, 2, 3] as int_list, ['a', 'b'] as char_list) as s")
+        df = df.select("id", f.explode("s.int_list").alias("an_int"), f.explode("s.char_list").alias("a_char"))
+        expected = strip_margin(
+            """
+            |+----+--------+--------+
+            || id | an_int | a_char |
+            |+----+--------+--------+
+            ||  1 |      1 |      a |
+            ||  1 |      1 |      b |
+            ||  1 |      2 |      a |
+            ||  1 |      2 |      b |
+            ||  1 |      3 |      a |
+            ||  1 |      3 |      b |
+            |+----+--------+--------+"""
+        )
+        assert df.show_string(simplify_structs=True) == expected
+
+    def test_explode_and_withColumn_with_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN a DataFrame with structs
+        WHEN we use explode on it
+        THEN the result should be correct
+        """
+        from bigquery_frame import functions as f
+
+        df = bq.sql("SELECT 1 as id, STRUCT([1, 2, 3] as int_list, ['a', 'b'] as char_list) as s")
+        df = df.withColumn("an_int", f.explode("s.int_list")).withColumn("a_char", f.explode("s.char_list")).drop("s")
+        expected = strip_margin(
+            """
+            |+----+--------+--------+
+            || id | an_int | a_char |
+            |+----+--------+--------+
+            ||  1 |      1 |      a |
+            ||  1 |      1 |      b |
+            ||  1 |      2 |      a |
+            ||  1 |      2 |      b |
+            ||  1 |      3 |      a |
+            ||  1 |      3 |      b |
+            |+----+--------+--------+"""
+        )
+        assert df.show_string(simplify_structs=True) == expected
+
+    def test_posexplode_outer_with_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN a DataFrame with structs
+        WHEN we use explode on it
+        THEN the result should be correct
+        """
+        from bigquery_frame import functions as f
+
+        df = bq.sql("SELECT 1 as id, STRUCT([1, 2, 3] as int_list, ['a', 'b'] as char_list) as s")
+        df = df.select(
+            "id", f.posexplode_outer("s.int_list").alias("an_int"), f.posexplode_outer("s.char_list").alias("a_char")
+        )
+        expected = strip_margin(
+            """
+            |+----+--------+------------+--------+------------+
+            || id | an_int | an_int_pos | a_char | a_char_pos |
+            |+----+--------+------------+--------+------------+
+            ||  1 |      1 |          0 |      a |          0 |
+            ||  1 |      1 |          0 |      b |          1 |
+            ||  1 |      2 |          1 |      a |          0 |
+            ||  1 |      2 |          1 |      b |          1 |
+            ||  1 |      3 |          2 |      a |          0 |
+            ||  1 |      3 |          2 |      b |          1 |
+            |+----+--------+------------+--------+------------+"""
+        )
+        assert df.show_string(simplify_structs=True) == expected
+
+    def test_posexplode_and_withColumn_with_struct(self, bq: BigQueryBuilder):
+        """
+        GIVEN a DataFrame with structs
+        WHEN we use explode on it
+        THEN the result should be correct
+        """
+        from bigquery_frame import functions as f
+
+        df = bq.sql("SELECT 1 as id, STRUCT([1, 2, 3] as int_list, ['a', 'b'] as char_list) as s")
+        df = (
+            df.withColumn("an_int", f.posexplode("s.int_list"))
+            .withColumn("a_char", f.posexplode("s.char_list"))
+            .drop("s")
+        )
+        df.show()
+        expected = strip_margin(
+            """
+            |+----+--------+------------+--------+------------+
+            || id | an_int | an_int_pos | a_char | a_char_pos |
+            |+----+--------+------------+--------+------------+
+            ||  1 |      1 |          0 |      a |          0 |
+            ||  1 |      1 |          0 |      b |          1 |
+            ||  1 |      2 |          1 |      a |          0 |
+            ||  1 |      2 |          1 |      b |          1 |
+            ||  1 |      3 |          2 |      a |          0 |
+            ||  1 |      3 |          2 |      b |          1 |
+            |+----+--------+------------+--------+------------+"""
+        )
+        assert df.show_string(simplify_structs=True) == expected
+
     def test_isnull_with_alias(self, bq: BigQueryBuilder):
         """isnull should work on columns with an alias"""
         df = bq.sql("""SELECT * FROM UNNEST([1, 2, NULL]) as a""")

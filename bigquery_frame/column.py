@@ -1,6 +1,6 @@
 from typing import Callable, List, Optional, Tuple, Union
 
-from bigquery_frame.exceptions import UnexpectedException
+from bigquery_frame.exceptions import AnalysisException, UnexpectedException
 from bigquery_frame.temp_names import _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, lit_to_col, lit_to_cols, quote, str_to_col, strip_margin
 
@@ -545,3 +545,23 @@ class TransformedArrayColumn(Column):
     @property
     def expr(self):
         return self._compile()
+
+
+class ExplodedColumn(Column):
+    def __init__(self, exploded_col: Column, with_index: bool, outer: bool) -> None:
+        super().__init__("")
+        self.exploded_col: Column = exploded_col
+        self.with_index: bool = with_index
+        self.outer: bool = outer
+
+    @property
+    def expr(self):
+        raise AnalysisException("Exploded columns cannot be transformed in the same select clause.")
+
+    def alias(self, alias: Optional[str]) -> "ExplodedColumn":
+        if alias is not None:
+            alias = quote(alias)
+        return ExplodedColumn(self.exploded_col, self.with_index, self.outer)._copy_from(self, alias)
+
+    def __str__(self):
+        return f"UNNEST({self.exploded_col})"

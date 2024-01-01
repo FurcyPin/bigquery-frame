@@ -3,6 +3,7 @@ import pytest
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame import functions as f
 from bigquery_frame.dataframe import strip_margin
+from bigquery_frame.exceptions import AnalysisException
 from tests.utils import captured_output
 
 
@@ -551,3 +552,15 @@ def test_isin(bq: BigQueryBuilder):
         |+----+---+---+-----------------+"""
     )
     assert actual.show_string() == expected
+
+
+def test_operation_after_explode(bq: BigQueryBuilder):
+    """
+    GIVEN an array column
+    WHEN we explode it and try to perform another operation in the same select
+    THEN an AnalysisException should be raised
+    """
+    df = bq.sql("""SELECT [1, 2, 3] as int_list""")
+    with pytest.raises(AnalysisException) as e:
+        df.select(f.explode("int_list") + f.lit(1)).show()
+    assert f"Exploded columns cannot be transformed in the same select clause." in e.value.args
