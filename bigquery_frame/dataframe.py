@@ -1200,10 +1200,36 @@ class DataFrame:
 
         TODO: This project is just a POC. Future versions may bring improvements to these features but this will require more on-the-fly schema inspections.  # noqa: E501
 
-        :param col_name: Name of the new column
-        :param col_expr: Expression defining the new column
-        :param replace: Set to true when replacing an already existing column
-        :return: a new :class:`DataFrame`
+        Args:
+            col_name: Name of the new column.
+            col_expr: Expression defining the new column
+            replace: Set to true when replacing an already existing column
+
+        Returns:
+            DataFrame with new or replaced column.
+
+        Examples:
+            >>> from bigquery_frame import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''
+            ...     SELECT 2 as age, 'Alice' as name
+            ...     UNION ALL
+            ...     SELECT 5 as age, 'Bob' as name
+            ... ''')
+            >>> df.withColumn('age2', df["age"] + 2).show()
+            +-----+-------+------+
+            | age |  name | age2 |
+            +-----+-------+------+
+            |   2 | Alice |    4 |
+            |   5 |   Bob |    7 |
+            +-----+-------+------+
+            >>> df.withColumn('age', df["age"] + 2, replace=True).show()
+            +-----+-------+
+            | age |  name |
+            +-----+-------+
+            |   4 | Alice |
+            |   7 |   Bob |
+            +-----+-------+
         """
         if replace:
             query = f"SELECT * REPLACE ({col_expr} AS {quote(col_name)}) FROM {quote(self._alias)}"
