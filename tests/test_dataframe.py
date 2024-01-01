@@ -201,6 +201,19 @@ def test_drop(bq: BigQueryBuilder):
     assert df2.schema == expected
 
 
+def test_drop_with_zero_columns(bq: BigQueryBuilder):
+    df = bq.sql("""SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types""")
+    df2 = df.drop()
+
+    expected = [
+        SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),
+        SchemaField(name="name", field_type="STRING", mode="NULLABLE"),
+        SchemaField(name="types", field_type="STRING", mode="REPEATED"),
+    ]
+
+    assert df2.schema == expected
+
+
 def test_sql_syntax_error(bq: BigQueryBuilder):
     df = bq.sql("""SELECT *""")
 
