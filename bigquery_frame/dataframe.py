@@ -376,12 +376,15 @@ class DataFrame:
         """
         schema_cols = set(self.columns)
         cols_in_schema = [col for col in cols if col in schema_cols]
-        query = strip_margin(
-            f"""SELECT
-            |  * EXCEPT ({cols_to_str(cols_in_schema)})
-            |FROM {quote(self._alias)}"""
-        )
-        return self._apply_query(query)
+        if len(cols_in_schema) == 0:
+            return self
+        else:
+            query = strip_margin(
+                f"""SELECT
+                |  * EXCEPT ({cols_to_str(cols_in_schema)})
+                |FROM {quote(self._alias)}"""
+            )
+            return self._apply_query(query)
 
     def filter(self, condition: ColumnOrName) -> "DataFrame":
         """Filters rows using the given condition."""
