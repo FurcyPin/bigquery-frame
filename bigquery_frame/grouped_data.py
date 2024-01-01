@@ -390,6 +390,16 @@ class GroupedData:
             ...         STRUCT("Java" as course, 2013 as year, 30000 as earnings)
             ...     ])
             ... ''')
+            >>> df1.show()
+            +--------+------+----------+
+            | course | year | earnings |
+            +--------+------+----------+
+            | dotNET | 2012 |    10000 |
+            |   Java | 2012 |    20000 |
+            | dotNET | 2012 |     5000 |
+            | dotNET | 2013 |    48000 |
+            |   Java | 2013 |    30000 |
+            +--------+------+----------+
 
             Compute the sum of earnings for each year by course with each course as a separate column
 
