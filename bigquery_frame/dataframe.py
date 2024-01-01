@@ -744,14 +744,14 @@ class DataFrame:
 
         exploded_cols = [col for col in cols if isinstance(col, ExplodedColumn)]
 
-        def exploded_col_to_unnest_str(col: ExplodedColumn):
+        def exploded_col_to_unnest_str(col: ExplodedColumn) -> str:
             alias = col.get_alias()
             assert_true(alias is not None, AnalysisException("Exploded columns must be aliased."))
             join_str = "LEFT OUTER JOIN" if col.outer else "INNER JOIN"
             pos_str = f" WITH OFFSET as {quote(alias + '_pos')}" if col.with_index else ""
             return f"{join_str} UNNEST({col.exploded_col.expr}) AS {alias}{pos_str}"
 
-        def col_to_select(col: Column) -> list[ColumnOrName]:
+        def col_to_select(col: Column) -> List[ColumnOrName]:
             if isinstance(col, ExplodedColumn):
                 alias = col.get_alias()
                 if col.with_index:
