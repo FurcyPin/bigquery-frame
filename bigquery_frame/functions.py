@@ -7,6 +7,7 @@ from bigquery_frame import BigQueryBuilder
 from bigquery_frame.column import (
     Column,
     ColumnOrName,
+    ExplodedColumn,
     LitOrColumn,
     SortedArrayColumn,
     TransformedArrayColumn,
@@ -400,6 +401,82 @@ def desc(col: ColumnOrName) -> Column:
     return Column(f"{str_to_col(col).expr} DESC")
 
 
+def explode(col: ColumnOrName) -> Column:
+    """Returns a new row for each element in the given array.
+
+    Exploded columns must be aliased.
+
+    Args:
+        col: Target column to work on.
+
+    Returns:
+        One row per array item.
+
+    See Also:
+        `bigquery_frame.functions.posexplode`
+        `bigquery_frame.functions.explode_outer`
+        `bigquery_frame.functions.posexplode_outer`
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id, [1, 2, 3] as int_list, ['a', 'b'] as char_list")
+        >>> df.select("id", f.explode("int_list").alias("an_int")).show()
+        +----+--------+
+        | id | an_int |
+        +----+--------+
+        |  1 |      1 |
+        |  1 |      2 |
+        |  1 |      3 |
+        +----+--------+
+        >>> df.select("id", f.explode("int_list").alias("an_int"), f.explode("char_list").alias("a_char")).show()
+        +----+--------+--------+
+        | id | an_int | a_char |
+        +----+--------+--------+
+        |  1 |      1 |      a |
+        |  1 |      1 |      b |
+        |  1 |      2 |      a |
+        |  1 |      2 |      b |
+        |  1 |      3 |      a |
+        |  1 |      3 |      b |
+        +----+--------+--------+
+    """
+    return ExplodedColumn(str_to_col(col), with_index=False, outer=False)
+
+
+def explode_outer(col: ColumnOrName) -> Column:
+    """Returns a new row for each element in the given array.
+
+    Unlike explode, if the array is null or empty then null is produced.
+    Exploded columns must be aliased.
+
+    Args:
+        col: Target column to work on.
+
+    Returns:
+        One row per array item.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id, [] as empty_list")
+        >>> df.select("id", f.explode("empty_list").alias("values")).show()
+        +----+--------+
+        | id | values |
+        +----+--------+
+        +----+--------+
+        >>> df.select("id", f.explode_outer("empty_list").alias("values")).show()
+        +----+--------+
+        | id | values |
+        +----+--------+
+        |  1 |   null |
+        +----+--------+
+    """
+    return ExplodedColumn(str_to_col(col), with_index=False, outer=True)
+
+
 def expr(expr: str) -> Column:
     """Parses the expression string into the column that it represents.
 
@@ -691,6 +768,86 @@ def lower(col: ColumnOrName) -> Column:
         +------+
     """
     return _invoke_function_over_column("LOWER", col)
+
+
+def posexplode(col: ColumnOrName) -> Column:
+    """Returns a new row for each element with position in the given array.
+
+    A separate column is added to indicate the element position in the array.
+    Exploded columns must be aliased.
+
+    Args:
+        col: Target column to work on.
+
+    Returns:
+        One row per array item including positions as a separate column.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id, [1, 2, 3] as int_list, ['a', 'b'] as char_list")
+        >>> df.select("id", f.posexplode("int_list").alias("an_int")).show()
+        +----+--------+------------+
+        | id | an_int | an_int_pos |
+        +----+--------+------------+
+        |  1 |      1 |          0 |
+        |  1 |      2 |          1 |
+        |  1 |      3 |          2 |
+        +----+--------+------------+
+        >>> df.select("id", f.posexplode("int_list").alias("an_int"), f.posexplode("char_list").alias("a_char")).show()
+        +----+--------+------------+--------+------------+
+        | id | an_int | an_int_pos | a_char | a_char_pos |
+        +----+--------+------------+--------+------------+
+        |  1 |      1 |          0 |      a |          0 |
+        |  1 |      1 |          0 |      b |          1 |
+        |  1 |      2 |          1 |      a |          0 |
+        |  1 |      2 |          1 |      b |          1 |
+        |  1 |      3 |          2 |      a |          0 |
+        |  1 |      3 |          2 |      b |          1 |
+        +----+--------+------------+--------+------------+
+    """
+    return ExplodedColumn(str_to_col(col), with_index=True, outer=False)
+
+
+def posexplode_outer(col: ColumnOrName) -> Column:
+    """Returns a new row for each element with position in the given array.
+
+    A separate column is added to indicate the element position in the array.
+    Exploded columns must be aliased.
+
+    Args:
+        col: Target column to work on.
+
+    Returns:
+        One row per array item including positions as a separate column.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql("SELECT 1 as id, [1, 2, 3] as int_list, ['a', 'b'] as char_list")
+        >>> df.select("id", f.posexplode("int_list").alias("an_int")).show()
+        +----+--------+------------+
+        | id | an_int | an_int_pos |
+        +----+--------+------------+
+        |  1 |      1 |          0 |
+        |  1 |      2 |          1 |
+        |  1 |      3 |          2 |
+        +----+--------+------------+
+        >>> df.select("id", f.posexplode("int_list").alias("an_int"), f.posexplode("char_list").alias("a_char")).show()
+        +----+--------+------------+--------+------------+
+        | id | an_int | an_int_pos | a_char | a_char_pos |
+        +----+--------+------------+--------+------------+
+        |  1 |      1 |          0 |      a |          0 |
+        |  1 |      1 |          0 |      b |          1 |
+        |  1 |      2 |          1 |      a |          0 |
+        |  1 |      2 |          1 |      b |          1 |
+        |  1 |      3 |          2 |      a |          0 |
+        |  1 |      3 |          2 |      b |          1 |
+        +----+--------+------------+--------+------------+
+    """
+    return ExplodedColumn(str_to_col(col), with_index=True, outer=False)
 
 
 def max(col: ColumnOrName) -> Column:

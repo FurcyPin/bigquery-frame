@@ -7,6 +7,7 @@ from google.cloud.bigquery.table import RowIterator
 
 from bigquery_frame import Column
 from bigquery_frame.column import ColumnOrName, cols_to_str
+from bigquery_frame.exceptions import AnalysisException
 from bigquery_frame.printing import tabulate_results
 from bigquery_frame.temp_names import DEFAULT_ALIAS_NAME, _get_alias, _get_temp_column_name
 from bigquery_frame.utils import assert_true, indent, list_or_tuple_to_list, quote, str_to_cols, strip_margin
@@ -714,7 +715,7 @@ class DataFrame:
         Examples:
 
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
+        >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
         >>> df = (
         ...     bq.sql('''SELECT 1 as a''')
@@ -731,10 +732,46 @@ class DataFrame:
             (`a`) + (1)
           FROM `_default_alias_1`
         )
-        SELECT *, a + b AS `c` FROM `_default_alias_2`
-
+        SELECT
+          `_default_alias_2`.*,
+          a + b AS `c`
+        FROM `_default_alias_2`
         """
         print(self.compile())
+
+    def _select_with_exploded_columns(self, cols: List[ColumnOrName]) -> "DataFrame":
+        from bigquery_frame.column import ExplodedColumn
+
+        exploded_cols = [col for col in cols if isinstance(col, ExplodedColumn)]
+
+        def exploded_col_to_unnest_str(col: ExplodedColumn):
+            alias = col.get_alias()
+            assert_true(alias is not None, AnalysisException("Exploded columns must be aliased."))
+            join_str = "LEFT OUTER JOIN" if col.outer else "INNER JOIN"
+            pos_str = f" WITH OFFSET as {quote(alias + '_pos')}" if col.with_index else ""
+            return f"{join_str} UNNEST({col.exploded_col.expr}) AS {alias}{pos_str}"
+
+        def col_to_select(col: Column) -> list[ColumnOrName]:
+            if isinstance(col, ExplodedColumn):
+                alias = col.get_alias()
+                if col.with_index:
+                    return [alias, quote(alias + "_pos")]
+                else:
+                    return [alias]
+            else:
+                return [col]
+
+        cols = [c for col in cols for c in col_to_select(col)]
+        unnest_clause = [exploded_col_to_unnest_str(col) for col in exploded_cols]
+        cols = str_to_cols(cols)
+        query = strip_margin(
+            f"""SELECT
+            |{cols_to_str(cols, 2)}
+            |FROM {quote(self._alias)}
+            |{cols_to_str(unnest_clause, indentation=0, sep="")}
+            | """
+        )
+        return self._apply_query(query)
 
     def select(self, *columns: Union[ColumnOrName, List[ColumnOrName]]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
@@ -773,13 +810,16 @@ class DataFrame:
         +-------+-----+
         """
         cols = list_or_tuple_to_list(*columns)
-        cols = str_to_cols(cols)
-        query = strip_margin(
-            f"""SELECT
-            |{cols_to_str(cols, 2)}
-            |FROM {quote(self._alias)}"""
-        )
-        return self._apply_query(query)
+        if _has_exploded_columns(cols):
+            return self._select_with_exploded_columns(cols)
+        else:
+            cols = str_to_cols(cols)
+            query = strip_margin(
+                f"""SELECT
+                |{cols_to_str(cols, 2)}
+                |FROM {quote(self._alias)}"""
+            )
+            return self._apply_query(query)
 
     def select_nested_columns(self, fields: Mapping[str, ColumnOrName]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
@@ -1231,10 +1271,16 @@ class DataFrame:
             |   7 |   Bob |
             +-----+-------+
         """
+        from bigquery_frame.column import ExplodedColumn
+
+        assert_true(
+            not (isinstance(col_expr, ExplodedColumn) and replace),
+            AnalysisException("Exploded columns cannot be used with in withColumn(replace=True)"),
+        )
         if replace:
             query = f"SELECT * REPLACE ({col_expr} AS {quote(col_name)}) FROM {quote(self._alias)}"
         else:
-            query = f"SELECT *, {col_expr} AS {quote(col_name)} FROM {quote(self._alias)}"
+            return self.select(f"{self._alias}.*", col_expr.alias(col_name))
         return self._apply_query(query)
 
     def with_nested_columns(self, fields: Dict[str, ColumnOrName]) -> "DataFrame":
@@ -1382,6 +1428,12 @@ def __get_test_df() -> DataFrame:
         ])
     """
     return bq.sql(query)
+
+
+def _has_exploded_columns(cols: List[Column]):
+    from bigquery_frame.column import ExplodedColumn
+
+    return any(isinstance(col, ExplodedColumn) for col in cols)
 
 
 def __get_test_dfs() -> Tuple[DataFrame, ...]:

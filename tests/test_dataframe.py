@@ -130,8 +130,8 @@ def test_bare_strings(bq: BigQueryBuilder):
     df2 = df.select("id", "name", "types")
     df2.createOrReplaceTempView("pokedex")
     df3 = bq.sql("""SELECT * FROM pokedex""")
-    df4 = df3.withColumn("nb_types", "ARRAY_LENGTH(types)")
-    df5 = df4.withColumn("name", "LOWER(name)", replace=True)
+    df4 = df3.withColumn("nb_types", f.expr("ARRAY_LENGTH(types)"))
+    df5 = df4.withColumn("name", f.expr("LOWER(name)"), replace=True)
 
     expected = [
         SchemaField(name="id", field_type="INTEGER", mode="NULLABLE"),

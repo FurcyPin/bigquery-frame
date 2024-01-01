@@ -639,11 +639,10 @@ Improvements:
 - Added new method `DataFrame.transform` that provides a concise syntax for chaining custom transformations.
 - `functions.array_agg` now support passing multiple columns in the order_by argument.  
 - Added new `functions`:
-  - `avg`
-  - `lower`
-  - `mean`
+  - `avg` and `mean`
+  - `lower` and `upper`
   - `regexp_replace`
-  - `upper`
+  - `explode`, `explode_outer`, `posexplode_outer` and `posexplode_outer` 
 - method `functions.lit` can now generate most BigQuery types:
   - STRING, BYTES
   - DATE, TIME, DATETIME, TIMESTAMP
