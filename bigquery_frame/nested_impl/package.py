@@ -6,7 +6,6 @@ from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import Column, fp
 from bigquery_frame import functions as f
-from bigquery_frame.column import cols_to_str
 from bigquery_frame.conf import REPETITION_MARKER, STRUCT_SEPARATOR
 from bigquery_frame.dataframe import DataFrame, is_repeated, is_struct
 from bigquery_frame.exceptions import AnalysisException
@@ -17,7 +16,7 @@ from bigquery_frame.special_characters import (
     _replace_special_characters_except_last_granularity,
     _restore_special_characters,
 )
-from bigquery_frame.utils import assert_true, group_by_key, quote, strip_margin
+from bigquery_frame.utils import assert_true, group_by_key, quote
 
 ColumnTransformation = Callable[[Optional[Column]], Column]
 AnyKindOfTransformation = Union[
@@ -639,6 +638,7 @@ def unnest_fields(
         >>> from bigquery_frame import nested
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
+
         >>> df = bq.sql('''SELECT
         ...     1 as id,
         ...     [STRUCT(2 as a, [STRUCT(3 as c, 4 as d)] as b, [5, 6] as e)] as s1,
@@ -826,6 +826,24 @@ def unnest_fields(
         +--------------------------------------------+--------------------------------------------+
         |                                          3 |                                          4 |
         +--------------------------------------------+--------------------------------------------+
+
+        When the DataFrame has column names that are reserved keywords:
+        >>> df = bq.sql('''SELECT 1 as `group`, [STRUCT(1 as `table`, 2 as `order`)] as `array`''')
+        >>> for cols, res_df in unnest_fields(df, nested.fields(df), keep_fields=["group", "`array`.`table`"]).items():
+        ...     print(cols)
+        ...     res_df.show()
+        <BLANKLINE>
+        +-------+
+        | group |
+        +-------+
+        |     1 |
+        +-------+
+        array
+        +-------+-------------------------------+-------------------------------+
+        | group | array__ARRAY____STRUCT__table | array__ARRAY____STRUCT__order |
+        +-------+-------------------------------+-------------------------------+
+        |     1 |                             1 |                             2 |
+        +-------+-------------------------------+-------------------------------+
     """  # noqa: E501
     from bigquery_frame import nested
 
@@ -908,28 +926,17 @@ def unnest_fields(
                 len(node) == 1,
                 "Error, this should not happen: tree node of type array with siblings",
             )
+            exploded_col = f.explode(f.col(quoted_prefix)).alias(_replace_special_characters(prefix + key))
 
             keep_cols = [
                 # The expression used to select a keep_column is different the first time we select it.
                 # For instance, if we do a "SELECT s.a as `s.a`", then the next time we select it we will
                 # do a "SELECT `s.a`"
-                alias if alias in current_df.columns else f.col(keep_col).alias(alias)
+                current_df[alias] if alias in current_df.columns else f.col(keep_col).alias(alias)
                 for keep_col, alias in keep_columns_dict.items()
                 if is_sub_field_of_any(keep_col, current_df.columns) or alias in current_df.columns
             ]
-
-            keep_cols_str = cols_to_str(keep_cols, 2) + "," if len(keep_cols) > 0 else ""
-
-            explode_query = strip_margin(
-                f"""
-                |SELECT
-                |{keep_cols_str}
-                |  {_replace_special_characters(prefix + key)}
-                |FROM {quote(current_df._alias)}
-                |LEFT JOIN UNNEST({quoted_prefix}) as {_replace_special_characters(prefix + key)}
-                |"""
-            )
-            new_df = current_df._apply_query(explode_query)
+            new_df = current_df.select(*keep_cols, exploded_col)
 
             yield from recurse_node_with_one_item(
                 children,
@@ -954,13 +961,22 @@ def unnest_fields(
         quoted_prefix="",
     )
     grouped_res = group_by_key(dataframe_and_columns)
+
+    def get_keep_columns_for_final_select(cols: List[Column], _df: DataFrame) -> Generator[Column, None, None]:
+        cols_in_df = _df.columns
+        cols_after_select = _df.select(*cols).columns
+        for keep_col, alias in keep_columns_dict.items():
+            # keep_columns_dict look like {"a.b": "a__STRUCT__b"}.
+            # Because BigQuery does not allow dots in column names,
+            # we need to match "a.b" and "a__STRUCT__b" and take whichever matches
+            if keep_col in cols_in_df and keep_col not in cols_after_select:
+                yield f.col(keep_col).alias(alias)
+            elif alias in cols_in_df and alias not in cols_after_select:
+                yield f.col(alias)
+
     res = [
         df.select(
-            *[
-                quote(keep_col)
-                for keep_col in keep_columns_dict.values()
-                if keep_col in df.columns and keep_col not in df.select(*cols).columns
-            ],
+            *get_keep_columns_for_final_select(cols, df),
             *cols,
         )
         for df, cols in grouped_res.items()
