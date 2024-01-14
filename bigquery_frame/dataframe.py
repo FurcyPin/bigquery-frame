@@ -350,7 +350,7 @@ class DataFrame:
         ...   bq.sql("SELECT * FROM temp_view").show()
         ... except google.api_core.exceptions.BadRequest as e:
         ...   print(e)
-        400 Table "temp_view" must be qualified with a dataset (e.g. dataset.table).
+        400 Table "temp_view" must be qualified with a dataset (e.g. dataset.table)...
         ...
 
         In this project, temporary views are implemented as CTEs in the final compiled query.
