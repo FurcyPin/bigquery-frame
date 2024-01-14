@@ -29,8 +29,8 @@ flake8 = "^5.0.4"
 mypy = "^0.971"
 bandit = "^1.7.4"
 safety = "^2.1.1"
-pytest = "^7.1.2"
-pytest-cov = "^3.0.0"
+pytest = "^7.4.4"
+pytest-cov = "^4.1.0"
 pytest-xdist="^3.5.0"
 pipdeptree = "2.2.1"
 
@@ -52,11 +52,24 @@ line_length = 120
 profile = "black"
 known_first_party = "bigquery_frame"
 
+[tool.coverage.run]
+branch = true
+omit = ["tests/*"]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:"
+]
 
 [tool.pytest.ini_options]
 addopts = [
     "-ra",
-    "--cov=bigquery_frame",
     "--doctest-modules"
 ]
 
