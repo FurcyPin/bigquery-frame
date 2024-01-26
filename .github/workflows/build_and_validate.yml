@@ -59,10 +59,7 @@ jobs:
       - name: Run Unit Tests
         env:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-        run: poetry run coverage run -m pytest
-
-      - name: Create coverage.xml
-        run: poetry run coverage xml
+        run: poetry run pytest --cov --cov-report=xml -n 6
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
