@@ -8,6 +8,7 @@ keywords = ["BigQuery", "DataFrame"]
 readme = "README.md"
 homepage = "https://github.com/FurcyPin/bigquery-frame"
 repository = "https://github.com/FurcyPin/bigquery-frame"
+include = ["bigquery_frame/py.typed"]
 
 [tool.poetry.scripts]
 bq-diff = 'bigquery_frame.cli.diff:main'
