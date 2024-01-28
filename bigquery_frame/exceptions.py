@@ -6,18 +6,14 @@ class IllegalArgumentException(Exception):
 
 class AnalysisException(Exception):
     """
-    Exception happening during the preparation of a transformation.
+    Exception raised when an anomaly is detected during the preparation of a transformation.
     """
-
-    pass
 
 
 class UnsupportedOperationException(Exception):
     """
     When the user does an operation that is not supported.
     """
-
-    pass
 
 
 class UnexpectedException(Exception):
