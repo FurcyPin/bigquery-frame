@@ -618,6 +618,136 @@ def _get_deepest_unnested_field(col_names: List[str]) -> str:
         return substring_before_last_occurrence(deepest, REPETITION_MARKER)
 
 
+def _explode_dataframe_for_each_field(
+    df: DataFrame,
+    fields: List[str],
+    keep_columns_dict: Dict[str, str],
+) -> Generator[Tuple[DataFrame, Column], None, None]:
+    """For each field in `fields`, build a couple (DataFrame, Column) that gives an exploded version of the DataFrame
+    `df` and a Column expression corresponding to that field.
+    The columns in keep_columns_list are kept in the exploded DataFrame when possible.
+    """
+
+    def recurse_node_with_multiple_items(
+        node: OrderedTree,
+        current_df: DataFrame,
+        prefix: str,
+        quoted_prefix: str,
+    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+        for key, children in node.items():
+            yield from recurse_item(
+                node,
+                key,
+                children,
+                current_df,
+                prefix,
+                quoted_prefix,
+            )
+
+    def recurse_node_with_one_item(
+        children: Optional[OrderedTree],
+        current_df: DataFrame,
+        prefix: str,
+        quoted_prefix: str,
+    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+        has_children = children is not None
+        if has_children:
+            node = cast(OrderedTree, children)
+            assert_true(
+                len(node) == 1,
+                "Error, this should not happen: non-struct node with more than one child",
+            )
+            yield from recurse_node_with_multiple_items(
+                node,
+                current_df,
+                prefix=prefix,
+                quoted_prefix=quoted_prefix,
+            )
+        else:
+            yield current_df, f.col(quoted_prefix).alias(_replace_special_characters(prefix))
+
+    def recurse_item(
+        node: OrderedTree,
+        key: str,
+        children: Optional[OrderedTree],
+        current_df: DataFrame,
+        prefix: str,
+        quoted_prefix: str,
+    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+        if key == STRUCT_SEPARATOR:
+            assert_true(
+                len(node) == 1,
+                "Error, this should not happen: tree node of type struct with siblings",
+            )
+            has_children = children is not None
+            assert_true(
+                has_children,
+                "Error, this should not happen: struct without children",
+            )
+            yield from recurse_node_with_multiple_items(
+                children,
+                current_df,
+                prefix=prefix + key,
+                quoted_prefix=quoted_prefix + key,
+            )
+        elif key == REPETITION_MARKER:
+            assert_true(
+                len(node) == 1,
+                "Error, this should not happen: tree node of type array with siblings",
+            )
+            exploded_col = f.explode(f.col(quoted_prefix)).alias(_replace_special_characters(prefix + key))
+
+            keep_cols = [
+                # The expression used to select a keep_column is different the first time we select it.
+                # For instance, if we do a "SELECT s.a as `s.a`", then the next time we select it we will
+                # do a "SELECT `s.a`"
+                current_df[alias] if alias in current_df.columns else f.col(keep_col).alias(alias)
+                for keep_col, alias in keep_columns_dict.items()
+                if is_sub_field_of_any(keep_col, current_df.columns) or alias in current_df.columns
+            ]
+            new_df = current_df.select(*keep_cols, exploded_col)
+
+            yield from recurse_node_with_one_item(
+                children,
+                new_df,
+                prefix=prefix + key,
+                quoted_prefix=_replace_special_characters(prefix + key),
+            )
+        else:
+            yield from recurse_node_with_one_item(
+                children,
+                current_df,
+                prefix=prefix + key,
+                quoted_prefix=quoted_prefix + quote(key),
+            )
+
+    col_dict = {col: None for col in fields}
+    root_tree = _build_nested_struct_tree(col_dict)
+    return recurse_node_with_multiple_items(
+        root_tree,
+        df,
+        prefix="",
+        quoted_prefix="",
+    )
+
+
+def _get_keep_columns_for_final_select(
+    cols: List[Column],
+    df: DataFrame,
+    keep_columns_dict: Dict[str, str],
+) -> Generator[Column, None, None]:
+    cols_in_df = df.columns
+    cols_after_select = df.select(*cols).columns
+    for keep_col, alias in keep_columns_dict.items():
+        # keep_columns_dict looks like {"a.b": "a__STRUCT__b"}.
+        # Because BigQuery does not allow dots in column names,
+        # we need to match "a.b" and "a__STRUCT__b" and take whichever matches
+        if keep_col in cols_in_df and keep_col not in cols_after_select:
+            yield f.col(keep_col).alias(alias)
+        elif alias in cols_in_df and alias not in cols_after_select:
+            yield f.col(alias)
+
+
 def unnest_fields(
     df: DataFrame,
     fields: Union[str, List[str]],
@@ -859,124 +989,18 @@ def unnest_fields(
 
     validate_nested_field_names(*fields, known_fields=nested.fields(df))
 
-    def recurse_node_with_multiple_items(
-        node: OrderedTree,
-        current_df: DataFrame,
-        prefix: str,
-        quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
-        for key, children in node.items():
-            yield from recurse_item(
-                node,
-                key,
-                children,
-                current_df,
-                prefix,
-                quoted_prefix,
-            )
-
-    def recurse_node_with_one_item(
-        children: Optional[OrderedTree],
-        current_df: DataFrame,
-        prefix: str,
-        quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
-        has_children = children is not None
-        if has_children:
-            node = cast(OrderedTree, children)
-            assert_true(
-                len(node) == 1,
-                "Error, this should not happen: non-struct node with more than one child",
-            )
-            yield from recurse_node_with_multiple_items(
-                node,
-                current_df,
-                prefix=prefix,
-                quoted_prefix=quoted_prefix,
-            )
-        else:
-            yield current_df, f.col(quoted_prefix).alias(_replace_special_characters(prefix))
-
-    def recurse_item(
-        node: OrderedTree,
-        key: str,
-        children: Optional[OrderedTree],
-        current_df: DataFrame,
-        prefix: str,
-        quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
-        if key == STRUCT_SEPARATOR:
-            assert_true(
-                len(node) == 1,
-                "Error, this should not happen: tree node of type struct with siblings",
-            )
-            has_children = children is not None
-            assert_true(
-                has_children,
-                "Error, this should not happen: struct without children",
-            )
-            yield from recurse_node_with_multiple_items(
-                children,
-                current_df,
-                prefix=prefix + key,
-                quoted_prefix=quoted_prefix + key,
-            )
-        elif key == REPETITION_MARKER:
-            assert_true(
-                len(node) == 1,
-                "Error, this should not happen: tree node of type array with siblings",
-            )
-            exploded_col = f.explode(f.col(quoted_prefix)).alias(_replace_special_characters(prefix + key))
-
-            keep_cols = [
-                # The expression used to select a keep_column is different the first time we select it.
-                # For instance, if we do a "SELECT s.a as `s.a`", then the next time we select it we will
-                # do a "SELECT `s.a`"
-                current_df[alias] if alias in current_df.columns else f.col(keep_col).alias(alias)
-                for keep_col, alias in keep_columns_dict.items()
-                if is_sub_field_of_any(keep_col, current_df.columns) or alias in current_df.columns
-            ]
-            new_df = current_df.select(*keep_cols, exploded_col)
-
-            yield from recurse_node_with_one_item(
-                children,
-                new_df,
-                prefix=prefix + key,
-                quoted_prefix=_replace_special_characters(prefix + key),
-            )
-        else:
-            yield from recurse_node_with_one_item(
-                children,
-                current_df,
-                prefix=prefix + key,
-                quoted_prefix=quoted_prefix + quote(key),
-            )
-
-    col_dict = {col: None for col in fields}
-    root_tree = _build_nested_struct_tree(col_dict)
-    dataframe_and_columns = recurse_node_with_multiple_items(
-        root_tree,
+    dataframe_and_columns: Generator[Tuple[DataFrame, Column], None, None] = _explode_dataframe_for_each_field(
         df,
-        prefix="",
-        quoted_prefix="",
+        fields,
+        keep_columns_dict,
     )
+    # After exploding the dataframe for each field, we regroup all the fields that produced the same DataFrame.
+    # This way all the fields with the same granularity are extracted with one single transformation.
     grouped_res = group_by_key(dataframe_and_columns)
-
-    def get_keep_columns_for_final_select(cols: List[Column], _df: DataFrame) -> Generator[Column, None, None]:
-        cols_in_df = _df.columns
-        cols_after_select = _df.select(*cols).columns
-        for keep_col, alias in keep_columns_dict.items():
-            # keep_columns_dict look like {"a.b": "a__STRUCT__b"}.
-            # Because BigQuery does not allow dots in column names,
-            # we need to match "a.b" and "a__STRUCT__b" and take whichever matches
-            if keep_col in cols_in_df and keep_col not in cols_after_select:
-                yield f.col(keep_col).alias(alias)
-            elif alias in cols_in_df and alias not in cols_after_select:
-                yield f.col(alias)
 
     res = [
         df.select(
-            *get_keep_columns_for_final_select(cols, df),
+            *_get_keep_columns_for_final_select(cols, df, keep_columns_dict),
             *cols,
         )
         for df, cols in grouped_res.items()
