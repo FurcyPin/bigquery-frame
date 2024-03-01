@@ -27,3 +27,16 @@ class UnexpectedException(Exception):
             f"\nPlease report a bug with the complete stacktrace at {self.issue_submit_url}"
         )
         Exception.__init__(self, msg)
+
+
+class DataframeComparatorException(Exception):
+    """
+    Exception happening during data diff.
+    """
+
+
+class CombinatorialExplosionError(DataframeComparatorException):
+    """
+    Exception happening before a join when we detect that the join key is incorrect,
+    which would lead to a combinatorial explosion.
+    """

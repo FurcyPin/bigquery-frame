@@ -36,4 +36,4 @@ def t2(bq: BigQueryBuilder, random_test_dataset: str, df: DataFrame) -> str:
 def test_cli_diff(t1: str, t2: str):
     with captured_output() as (stdout, stderr):
         diff.main(["--tables", f"{t1}", f"{t2}", "--join-cols", "id"])
-    assert "diff ok!" in stdout.getvalue()
+    assert "Report exported" in stdout.getvalue()
