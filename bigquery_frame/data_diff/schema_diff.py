@@ -1,7 +1,7 @@
 import difflib
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, cast
+from typing import Dict, List
 
 from google.cloud.bigquery import SchemaField
 
