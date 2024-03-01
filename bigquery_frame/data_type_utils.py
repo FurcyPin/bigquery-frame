@@ -216,52 +216,46 @@ def flatten_schema(
         nullable: bool,
         prefix: str,
     ) -> Generator[SchemaField, None, None]:
-        if keep_non_leaf_fields:
-            yield SchemaField(
-                name=prefix,
-                field_type=schema_field.field_type,
-                mode=schema_field.mode,
-                description=schema_field.description,
-                fields=schema_field.fields,
-            )
-        if is_struct(schema_field) and is_repeated(schema_field) and explode:
-            if keep_non_leaf_fields:
-                yield SchemaField(
-                    name=prefix + repetition_marker,
-                    field_type=schema_field.field_type,
-                    mode="NULLABLE" if nullable or is_nullable(schema_field) else "REQUIRED",
-                    description=schema_field.description,
-                    fields=schema_field.fields,
+        res = []
+        new_nullable = nullable or is_nullable(schema_field)
+        if is_struct(schema_field):
+            if is_repeated(schema_field):
+                if explode:
+                    res += list(
+                        flatten_struct_type(
+                            schema_field.fields,
+                            new_nullable,
+                            prefix + repetition_marker + struct_separator,
+                        )
+                    )
+            else:
+                res += list(
+                    flatten_struct_type(
+                        schema_field.fields,
+                        new_nullable,
+                        prefix + struct_separator,
+                    )
                 )
-            yield from flatten_struct_type(
-                schema_field.fields,
-                nullable or is_nullable(schema_field),
-                prefix + repetition_marker + struct_separator,
-            )
-        elif is_struct(schema_field) and not is_repeated(schema_field):
-            yield from flatten_struct_type(
-                schema_field.fields,
-                nullable or is_nullable(schema_field),
-                prefix + struct_separator,
-            )
-        elif is_repeated(schema_field) and explode:
-            prefix += repetition_marker
-            mode = "NULLABLE" if nullable or is_nullable(schema_field) else "REQUIRED"
-            yield SchemaField(
-                name=prefix,
+        if is_repeated(schema_field) and explode:
+            new_schema_field = SchemaField(
+                name=prefix + repetition_marker,
                 field_type=schema_field.field_type,
-                mode=mode,
+                mode="NULLABLE" if nullable else "REQUIRED",
                 description=schema_field.description,
                 fields=schema_field.fields,
             )
-        elif not keep_non_leaf_fields:
-            yield SchemaField(
-                name=prefix,
-                field_type=schema_field.field_type,
-                mode=schema_field.mode,
-                description=schema_field.description,
-                fields=schema_field.fields,
-            )
+            if keep_non_leaf_fields or len(res) == 0:
+                res = [new_schema_field] + res
+        new_schema_field = SchemaField(
+            name=prefix,
+            field_type=schema_field.field_type,
+            mode=schema_field.mode,
+            description=schema_field.description,
+            fields=schema_field.fields,
+        )
+        if keep_non_leaf_fields or len(res) == 0:
+            res = [new_schema_field] + res
+        yield from res
 
     def flatten_struct_type(
         schema: List[SchemaField], previous_nullable: bool = False, prefix: str = ""
