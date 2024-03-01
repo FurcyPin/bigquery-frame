@@ -88,10 +88,10 @@ class DiffResult:
         - A Column `__EXISTS__: STRUCT<left_value, right_value>`
         - A Column `__IS_EQUAL__: BOOLEAN`
 
-        In the simplest cases, there is only one granularity level, called the root level and represented 
+        In the simplest cases, there is only one granularity level, called the root level and represented
         by the string `""`. When comparing DataFrames containing arrays of structs, if the user passes a repeated
         field as join_cols (for example `"a!.id"`), then each level of granularity will be generated.
-        In the example, there will be two: the root level `""` containing all root-level columns, and the 
+        In the example, there will be two: the root level `""` containing all root-level columns, and the
         level `"a!"` containing all the fields inside the exploded array `a!`; with one row per element inside `a!`.
         """
         self.join_cols: List[str] = join_cols
