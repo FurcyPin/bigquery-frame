@@ -16,3 +16,7 @@ htmlcov/
 # Python Poetry
 poetry.lock
 dist/
+
+# project files
+/test_working_dir
+/diff_report.html

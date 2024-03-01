@@ -10,6 +10,8 @@ T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
 
+MAX_JAVA_INT = 2147483647
+
 
 def strip_margin(text: str):
     """For every line in this string, strip a leading prefix consisting of whitespace, tabs and carriage returns

@@ -628,7 +628,7 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 ### 0.5.0
 
-Improvements:
+**Improvements:**
 
 - Added support for `DataFrame.groupBy`. It also supports `DataFrame.groupBy(...).pivot(...)`.
 - `transformations.pivot` now support doing multiple aggregations at the same time.
@@ -651,8 +651,16 @@ Improvements:
 - Added new method `Column.isin`.
 - Improved `functions.sort_array` and `functions.transform`, they can now be correctly used together. 
   But their signature has changed. They now take functions as arguments instead of strings.
+- **Complete overhaul of data-diff**: 
+  - data-diff now supports complex data types. Declaring a repeated field (e.g. `"s!.id"` in join_cols will now explode the
+    corresponding array and perform the diff on it).
+  - When columns are removed or renamed, they are now still displayed in the per-column diff report.
+  - data-diff now generates an HTML report: it is fully standalone and can be opened without any 
+    internet connection.
+  - A user-friendly error is now raised when one of the `join_cols` does not exist. 
 
-Breaking changes:
+
+**Breaking changes:**
 
 - Dropped support for Python 3.7
 - `DataFrame.join` does not supports string expression. For instance `df1.join(df2, on="col1 == col2")` 
@@ -665,7 +673,10 @@ Breaking changes:
   with `sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = None`.
 - The signature of the `functions.transform` method has changed.
   The second argument `transform_col: Column` was replaced with `func: Callable[[Column], Column]`
-
+- **data-diff**:
+  - `bigquery_frame.data_diff.DataframeComparator` object has been removed. 
+    Please use directly the method `bigquery_frame.data_diff.compare_dataframes`.
+  - package `bigquery_frame.data_diff.diff_results` has been renamed to `diff_result`.
 
 Bugfixes:
 - `transformations.unpivot` now works with an empty `pivot_columns` list.
