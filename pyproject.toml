@@ -61,7 +61,7 @@ omit = ["tests/*"]
 directory = "htmlcov"
 
 [tool.coverage.xml]
-output = "coverage.xml"
+output = "test_working_dir/coverage.xml"
 
 [tool.coverage.report]
 exclude_also = [
@@ -71,7 +71,8 @@ exclude_also = [
 [tool.pytest.ini_options]
 addopts = [
     "-ra",
-    "--doctest-modules"
+    "--doctest-modules",
+    "--junitxml=test_working_dir/test-results.xml"
 ]
 
 testpaths = [
