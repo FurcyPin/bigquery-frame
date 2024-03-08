@@ -35,8 +35,10 @@ def harmonize_dataframes(
     Examples:
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
-        >>> df1 = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
-        >>> df2 = bq.sql('SELECT 1 as id, STRUCT(2 as a, [STRUCT(3.0 as c, "4" as d)] as b, [5.0, 6.0] as e) as s')
+        >>> df1 = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as f) as s')
+        >>> df2 = bq.sql(
+        ...     'SELECT 1 as id, STRUCT(2 as a, [STRUCT(3.0 as c, "4" as d, 5 as e)] as b, [5.0, 6.0] as f) as s'
+        ... )
         >>> df1.union(df2).show() # doctest: +ELLIPSIS
         Traceback (most recent call last):
           ...
@@ -46,8 +48,8 @@ def harmonize_dataframes(
         +----+--------------------------------------------------------+
         | id |                                                      s |
         +----+--------------------------------------------------------+
-        |  1 | {'a': 1, 'b': [{'c': 2.0, 'd': '3'}], 'e': [4.0, 5.0]} |
-        |  1 | {'a': 2, 'b': [{'c': 3.0, 'd': '4'}], 'e': [5.0, 6.0]} |
+        |  1 | {'a': 1, 'b': [{'c': 2.0, 'd': '3'}], 'f': [4.0, 5.0]} |
+        |  1 | {'a': 2, 'b': [{'c': 3.0, 'd': '4'}], 'f': [5.0, 6.0]} |
         +----+--------------------------------------------------------+
     """
     left_schema_flat = flatten_schema(left_df.schema, explode=True)
