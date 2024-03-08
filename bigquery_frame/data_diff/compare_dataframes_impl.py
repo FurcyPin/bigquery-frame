@@ -354,6 +354,8 @@ def _check_join_cols(
         )
 
 
+DEFAULT_DATE = '"0001-01-01"'
+
 default_values_per_type = {
     "STRING": '""',
     "BOOL": "FALSE",
@@ -361,10 +363,10 @@ default_values_per_type = {
     "NUMERIC": "0",
     "BIGNUMERIC": "0",
     "FLOAT": "0",
-    "DATE": '"0001-01-01"',
+    "DATE": DEFAULT_DATE,
     "TIME": '"00:00:00"',
-    "DATETIME": '"0001-01-01"',
-    "TIMESTAMP": '"0001-01-01"',
+    "DATETIME": DEFAULT_DATE,
+    "TIMESTAMP": DEFAULT_DATE,
     "BYTES": 'b""',
     "GEOGRAPHY": 'ST_GEOGFROMTEXT("POINT(0 0)")',
 }
