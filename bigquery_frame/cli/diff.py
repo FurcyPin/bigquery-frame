@@ -31,7 +31,6 @@ def main(argv: List[str] = None):
     )
     parser.add_argument(
         "--output",
-        nargs=1,
         default=None,
         type=str,
         help="Path of the HTML report to generate",

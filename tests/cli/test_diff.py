@@ -36,4 +36,28 @@ def t2(bq: BigQueryBuilder, random_test_dataset: str, df: DataFrame) -> str:
 def test_cli_diff(t1: str, t2: str):
     with captured_output() as (stdout, stderr):
         diff.main(["--tables", f"{t1}", f"{t2}", "--join-cols", "id"])
-    assert "Report exported" in stdout.getvalue()
+    assert "Report exported as diff_report.html" in stdout.getvalue()
+
+
+def test_cli_diff_with_output_option(t1: str, t2: str):
+    with captured_output() as (stdout, stderr):
+        diff.main(
+            ["--tables", f"{t1}", f"{t2}", "--join-cols", "id", "--output", "test_working_dir/test_cli_diff.html"]
+        )
+    assert "Report exported as test_working_dir/test_cli_diff.html" in stdout.getvalue()
+
+
+def test_cli_diff_with_no_args(t1: str, t2: str):
+    """WHEN the command is called with no argument, it should print the help and exit"""
+    with captured_output() as (stdout, stderr):
+        with pytest.raises(SystemExit):
+            diff.main([])
+    assert "usage: bq-diff" in stdout.getvalue()
+
+
+def test_cli_diff_with_help_option(t1: str, t2: str):
+    """WHEN the command is called with the --help option, it should print the help and exit"""
+    with captured_output() as (stdout, stderr):
+        with pytest.raises(SystemExit):
+            diff.main(["--help"])
+    assert "usage: bq-diff" in stdout.getvalue()
