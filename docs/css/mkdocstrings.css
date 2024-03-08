@@ -1,0 +1,5 @@
+/* Indent and distinguish sub-items */
+div.doc-contents:not(.first) {
+  padding-left: 15px;
+  border-left: 4px solid rgba(230, 230, 230);
+}

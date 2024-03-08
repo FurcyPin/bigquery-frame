@@ -1,0 +1,72 @@
+# mkdocs.yml
+site_name: BigQuery-frame
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.select
+
+plugins:
+  - search:
+      lang: en
+  - include-markdown:
+  - mkdocstrings:
+      enable_inventory: true
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_root_full_path: false
+            show_root_toc_entry: true
+            show_source: true
+            show_signature: true
+            show_signature_annotations: true
+
+extra_css:
+  - css/mkdocstrings.css
+  - css/custom_width.css
+
+markdown_extensions:
+  # Allows to add notes and collapsible sections etc.
+  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/?h=admon#usage
+  - admonition
+  - pymdownx.details
+
+watch:
+  - README.md
+  - bigquery_frame
+
+#site_url: docs/home.md
+site_url: https://furcypin.github.io/bigquery-frame
+edit_uri: https://github.com/FurcyPin/bigquery-frame/tree/main/docs
+repo_url: https://github.com/FurcyPin/bigquery-frame
+repo_name: FurcyPin/bigquery-frame
+
+nav:
+  - What is bigquery-frame ?: "README.md"
+  - Use cases:
+    - Intro: "use_cases/intro.md"
+    - Working with nested data: "use_cases/working_with_nested_data.md"
+    - Working with json: "use_cases/working_with_json.md"
+  - Reference:
+    - bigquery_frame: "reference/bigquery_frame.md"
+    - bigquery_frame.functions: "reference/functions.md"
+    - bigquery_frame.graph: "reference/graph.md"
+    - bigquery_frame.nested: "reference/nested.md"
+    - bigquery_frame.transformations: "reference/transformations.md"
+

@@ -56,6 +56,9 @@ jobs:
       - name: Security safety
         run: poetry run safety check
 
+      - name: Build docs
+        run: poetry run mkdocs build
+
       - name: Run Unit Tests
         env:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
