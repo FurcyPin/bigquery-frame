@@ -247,7 +247,6 @@ class DiffResult:
             |             4 |          c4 | {5, 0, 0, 0, 5} |                     {[], [], [], [{1, 2}, {2, 2}, {3, 1}]} |
             +---------------+-------------+-----------------+------------------------------------------------------------+
         """  # noqa: E501
-        # TODO: check this: "The arrays contained in the field `diff` are NOT guaranteed to be sorted."
         return _get_diff_per_col_df_with_cache(self, max_nb_rows_per_col_state)
 
     def _compute_diff_stats_shard(self, diff_df_shard: DataFrame) -> DiffStats:
