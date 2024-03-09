@@ -11,12 +11,18 @@
 
 ## What is it ?
 
-This project started as a POC that aimed to showcase the wonders that could be done if BigQuery provided a DataFrame API in 
-Python similar to the one already available with PySpark or Snowpark.
+Bigquery-frame is a library that does two things:
+- It brings a DataFrame API similar to PySpark, that runs on BigQuery
+- It brings several cool features on top of it that lets you do magic stuff on BigQuery, like handling nested
+  data like it's nothing, or comparing two tables (a.k.a. data-diff).
+
+This project originally started as a POC that aimed to showcase the wonders that could be done 
+if BigQuery provided a DataFrame API in Python similar to the one already available with PySpark or Snowpark.
+
 With time, I started to add more and more [cool features :sunglasses:](#cool-features).
 
 I tried to reproduce the most commonly used methods of the Spark DataFrame object. I aimed at making something 
-as close as possible as PySpark, and tried to keep exactly the same naming and docstrings as PySpark's DataFrames.
+as close as possible to PySpark, and tried to keep exactly the same naming and docstrings as PySpark's DataFrames.
  
 
 For instance, this is a working example of PySpark code:
@@ -48,7 +54,7 @@ df2.show()
 # +---+---------+---------------+--------+
 ```
 
-And this is an equivalent working example using bigquery_frame, that runs on Google Big Query! 
+And this is an equivalent working example using bigquery_frame, that runs on Google BigQuery! 
 ```python
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
@@ -631,6 +637,7 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 **Improvements:**
 
+- Added a [brand new shiny documentation :smiley:](https://furcypin.github.io/bigquery-frame)
 - Added support for `DataFrame.groupBy`. It also supports `DataFrame.groupBy(...).pivot(...)`.
 - `transformations.pivot` now support doing multiple aggregations at the same time.
   It's signature has changed: The arguments `agg_fun` and `agg_col` have been replaced with `aggs`

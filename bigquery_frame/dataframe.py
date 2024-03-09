@@ -57,23 +57,25 @@ def is_nullable(schema_field: SchemaField) -> bool:
     return schema_field.mode == "NULLABLE"
 
 
-def schema_to_simple_string(schema: List[SchemaField]):
+def schema_to_simple_string(schema: List[SchemaField]) -> str:
     """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
     The field names are kept, with a '.' separator for struct fields.
     If `explode` option is set, arrays are exploded with a '!' separator.
 
-    Example:
+    Args:
+        schema: A BigQuery schema.
 
-    >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-    >>> bq = BigQueryBuilder()
-    >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
-    >>> print(df.schema)  # noqa: E501
-    [SchemaField('id', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, None, (), None)), None)]
-    >>> schema_to_simple_string(df.schema)
-    'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
+    Returns:
+        A string representation of the schema.
 
-    :param schema:
-    :return:
+    Examples:
+        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
+        >>> print(df.schema)  # noqa: E501
+        [SchemaField('id', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('s', 'RECORD', 'NULLABLE', None, None, (SchemaField('a', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('b', 'RECORD', 'REPEATED', None, None, (SchemaField('c', 'INTEGER', 'NULLABLE', None, None, (), None), SchemaField('d', 'INTEGER', 'NULLABLE', None, None, (), None)), None), SchemaField('e', 'INTEGER', 'REPEATED', None, None, (), None)), None)]
+        >>> schema_to_simple_string(df.schema)
+        'id:INTEGER,s:STRUCT<a:INTEGER,b:ARRAY<STRUCT<c:INTEGER,d:INTEGER>>,e:ARRAY<INTEGER>>'
     """
 
     def schema_field_to_simple_string(schema_field: SchemaField):
@@ -114,12 +116,15 @@ def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
     """Deduplicate a list of key, values by their keys.
     Unlike `list(set(l))`, this does preserve ordering.
 
-    Example:
-    >>> _dedup_key_value_list([('a', 1), ('b', 2), ('a', 3)])
-    [('a', 3), ('b', 2)]
+    Args:
+        items: A list of couples.
 
-    :param items: an iterable of couples
-    :return: an iterable of couples
+    Returns:
+        A deduplicated copy of the list.
+
+    Examples:
+        >>> _dedup_key_value_list([('a', 1), ('b', 2), ('a', 3)])
+        [('a', 3), ('b', 2)]
     """
     return list({k: v for k, v in items}.items())
 
@@ -159,39 +164,38 @@ class DataFrame:
     def __getitem__(self, item: Union[ColumnOrName, Iterable[ColumnOrName], int]):
         """Returns the column as a :class:`Column`.
 
-        Examples
-        --------
-        >>> df = __get_test_df()
-        >>> df.select(df['id']).show()
-        +----+
-        | id |
-        +----+
-        |  1 |
-        |  2 |
-        |  3 |
-        +----+
-        >>> df[["id", "name"]].show()
-        +----+-----------+
-        | id |      name |
-        +----+-----------+
-        |  1 | Bulbasaur |
-        |  2 |   Ivysaur |
-        |  3 |  Venusaur |
-        +----+-----------+
-        >>> df[df["id"] > 1 ].show()
-        +----+----------+
-        | id |     name |
-        +----+----------+
-        |  2 |  Ivysaur |
-        |  3 | Venusaur |
-        +----+----------+
-        >>> df[df[0] > 1].show()
-        +----+----------+
-        | id |     name |
-        +----+----------+
-        |  2 |  Ivysaur |
-        |  3 | Venusaur |
-        +----+----------+
+        Examples:
+            >>> df = __get_test_df()
+            >>> df.select(df['id']).show()
+            +----+
+            | id |
+            +----+
+            |  1 |
+            |  2 |
+            |  3 |
+            +----+
+            >>> df[["id", "name"]].show()
+            +----+-----------+
+            | id |      name |
+            +----+-----------+
+            |  1 | Bulbasaur |
+            |  2 |   Ivysaur |
+            |  3 |  Venusaur |
+            +----+-----------+
+            >>> df[df["id"] > 1 ].show()
+            +----+----------+
+            | id |     name |
+            +----+----------+
+            |  2 |  Ivysaur |
+            |  3 | Venusaur |
+            +----+----------+
+            >>> df[df[0] > 1].show()
+            +----+----------+
+            | id |     name |
+            +----+----------+
+            |  2 |  Ivysaur |
+            |  3 | Venusaur |
+            +----+----------+
         """
         if isinstance(item, str):
             return Column(f"{quote(self._alias)}.{quote(item)}")
@@ -302,71 +306,74 @@ class DataFrame:
     def createOrReplaceTempTable(self, alias: str) -> None:
         """Creates or replace a persisted temporary table.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql("SELECT 1 as id")
-        >>> df.createOrReplaceTempTable("temp_table")
-        >>> bq.sql("SELECT * FROM temp_table").show()
-        +----+
-        | id |
-        +----+
-        |  1 |
-        +----+
+        Args:
+            alias: The name of the temporary table to create or replace.
 
-        :return: a new :class:`DataFrame`
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql("SELECT 1 as id")
+            >>> df.createOrReplaceTempTable("temp_table")
+            >>> bq.sql("SELECT * FROM temp_table").show()
+            +----+
+            | id |
+            +----+
+            |  1 |
+            +----+
         """
         self.bigquery._registerDataFrameAsTempTable(self, alias)
 
     def createOrReplaceTempView(self, name: str) -> None:
         """Creates or replaces a local temporary view with this :class:`DataFrame`.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql("SELECT 1 as id")
-        >>> df.createOrReplaceTempView("temp_view")
-        >>> bq.sql("SELECT * FROM temp_view").show()
-        +----+
-        | id |
-        +----+
-        |  1 |
-        +----+
+        Args:
+            name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
 
-        Limitations compared to Spark
-        -----------------------------
-        Replacing an existing temp view with a new one will make the old view inaccessible to future instruction
-        (like Spark), but also to past instructions (unlike Spark). It means that the newly defined view cannot
-        derive from the view it is replacing. For instance, the following code works in Spark but not here :
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql("SELECT 1 as id")
+            >>> df.createOrReplaceTempView("temp_view")
+            >>> bq.sql("SELECT * FROM temp_view").show()
+            +----+
+            | id |
+            +----+
+            |  1 |
+            +----+
 
-        >>> bq.sql("SELECT 2 as id").createOrReplaceTempView("temp_view")
-        >>> bq.sql("SELECT * FROM temp_view").show()
-        +----+
-        | id |
-        +----+
-        |  2 |
-        +----+
-        >>> bq.sql("SELECT * FROM temp_view").createOrReplaceTempView("temp_view")
-        >>> import google
-        >>> try:  #doctest: +ELLIPSIS
-        ...   bq.sql("SELECT * FROM temp_view").show()
-        ... except google.api_core.exceptions.BadRequest as e:
-        ...   print(e)
-        400 Table "temp_view" must be qualified with a dataset (e.g. dataset.table)...
-        ...
+        !!! warning "Limitations compared to Spark"
+            Replacing an existing temp view with a new one will make the old view inaccessible to future instructions
+            (like Spark), but also to past instructions (unlike Spark). It means that the newly defined view cannot
+            derive from the view it is replacing. For instance, the following code works in Spark but not here :
 
-        In this project, temporary views are implemented as CTEs in the final compiled query.
-        As such, BigQuery does not allow to define two CTEs with the same name.
+            Examples:
 
-        :param name: Name of the temporary view. It must contain only alphanumeric and lowercase characters, no dots.
-        :return: Nothing
+                >>> bq.sql("SELECT 2 as id").createOrReplaceTempView("temp_view")
+                >>> bq.sql("SELECT * FROM temp_view").show()
+                +----+
+                | id |
+                +----+
+                |  2 |
+                +----+
+                >>> bq.sql("SELECT * FROM temp_view").createOrReplaceTempView("temp_view")
+                >>> import google
+                >>> try:  #doctest: +ELLIPSIS
+                ...   bq.sql("SELECT * FROM temp_view").show()
+                ... except google.api_core.exceptions.BadRequest as e:
+                ...   print(e)
+                400 Table "temp_view" must be qualified with a dataset (e.g. dataset.table)...
+                ...
+
+            In this project, temporary views are implemented as CTEs in the final compiled query.
+            As such, BigQuery does not allow to define two CTEs with the same name.
         """
         self.bigquery._registerDataFrameAsTempView(self, name)
 
     def distinct(self) -> "DataFrame":
         """Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
 
-        Limitations compared to Spark
-        -----------------------------
-        In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
+        !!! warning "Limitations compared to Spark"
+            In BigQuery, the DISTINCT statement does not work on complex types like STRUCT and ARRAY.
         """
         query = f"""SELECT DISTINCT * FROM {quote(self._alias)}"""
         return self._apply_query(query)
@@ -398,8 +405,10 @@ class DataFrame:
         return self._apply_query(query)
 
     def groupBy(self, *cols: Union[ColumnOrName, List[ColumnOrName]]) -> "GroupedData":
-        """Groups the :class:`DataFrame` using the specified columns, so we can run aggregation on them.
-        See :class:`GroupedData` for all the available aggregate functions.
+        """Groups the [DataFrame][bigquery_frame.DataFrame] using the specified columns, so we can run aggregation
+        on them.
+
+        See [GroupedData][bigquery_frame.grouped_data.GroupedData] for all the available aggregate functions.
 
         Args:
             *cols: Columns to group by.
@@ -472,7 +481,7 @@ class DataFrame:
     ):
         """Joins with another :class:`DataFrame`, using the given join expression.
 
-        !!! warning: "Limitations compared to Spark"
+        !!! warning "Limitations compared to Spark"
             This method has several limitations when compared to Spark:
             - When doing a select after a join, table prefixes MUST always be used on column names.
               For this reason, users SHOULD always make sure the DataFrames they are joining on are properly aliased
@@ -487,15 +496,14 @@ class DataFrame:
                 If `on` is a string or a list of strings indicating the name of the join column(s),
                 the column(s) must exist on both sides, and this performs an equi-join.
             how: (default `inner`). Must be one of: `inner`, `cross`, `outer`,
-            `full`, `fullouter`, `full_outer`, `left`, `leftouter`, `left_outer`,
-            `right`, `rightouter`, `right_outer`, `semi`, `leftsemi`, `left_semi`,
-            `anti`, `leftanti` and `left_anti`.
+                `full`, `fullouter`, `full_outer`, `left`, `leftouter`, `left_outer`,
+                `right`, `rightouter`, `right_outer`, `semi`, `leftsemi`, `left_semi`,
+                `anti`, `leftanti` and `left_anti`.
 
         Returns:
             Joined DataFrame.
 
-        Examples:
-            The following performs a full outer join between ``df1`` and ``df2``.
+        Examples: Example: The following performs a full outer join between ``df1`` and ``df2``.
             >>> from bigquery_frame import functions as f
             >>> df1, df2, df3, df4 = __get_test_dfs()
             >>> df1 = df1.alias("df1")
@@ -597,7 +605,6 @@ class DataFrame:
             +------+-----+
 
         Examples: Examples of limitations compared to Spark
-
             Unlike in Spark, the following examples do not work:
             - Not specifying the table prefix in the select clause after a join (even for "JOIN ... USING (...)")
             >>> df1.join(df2, "name", 'outer').select("name").show()  # doctest: +ELLIPSIS
@@ -679,13 +686,13 @@ class DataFrame:
         """Persist the contents of the :class:`DataFrame` in a temporary table and returns a new DataFrame reading
         from that table.
 
-        Limitations compared to Spark
-        -----------------------------
-        Unlike with Spark, this operation is an action and the temporary table is created immediately.
-        Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this
-        method must be used.
+        Returns:
+            A new DataFrame.
 
-        :return: a new :class:`DataFrame`
+        !!! warning Limitations compared to Spark
+            Unlike with Spark, this operation is an action and the temporary table is created immediately.
+            Like Spark, however, the current DataFrame is not persisted, the new DataFrame returned by this
+            method must be used.
         """
         return self.bigquery._registerDataFrameAsTempTable(self)
 
@@ -693,19 +700,17 @@ class DataFrame:
         """Prints out the schema in tree format.
 
         Examples:
-
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
-        >>> df.printSchema()
-        root
-         |-- id: INTEGER (NULLABLE)
-         |-- s: RECORD (NULLABLE)
-         |    |-- a: INTEGER (NULLABLE)
-         |    |-- b: RECORD (REPEATED)
-         |    |    |-- c: INTEGER (NULLABLE)
-        <BLANKLINE>
-
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+                >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+            >>> df.printSchema()
+            root
+             |-- id: INTEGER (NULLABLE)
+             |-- s: RECORD (NULLABLE)
+             |    |-- a: INTEGER (NULLABLE)
+             |    |-- b: RECORD (REPEATED)
+             |    |    |-- c: INTEGER (NULLABLE)
+            <BLANKLINE>
         """
         print(self.treeString())
 
@@ -713,29 +718,28 @@ class DataFrame:
         """Prints out the SQL query generated to materialize this :class:`DataFrame`.
 
         Examples:
-
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> from bigquery_frame import functions as f
-        >>> df = (
-        ...     bq.sql('''SELECT 1 as a''')
-        ...     .select('a', f.col('a') + f.lit(1).alias('b'))
-        ...     .withColumn('c', f.expr('a + b'))
-        ... )
-        >>> df.print_query()
-        WITH `_default_alias_1` AS (
-          SELECT 1 as a
-        )
-        , `_default_alias_2` AS (
-          SELECT
-            `a`,
-            (`a`) + (1)
-          FROM `_default_alias_1`
-        )
-        SELECT
-          `_default_alias_2`.*,
-          a + b AS `c`
-        FROM `_default_alias_2`
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> from bigquery_frame import functions as f
+            >>> df = (
+            ...     bq.sql('''SELECT 1 as a''')
+            ...     .select('a', f.col('a') + f.lit(1).alias('b'))
+            ...     .withColumn('c', f.expr('a + b'))
+            ... )
+            >>> df.print_query()
+            WITH `_default_alias_1` AS (
+              SELECT 1 as a
+            )
+            , `_default_alias_2` AS (
+              SELECT
+                `a`,
+                (`a`) + (1)
+              FROM `_default_alias_1`
+            )
+            SELECT
+              `_default_alias_2`.*,
+              a + b AS `c`
+            FROM `_default_alias_2`
         """
         print(self.compile())
 
@@ -785,29 +789,27 @@ class DataFrame:
             A DataFrame with subset (or all) of columns.
 
         Examples:
-        >>> from bigquery_frame import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql("SELECT * FROM UNNEST([STRUCT(2 as age, 'Alice' as name), STRUCT(5 as age, 'Bob' as name)])")
+            >>> from bigquery_frame import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql("SELECT * FROM UNNEST([STRUCT(2 as age, 'Alice' as name), STRUCT(5 as age, 'Bob' as name)])")
 
-        Select all columns in the DataFrame.
+        Examples: Example 1: Select all columns in the DataFrame.
+            >>> df.select('*').show()
+            +-----+-------+
+            | age |  name |
+            +-----+-------+
+            |   2 | Alice |
+            |   5 |   Bob |
+            +-----+-------+
 
-        >>> df.select('*').show()
-        +-----+-------+
-        | age |  name |
-        +-----+-------+
-        |   2 | Alice |
-        |   5 |   Bob |
-        +-----+-------+
-
-        Select a column with other expressions in the DataFrame.
-
-        >>> df.select(df["name"], (df["age"] + 10).alias('age')).show()
-        +-------+-----+
-        |  name | age |
-        +-------+-----+
-        | Alice |  12 |
-        |   Bob |  15 |
-        +-------+-----+
+        Examples: Example 2: Select a column with other expressions in the DataFrame.
+            >>> df.select(df["name"], (df["age"] + 10).alias('age')).show()
+            +-------+-----+
+            |  name | age |
+            +-------+-----+
+            | Alice |  12 |
+            |   Bob |  15 |
+            +-------+-----+
         """
         cols = list_or_tuple_to_list(*columns)
         if _has_exploded_columns(cols):
@@ -837,71 +839,74 @@ class DataFrame:
             This method is deprecated since version 0.5.0 and will be removed in version 0.6.0.
             Please use bigquery_frame.nested.select instead.
 
+        Args:
+            fields: A Dict[column_alias, column_expression] of columns to select
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+------------------+
-        | id |                s |
-        +----+------------------+
-        |  1 | {'a': 1, 'b': 2} |
-        +----+------------------+
-        >>> df.select_nested_columns({
-        ...     "id": "id",
-        ...     "s.c": f.col("s.a") + f.col("s.b")
-        ... }).show()
-        +----+----------+
-        | id |        s |
-        +----+----------+
-        |  1 | {'c': 3} |
-        +----+----------+
+        Returns:
+            A DataFrame.
 
-        >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+--------------------------------------+
-        | id |                                    s |
-        +----+--------------------------------------+
-        |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
-        +----+--------------------------------------+
-        >>> df.select_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
-        +----------------------+
-        |                    s |
-        +----------------------+
-        | [{'c': 3}, {'c': 7}] |
-        +----------------------+
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> from bigquery_frame import functions as f
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+------------------+
+            | id |                s |
+            +----+------------------+
+            |  1 | {'a': 1, 'b': 2} |
+            +----+------------------+
+            >>> df.select_nested_columns({
+            ...     "id": "id",
+            ...     "s.c": f.col("s.a") + f.col("s.b")
+            ... }).show()
+            +----+----------+
+            | id |        s |
+            +----+----------+
+            |  1 | {'c': 3} |
+            +----+----------+
 
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+--------------------+
-        | id |                  s |
-        +----+--------------------+
-        |  1 | [{'e': [1, 2, 3]}] |
-        +----+--------------------+
-        >>> df.select_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
-        +--------------------------+
-        |                        s |
-        +--------------------------+
-        | [{'e': [1.0, 2.0, 3.0]}] |
-        +--------------------------+
+            >>> from bigquery_frame import functions as f
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+--------------------------------------+
+            | id |                                    s |
+            +----+--------------------------------------+
+            |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
+            +----+--------------------------------------+
+            >>> df.select_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
+            +----------------------+
+            |                    s |
+            +----------------------+
+            | [{'c': 3}, {'c': 7}] |
+            +----------------------+
 
-        :param fields: a Dict[column_alias, column_expression] of columns to select
-        :return:
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+--------------------+
+            | id |                  s |
+            +----+--------------------+
+            |  1 | [{'e': [1, 2, 3]}] |
+            +----+--------------------+
+            >>> df.select_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
+            +--------------------------+
+            |                        s |
+            +--------------------------+
+            | [{'e': [1.0, 2.0, 3.0]}] |
+            +--------------------------+
         """
         warning_message = (
             "The method DataFrame.select_nested_columns is deprecated since version 0.5.0 "
@@ -919,32 +924,33 @@ class DataFrame:
 
         Formating options may be set using `format_args`.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
-        >>> df.show()
-        +----+---------------------------+
-        | id |                         s |
-        +----+---------------------------+
-        |  1 | {'a': 1, 'b': [{'c': 1}]} |
-        +----+---------------------------+
-        >>> df.show(format_args={"tablefmt": 'fancy_grid'})
-        ╒══════╤═══════════════════════════╕
-        │   id │ s                         │
-        ╞══════╪═══════════════════════════╡
-        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
-        ╘══════╧═══════════════════════════╛
-        >>> df.show(simplify_structs=True)
-        +----+------------+
-        | id |          s |
-        +----+------------+
-        |  1 | {1, [{1}]} |
-        +----+------------+
+        Args:
+            n: Number of rows to show.
+            format_args: Extra arguments that may be passed to the function tabulate.tabulate().
+            simplify_structs: If set to true, struct field names are not displayed.
 
-        :param n: Number of rows to show.
-        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
-        :param simplify_structs: if set to true, struct field names are not displayed
-        :return: None
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+            >>> df.show()
+            +----+---------------------------+
+            | id |                         s |
+            +----+---------------------------+
+            |  1 | {'a': 1, 'b': [{'c': 1}]} |
+            +----+---------------------------+
+            >>> df.show(format_args={"tablefmt": 'fancy_grid'})
+            ╒══════╤═══════════════════════════╕
+            │   id │ s                         │
+            ╞══════╪═══════════════════════════╡
+            │    1 │ {'a': 1, 'b': [{'c': 1}]} │
+            ╘══════╧═══════════════════════════╛
+            >>> df.show(simplify_structs=True)
+            +----+------------+
+            | id |          s |
+            +----+------------+
+            |  1 | {1, [{1}]} |
+            +----+------------+
         """
         print(self.show_string(n, format_args, simplify_structs))
 
@@ -957,32 +963,36 @@ class DataFrame:
 
         Formating options may be set using `format_args`.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
-        >>> print(df.show_string())
-        +----+---------------------------+
-        | id |                         s |
-        +----+---------------------------+
-        |  1 | {'a': 1, 'b': [{'c': 1}]} |
-        +----+---------------------------+
-        >>> print(df.show_string(format_args={"tablefmt": 'fancy_grid'}))
-        ╒══════╤═══════════════════════════╕
-        │   id │ s                         │
-        ╞══════╪═══════════════════════════╡
-        │    1 │ {'a': 1, 'b': [{'c': 1}]} │
-        ╘══════╧═══════════════════════════╛
-        >>> print(df.show_string(simplify_structs=True))
-        +----+------------+
-        | id |          s |
-        +----+------------+
-        |  1 | {1, [{1}]} |
-        +----+------------+
+        Args:
+            n: Number of rows to show.
+            format_args: Extra arguments that may be passed to the function tabulate.tabulate().
+            simplify_structs: If set to true, struct field names are not displayed.
 
-        :param n: Number of rows to show.
-        :param format_args: extra arguments that may be passed to the function tabulate.tabulate()
-        :param simplify_structs: if set to true, struct field names are not displayed
-        :return: None
+        Returns:
+            A string representation of this DataFrame.
+
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
+            >>> print(df.show_string())
+            +----+---------------------------+
+            | id |                         s |
+            +----+---------------------------+
+            |  1 | {'a': 1, 'b': [{'c': 1}]} |
+            +----+---------------------------+
+            >>> print(df.show_string(format_args={"tablefmt": 'fancy_grid'}))
+            ╒══════╤═══════════════════════════╕
+            │   id │ s                         │
+            ╞══════╪═══════════════════════════╡
+            │    1 │ {'a': 1, 'b': [{'c': 1}]} │
+            ╘══════╧═══════════════════════════╛
+            >>> print(df.show_string(simplify_structs=True))
+            +----+------------+
+            | id |          s |
+            +----+------------+
+            |  1 | {1, [{1}]} |
+            +----+------------+
         """
         res = self.limit(n + 1).collect_iterator()
         return tabulate_results(res, format_args, limit=n, simplify_structs=simplify_structs)
@@ -991,7 +1001,7 @@ class DataFrame:
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
 
         Args:
-            *cols: List of :class:`Column` or column names to sort by.
+            *cols: List of Columns or column names to sort by.
 
         Returns:
             Sorted DataFrame.
@@ -1047,7 +1057,9 @@ class DataFrame:
         - db-dtypes
 
         Optional extra arguments (kwargs) will be passed directly to the
-        :func:`bigquery.table.RowIterator.to_dataframe` method.
+        [`bigquery.table.RowIterator.to_dataframe`](
+            https://cloud.google.com/python/docs/reference/bigquery/latest/google.cloud.bigquery.table.RowIterator#google_cloud_bigquery_table_RowIterator_to_dataframe
+        ) method.
         Please check its documentation for further information.
 
         By default, the BigQuery client will use the BigQuery Storage API to download data faster.
@@ -1055,27 +1067,27 @@ class DataFrame:
         You can disable this behavior and use the regular, slower download method (which does not require additionnal
         rights) by passing the argument `create_bqstorage_client=False`.
 
-        >>> df = __get_test_df()
-        >>> import tabulate
-        >>> pdf = df.toPandas()
-        >>> type(pdf)
-        <class 'pandas.core.frame.DataFrame'>
-        >>> pdf
-           id       name
-        0   1  Bulbasaur
-        1   2    Ivysaur
-        2   3   Venusaur
-
-        """
+        Examples:
+            >>> df = __get_test_df()
+            >>> import tabulate
+            >>> pdf = df.toPandas()
+            >>> type(pdf)
+            <class 'pandas.core.frame.DataFrame'>
+            >>> pdf
+               id       name
+            0   1  Bulbasaur
+            1   2    Ivysaur
+            2   3   Venusaur
+        """  # noqa: E501
         return self.collect_iterator().to_dataframe(**kwargs)
 
     def transform(
         self, func: typing.Callable[..., "DataFrame"], *args: typing.Any, **kwargs: typing.Any
     ) -> "DataFrame":
-        """Returns a new :class:`DataFrame`. Concise syntax for chaining custom transformations.
+        """Returns a new [DataFrame][bigquery_frame.DataFrame]. Concise syntax for chaining custom transformations.
 
         Args:
-            func: a function that takes and returns a :class:`DataFrame`.
+            func: a function that takes and returns a [DataFrame][bigquery_frame.DataFrame].
             *args: Positional arguments to pass to func.
             **kwargs: Keyword arguments to pass to func.
 
@@ -1125,69 +1137,77 @@ class DataFrame:
         return schema_to_tree_string(self.schema)
 
     def union(self, other: "DataFrame") -> "DataFrame":
-        """Return a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
+        """Return a new [DataFrame][bigquery_frame.DataFrame] containing union of rows in this and another
+        [DataFrame][bigquery_frame.DataFrame].
 
         This is equivalent to `UNION ALL` in SQL. To do a SQL-style `UNION DISTINCT`
-        (that does deduplication of elements), use this function followed by :func:`distinct`.
+        (that does deduplication of elements), use this function followed by
+        [distinct][bigquery_frame.functions.distinct].
 
         Also as standard in SQL, this function resolves columns by position (not by name).
         To get column resolution by name, use the function `unionByName` instead.
 
-        :param other:
-        :return: a new :class:`DataFrame`
+        Args:
+            other: Another DataFrame
+
+        Returns:
+            A new DataFrame.
         """
         query = f"""SELECT * FROM {quote(self._alias)} UNION ALL SELECT * FROM {quote(other._alias)}"""
         return self._apply_query(query, deps=[self, other])
 
     def unionByName(self, other: "DataFrame", allowMissingColumns: bool = False) -> "DataFrame":
-        """Returns a new :class:`DataFrame` containing union of rows in this and another :class:`DataFrame`.
+        """Returns a new [DataFrame][bigquery_frame.DataFrame] containing union of rows in this and another
+        [DataFrame][bigquery_frame.DataFrame].
 
         This is different from both `UNION ALL` and `UNION DISTINCT` in SQL. To do a SQL-style set
         union (that does deduplication of elements), use this function followed by :func:`distinct`.
 
-        Examples
-        --------
-        The difference between this function and :func:`union` is that this function
-        resolves columns by name (not by position):
+        Args:
+            other: Another DataFrame
+            allowMissingColumns: If False, the columns that are not in both DataFrames are dropped, if True,
+              they are added to the other DataFrame as null values.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-            >>> bq = BigQueryBuilder()
-        >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
-        >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col0''')
-        >>> df1.union(df2).show()
-        +------+------+------+
-        | col0 | col1 | col2 |
-        +------+------+------+
-        |    1 |    2 |    3 |
-        |    4 |    5 |    6 |
-        +------+------+------+
-        >>> df1.unionByName(df2).show()
-        +------+------+------+
-        | col0 | col1 | col2 |
-        +------+------+------+
-        |    1 |    2 |    3 |
-        |    6 |    4 |    5 |
-        +------+------+------+
+        Returns:
+            A new DataFrame.
 
-        When the parameter `allowMissingColumns` is ``True``, the set of column names
-        in this and other :class:`DataFrame` can differ; missing columns will be filled with null.
-        Further, the missing columns of this :class:`DataFrame` will be added at the end
-        in the schema of the union result:
+        Examples:
+            The difference between this function and :func:`union` is that this function
+            resolves columns by name (not by position):
 
-        >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
-        >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col3''')
-        >>> df1.unionByName(df2, allowMissingColumns=True).show()
-        +------+------+------+------+
-        | col0 | col1 | col2 | col3 |
-        +------+------+------+------+
-        |    1 |    2 |    3 | null |
-        | null |    4 |    5 |    6 |
-        +------+------+------+------+
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+                >>> bq = BigQueryBuilder()
+            >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
+            >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col0''')
+            >>> df1.union(df2).show()
+            +------+------+------+
+            | col0 | col1 | col2 |
+            +------+------+------+
+            |    1 |    2 |    3 |
+            |    4 |    5 |    6 |
+            +------+------+------+
+            >>> df1.unionByName(df2).show()
+            +------+------+------+
+            | col0 | col1 | col2 |
+            +------+------+------+
+            |    1 |    2 |    3 |
+            |    6 |    4 |    5 |
+            +------+------+------+
 
-        :param other: Another DataFrame
-        :param allowMissingColumns: If False, the columns that are not in both DataFrames are dropped, if True,
-          they are added to the other DataFrame as null values.
-        :return: a new :class:`DataFrame`
+            When the parameter `allowMissingColumns` is ``True``, the set of column names
+            in this and other [DataFrame][bigquery_frame.DataFrame] can differ; missing columns will be filled with null.
+            Further, the missing columns of this [DataFrame][bigquery_frame.DataFrame] will be added at the end
+            in the schema of the union result:
+
+            >>> df1 = bq.sql('''SELECT 1 as col0, 2 as col1, 3 as col2''')
+            >>> df2 = bq.sql('''SELECT 4 as col1, 5 as col2, 6 as col3''')
+            >>> df1.unionByName(df2, allowMissingColumns=True).show()
+            +------+------+------+------+
+            | col0 | col1 | col2 | col3 |
+            +------+------+------+------+
+            |    1 |    2 |    3 | null |
+            | null |    4 |    5 |    6 |
+            +------+------+------+------+
         """
         self_cols = self.columns
         other_cols = other.columns
@@ -1227,18 +1247,20 @@ class DataFrame:
         return self._apply_query(query, deps=[self, other])
 
     def withColumn(self, col_name: str, col_expr: Column, replace: bool = False) -> "DataFrame":
-        """Returns a new :class:`DataFrame` by adding a column or replacing the existing column that has the same name.
+        """Returns a new [DataFrame][bigquery_frame.DataFrame] by adding a column or replacing the existing column
+        that has the same name.
 
-        The column expression must be an expression over this :class:`DataFrame`; attempting to add a column from
-        some other :class:`DataFrame` will raise an error.
+        The column expression must be an expression over this [DataFrame][bigquery_frame.DataFrame];
+        attempting to add a column from some other [DataFrame][bigquery_frame.DataFrame] will raise an error.
 
-        Limitations compared to Spark
-        -----------------------------
-        - Replace an existing column must be done explicitly by passing the argument `replace=True`.
-        - Each time this function is called, a new CTE will be created. This may lead to reaching BigQuery's
-          query size limit very quickly.
+        !!! warning "Limitations compared to Spark"
+            - Replace an existing column must be done explicitly by passing the argument `replace=True`.
+            - Each time this function is called, a new CTE will be created. This may lead to reaching BigQuery's
+              query size limit very quickly.
 
-        TODO: This project is just a POC. Future versions may bring improvements to these features but this will require more on-the-fly schema inspections.  # noqa: E501
+        !!! warning "TODO"
+            Future versions may bring improvements to these features but this will
+            require more on-the-fly schema inspections.
 
         Args:
             col_name: Name of the new column.
@@ -1284,7 +1306,7 @@ class DataFrame:
         return self._apply_query(query)
 
     def with_nested_columns(self, fields: Dict[str, ColumnOrName]) -> "DataFrame":
-        """Returns a new :class:`DataFrame` by adding or replacing (when they already exist) columns.
+        """Returns a new [DataFrame][bigquery_frame.DataFrame] by adding or replacing (when they already exist) columns.
 
         Unlike the :func:`withColumn` method, this method works on repeated elements
         and records (arrays and arrays of struct).
@@ -1300,71 +1322,76 @@ class DataFrame:
             This methtod is deprecated since version 0.5.0 and will be removed in version 0.6.0.
             Please use bigquery_frame.nested.with_fields instead.
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> bq = BigQueryBuilder()
-        >>> from bigquery_frame import functions as f
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+------------------+
-        | id |                s |
-        +----+------------------+
-        |  1 | {'a': 1, 'b': 2} |
-        +----+------------------+
-        >>> df.with_nested_columns({
-        ...     "id": "id",
-        ...     "s.c": f.col("s.a") + f.col("s.b")
-        ... }).show()
-        +----+--------------------------+
-        | id |                        s |
-        +----+--------------------------+
-        |  1 | {'a': 1, 'b': 2, 'c': 3} |
-        +----+--------------------------+
 
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+        Args:
+            fields: A Dict[column_alias, column_expression] of columns to select.
+
+        Returns:
+            DataFrame with new or replaced column.
+
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> bq = BigQueryBuilder()
             >>> from bigquery_frame import functions as f
-        >>> bq = BigQueryBuilder()
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+--------------------------------------+
-        | id |                                    s |
-        +----+--------------------------------------+
-        |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
-        +----+--------------------------------------+
-        >>> df.with_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
-        +----+------------------------------------------------------+
-        | id |                                                    s |
-        +----+------------------------------------------------------+
-        |  1 | [{'a': 1, 'b': 2, 'c': 3}, {'a': 3, 'b': 4, 'c': 7}] |
-        +----+------------------------------------------------------+
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, STRUCT(1 as a, 2 as b) as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+------------------+
+            | id |                s |
+            +----+------------------+
+            |  1 | {'a': 1, 'b': 2} |
+            +----+------------------+
+            >>> df.with_nested_columns({
+            ...     "id": "id",
+            ...     "s.c": f.col("s.a") + f.col("s.b")
+            ... }).show()
+            +----+--------------------------+
+            | id |                        s |
+            +----+--------------------------+
+            |  1 | {'a': 1, 'b': 2, 'c': 3} |
+            +----+--------------------------+
 
-        >>> df = bq.sql('''
-        ...  SELECT * FROM UNNEST([
-        ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
-        ...  ])
-        ... ''')
-        >>> df.show()
-        +----+--------------------+
-        | id |                  s |
-        +----+--------------------+
-        |  1 | [{'e': [1, 2, 3]}] |
-        +----+--------------------+
-        >>> df.with_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
-        +----+--------------------------+
-        | id |                        s |
-        +----+--------------------------+
-        |  1 | [{'e': [1.0, 2.0, 3.0]}] |
-        +----+--------------------------+
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> from bigquery_frame import functions as f
+            >>> bq = BigQueryBuilder()
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+--------------------------------------+
+            | id |                                    s |
+            +----+--------------------------------------+
+            |  1 | [{'a': 1, 'b': 2}, {'a': 3, 'b': 4}] |
+            +----+--------------------------------------+
+            >>> df.with_nested_columns({"s!.c": f.col("a") + f.col("b")}).show()
+            +----+------------------------------------------------------+
+            | id |                                                    s |
+            +----+------------------------------------------------------+
+            |  1 | [{'a': 1, 'b': 2, 'c': 3}, {'a': 3, 'b': 4, 'c': 7}] |
+            +----+------------------------------------------------------+
 
-        :param fields: a Dict[column_alias, column_expression] of columns to select
-        :return:
+            >>> df = bq.sql('''
+            ...  SELECT * FROM UNNEST([
+            ...    STRUCT(1 as id, [STRUCT([1, 2, 3] as e)] as s)
+            ...  ])
+            ... ''')
+            >>> df.show()
+            +----+--------------------+
+            | id |                  s |
+            +----+--------------------+
+            |  1 | [{'e': [1, 2, 3]}] |
+            +----+--------------------+
+            >>> df.with_nested_columns({"s!.e!": lambda c: c.cast("FLOAT64")}).show()
+            +----+--------------------------+
+            | id |                        s |
+            +----+--------------------------+
+            |  1 | [{'e': [1.0, 2.0, 3.0]}] |
+            +----+--------------------------+
         """
         warning_message = (
             "The method DataFrame.with_nested_columns is deprecated since version 0.5.0 "
@@ -1378,29 +1405,27 @@ class DataFrame:
 
     @property
     def write(self):
-        """Interface for saving the content of the :class:`DataFrame` out into external storage.
+        """Interface for saving the content of the [DataFrame][bigquery_frame.DataFrame] out into external storage.
 
-        Examples
-        --------
-        >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
-        >>> from bigquery_frame.auth import get_bq_client
-        >>> from bigquery_frame.dataframe_writer import __setup_test_dataset, __teardown_test_dataset
-        >>> client = get_bq_client()
-        >>> bq = BigQueryBuilder(client)
-        >>> test_dataset = __setup_test_dataset(client)
-        >>> df = bq.sql("SELECT 1 as a")
+        Examples:
+            >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
+            >>> from bigquery_frame.auth import get_bq_client
+            >>> from bigquery_frame.dataframe_writer import __setup_test_dataset, __teardown_test_dataset
+            >>> client = get_bq_client()
+            >>> bq = BigQueryBuilder(client)
+            >>> test_dataset = __setup_test_dataset(client)
+            >>> df = bq.sql("SELECT 1 as a")
 
-        >>> df.write.mode('overwrite').save(f"{test_dataset.dataset_id}.my_table")
-        >>> df.write.mode('append').save(f"{test_dataset.dataset_id}.my_table")
-        >>> bq.table(f"{test_dataset.dataset_id}.my_table").show()
-        +---+
-        | a |
-        +---+
-        | 1 |
-        | 1 |
-        +---+
-        >>> __teardown_test_dataset(client, test_dataset)
-
+            >>> df.write.mode('overwrite').save(f"{test_dataset.dataset_id}.my_table")
+            >>> df.write.mode('append').save(f"{test_dataset.dataset_id}.my_table")
+            >>> bq.table(f"{test_dataset.dataset_id}.my_table").show()
+            +---+
+            | a |
+            +---+
+            | 1 |
+            | 1 |
+            +---+
+            >>> __teardown_test_dataset(client, test_dataset)
         """
         from bigquery_frame.dataframe_writer import DataframeWriter
 

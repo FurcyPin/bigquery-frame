@@ -10,4 +10,4 @@ section at the end of the section:
     ::: bigquery_frame.transformations.flatten
 
 
-You can also find a comprehensive list of all methods in the [reference](/reference).
+You can also find a comprehensive list of all methods in the [reference](/bigquery-frame/reference/bigquery_frame).

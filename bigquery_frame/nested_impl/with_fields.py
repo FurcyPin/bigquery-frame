@@ -35,9 +35,7 @@ def with_fields(df: DataFrame, fields: Mapping[str, AnyKindOfTransformation]) ->
         applied to the corresponding fields. If a field name did not exist in the input DataFrame,
         it will be added to the output DataFrame. If it did exist, the original value will be replaced with the new one.
 
-    Examples:
-
-        *Example 1: non-repeated fields*
+    Examples: Example 1: non-repeated fields
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame import functions as f
         >>> from bigquery_frame import nested
@@ -78,7 +76,7 @@ def with_fields(df: DataFrame, fields: Mapping[str, AnyKindOfTransformation]) ->
         |  1 | {2, 3, 1, 5} |
         +----+--------------+
 
-        *Example 2: repeated fields*
+    Examples: Example 2: repeated fields
         >>> df = bq.sql('''
         ...     SELECT
         ...         1 as id,
@@ -130,7 +128,7 @@ def with_fields(df: DataFrame, fields: Mapping[str, AnyKindOfTransformation]) ->
         |  1 | [{1, {2}}, {1, {2}}] |
         +----+----------------------+
 
-        *Example 3: field repeated twice*
+    Examples: Example 3: field repeated twice
         >>> df = bq.sql('SELECT 1 as id, [STRUCT([1, 2, 3] as e)] as s')
         >>> nested.print_schema(df)
         root
@@ -152,7 +150,7 @@ def with_fields(df: DataFrame, fields: Mapping[str, AnyKindOfTransformation]) ->
         |  1 | [{[1.0, 2.0, 3.0]}] |
         +----+---------------------+
 
-        *Example 4: Accessing multiple repetition levels*
+    Examples: Example 4: Accessing multiple repetition levels
         >>> df = bq.sql('''
         ...     SELECT
         ...         1 as id,

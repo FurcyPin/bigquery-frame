@@ -18,9 +18,7 @@ def sort_all_arrays(df: DataFrame) -> DataFrame:
     Returns:
         A new DataFrame where all arrays have been sorted.
 
-    Examples:
-        *Example 1:* with a simple `ARRAY<INT>`
-
+    Examples: Example 1: with a simple `ARRAY<INT>`
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
         >>> df = bq.sql('SELECT 1 as id, [3, 2, 1] as a')
@@ -38,8 +36,7 @@ def sort_all_arrays(df: DataFrame) -> DataFrame:
         |  1 | [1, 2, 3] |
         +----+-----------+
 
-        *Example 2:* with an `ARRAY<STRUCT<...>>`
-
+    Examples: Example 2: with an `ARRAY<STRUCT<...>>`
         >>> df = bq.sql('SELECT [STRUCT(2 as a, 1 as b), STRUCT(1 as a, 2 as b), STRUCT(1 as a, 1 as b)] as s')
         >>> df.show(simplify_structs=True)
         +--------------------------+
@@ -55,8 +52,7 @@ def sort_all_arrays(df: DataFrame) -> DataFrame:
         | [{1, 1}, {1, 2}, {2, 1}] |
         +--------------------------+
 
-        *Example 3:* with an `ARRAY<STRUCT<STRUCT<...>>>`
-
+    Examples: Example 3: with an `ARRAY<STRUCT<STRUCT<...>>>`
         >>> df = bq.sql('''SELECT [
         ...         STRUCT(STRUCT(2 as a, 2 as b) as s),
         ...         STRUCT(STRUCT(1 as a, 2 as b) as s)
@@ -76,8 +72,7 @@ def sort_all_arrays(df: DataFrame) -> DataFrame:
         | [{{1, 2}}, {{2, 2}}] |
         +----------------------+
 
-        *Example 4:* with an `ARRAY<ARRAY<ARRAY<INT>>>`
-
+    Examples: Example 4: with an `ARRAY<ARRAY<ARRAY<INT>>>`
         As this example shows, the innermost arrays are sorted before the outermost arrays.
 
         >>> df = bq.sql('''SELECT [

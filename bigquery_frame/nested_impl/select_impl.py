@@ -36,10 +36,7 @@ def select(df: DataFrame, fields: Mapping[str, ColumnTransformation]) -> DataFra
         A new DataFrame where only the specified field have been selected and the corresponding
         transformations were applied to each of them.
 
-    Examples:
-
-        *Example 1: non-repeated fields*
-
+    Examples: Example 1: non-repeated fields
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame import functions as f
         >>> from bigquery_frame import nested
@@ -82,8 +79,7 @@ def select(df: DataFrame, fields: Mapping[str, ColumnTransformation]) -> DataFra
         | {2, 3, 5} |
         +-----------+
 
-        *Example 2: repeated fields*
-
+    Examples: Example 2: repeated fields
         >>> df = bq.sql('SELECT 1 as id, [STRUCT(1 as a, 2 as b), STRUCT(3 as a, 4 as b)] as s')
         >>> nested.print_schema(df)
         root
@@ -125,7 +121,7 @@ def select(df: DataFrame, fields: Mapping[str, ColumnTransformation]) -> DataFra
         |  1 | [{1, 2}, {1, 2}] |
         +----+------------------+
 
-        *Example 3: field repeated twice*
+    Examples: Example 3: field repeated twice
         >>> df = bq.sql('''
         ...     SELECT
         ...         1 as id,
@@ -162,7 +158,7 @@ def select(df: DataFrame, fields: Mapping[str, ColumnTransformation]) -> DataFra
         | [{[1, 2, 3]}] | [{[4.0, 5.0, 6.0]}] |
         +---------------+---------------------+
 
-        *Example 4: Accessing multiple repetition levels*
+    Examples: Example 4: Accessing multiple repetition levels
         >>> df = bq.sql('''
         ...     SELECT
         ...         1 as id,

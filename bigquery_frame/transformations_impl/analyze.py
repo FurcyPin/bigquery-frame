@@ -186,30 +186,29 @@ def analyze(
     - max: largest value
     - approx_top_100: Top 100 most frequent values with their respective count
 
-    Implementation details:
-    -----------------------
+    ## Implementation details
 
     - Structs are flattened with a `.` in their name.
     - Arrays are unnested with a `!` character in their name, which is why they may have a different count.
     - Null values are not counted in the count_distinct column.
 
-    Customization:
-    --------------
+    ## Customization
+
     By default, this method will compute for each column the aggregations listed in
     `bigquery_frame.transformation_impl.analyze.default_aggs`, but users can change this and even add their
     own custom aggregation by passing the argument `_agg`, a list of aggregation functions with the following signature
     (col: str, schema_field: SchemaField, col_num: int) -> Column
 
-    Examples of aggregation methods can be found in the module :module:`bigquery_frame.transformation_impl.analyze_aggs`
+    Examples of aggregation methods can be found in the module `bigquery_frame.transformation_impl.analyze_aggs`
 
-    Grouping:
-    ---------
+    ## Grouping
+
     With the `group_by` option, users can specify one or multiple columns for which the statistics will be grouped.
     If this option is used, an extra column "group" of type struct will be added to output DataFrame.
     See the examples below.
 
-    Troubleshooting:
-    ----------------
+    ## Troubleshooting
+
     When working on entreprise-level data, BigQuery might return a 400 error with the following message.
     "Not enough resources for query planning - too many subqueries or query is too complex"
 
@@ -222,90 +221,92 @@ def analyze(
       If you already persisted the input DataFrame and the same error persist, you can try lowering the value
       of `_chunk_size`, but beware that the lower this value, the slower the analyzis will be.
 
+    Args:
+        df: A DataFrame
+        group_by: A list of column names on which the aggregations will be grouped.
+        _aggs: A list of aggregation to override the default aggregation made by the function.
+        _chunk_size: Try reducing this number if you get this error from BigQuery:
+            "Not enough resources for query planning".
+
+    Returns:
+        A new DataFrame containing the analyzed profile of the input DataFrame.
+
     Examples:
-    ---------
-    >>> df = __get_test_df()
-    >>> df.show()
-    +----+------------+---------------------+--------------------------------------------+
-    | id |       name |               types |                                  evolution |
-    +----+------------+---------------------+--------------------------------------------+
-    |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
-    |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |
-    |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |
-    |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |
-    |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |
-    |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |
-    |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |
-    |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |
-    |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |
-    +----+------------+---------------------+--------------------------------------------+
+        >>> df = __get_test_df()
+        >>> df.show()
+        +----+------------+---------------------+--------------------------------------------+
+        | id |       name |               types |                                  evolution |
+        +----+------------+---------------------+--------------------------------------------+
+        |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |
+        |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |
+        |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |
+        |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |
+        |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |
+        |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |
+        |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |
+        |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |
+        |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |
+        +----+------------+---------------------+--------------------------------------------+
 
-    >>> analyzed_df = analyze(df)
-    Analyzing 5 columns ...
-    >>> analyzed_df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()  # noqa: E501
-    +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    | column_number |            column_name | column_type | count | count_distinct | count_null |       min |       max |                     approx_top_100 |
-    +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
-    |             0 |                     id |     INTEGER |     9 |              9 |          0 |         1 |         9 |         {'value': '1', 'count': 1} |
-    |             1 |                   name |      STRING |     9 |              9 |          0 | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
-    |             2 |                 types! |      STRING |    13 |              5 |          0 |      Fire |     Water |     {'value': 'Grass', 'count': 3} |
-    |             3 |   evolution.can_evolve |     BOOLEAN |     9 |              2 |          0 |     false |      true |      {'value': 'true', 'count': 6} |
-    |             4 | evolution.evolves_from |     INTEGER |     9 |              6 |          3 |         1 |         8 |      {'value': 'NULL', 'count': 3} |
-    +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+        >>> analyzed_df = analyze(df)
+        Analyzing 5 columns ...
+        >>> analyzed_df.withColumn("approx_top_100", f.expr("approx_top_100[OFFSET(0)]"), replace=True).show()  # noqa: E501
+        +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+        | column_number |            column_name | column_type | count | count_distinct | count_null |       min |       max |                     approx_top_100 |
+        +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
+        |             0 |                     id |     INTEGER |     9 |              9 |          0 |         1 |         9 |         {'value': '1', 'count': 1} |
+        |             1 |                   name |      STRING |     9 |              9 |          0 | Blastoise | Wartortle | {'value': 'Bulbasaur', 'count': 1} |
+        |             2 |                 types! |      STRING |    13 |              5 |          0 |      Fire |     Water |     {'value': 'Grass', 'count': 3} |
+        |             3 |   evolution.can_evolve |     BOOLEAN |     9 |              2 |          0 |     false |      true |      {'value': 'true', 'count': 6} |
+        |             4 | evolution.evolves_from |     INTEGER |     9 |              6 |          3 |         1 |         8 |      {'value': 'NULL', 'count': 3} |
+        +---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------+
 
-    >>> df = __get_test_df().withColumn("main_type", f.expr("types[OFFSET(0)]"))
-    >>> df.show()
-    +----+------------+---------------------+--------------------------------------------+-----------+
-    | id |       name |               types |                                  evolution | main_type |
-    +----+------------+---------------------+--------------------------------------------+-----------+
-    |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |     Grass |
-    |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |     Grass |
-    |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |     Grass |
-    |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |      Fire |
-    |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |      Fire |
-    |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |      Fire |
-    |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |     Water |
-    |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |     Water |
-    |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |     Water |
-    +----+------------+---------------------+--------------------------------------------+-----------+
+        >>> df = __get_test_df().withColumn("main_type", f.expr("types[OFFSET(0)]"))
+        >>> df.show()
+        +----+------------+---------------------+--------------------------------------------+-----------+
+        | id |       name |               types |                                  evolution | main_type |
+        +----+------------+---------------------+--------------------------------------------+-----------+
+        |  1 |  Bulbasaur | ['Grass', 'Poison'] | {'can_evolve': True, 'evolves_from': None} |     Grass |
+        |  2 |    Ivysaur | ['Grass', 'Poison'] |    {'can_evolve': True, 'evolves_from': 1} |     Grass |
+        |  3 |   Venusaur | ['Grass', 'Poison'] |   {'can_evolve': False, 'evolves_from': 2} |     Grass |
+        |  4 | Charmander |            ['Fire'] | {'can_evolve': True, 'evolves_from': None} |      Fire |
+        |  5 | Charmeleon |            ['Fire'] |    {'can_evolve': True, 'evolves_from': 4} |      Fire |
+        |  6 |  Charizard |  ['Fire', 'Flying'] |   {'can_evolve': False, 'evolves_from': 5} |      Fire |
+        |  7 |   Squirtle |           ['Water'] | {'can_evolve': True, 'evolves_from': None} |     Water |
+        |  8 |  Wartortle |           ['Water'] |    {'can_evolve': True, 'evolves_from': 7} |     Water |
+        |  9 |  Blastoise |           ['Water'] |   {'can_evolve': False, 'evolves_from': 8} |     Water |
+        +----+------------+---------------------+--------------------------------------------+-----------+
 
-    >>> from bigquery_frame.transformations_impl import analyze_aggs
-    >>> aggs = [
-    ...     analyze_aggs.column_number,
-    ...     analyze_aggs.column_name,
-    ...     analyze_aggs.count,
-    ...     analyze_aggs.count_distinct,
-    ...     analyze_aggs.count_null,
-    ... ]
-    >>> analyzed_df = analyze(df, group_by="main_type", _aggs=aggs)
-    Analyzing 5 columns ...
-    >>> analyzed_df.orderBy("`group`.main_type", "column_number").show()
-    +------------------------+---------------+------------------------+-------+----------------+------------+
-    |                  group | column_number |            column_name | count | count_distinct | count_null |
-    +------------------------+---------------+------------------------+-------+----------------+------------+
-    |  {'main_type': 'Fire'} |             0 |                     id |     3 |              3 |          0 |
-    |  {'main_type': 'Fire'} |             1 |                   name |     3 |              3 |          0 |
-    |  {'main_type': 'Fire'} |             2 |                 types! |     4 |              2 |          0 |
-    |  {'main_type': 'Fire'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
-    |  {'main_type': 'Fire'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    | {'main_type': 'Grass'} |             0 |                     id |     3 |              3 |          0 |
-    | {'main_type': 'Grass'} |             1 |                   name |     3 |              3 |          0 |
-    | {'main_type': 'Grass'} |             2 |                 types! |     6 |              2 |          0 |
-    | {'main_type': 'Grass'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
-    | {'main_type': 'Grass'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    | {'main_type': 'Water'} |             0 |                     id |     3 |              3 |          0 |
-    | {'main_type': 'Water'} |             1 |                   name |     3 |              3 |          0 |
-    | {'main_type': 'Water'} |             2 |                 types! |     3 |              1 |          0 |
-    | {'main_type': 'Water'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
-    | {'main_type': 'Water'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
-    +------------------------+---------------+------------------------+-------+----------------+------------+
-
-    :param df: a DataFrame
-    :param group_by: (optional) a list of column names on which the aggregations will be grouped
-    :param _aggs: (optional) a list of aggregation to override the default aggregation made by the function
-    :param _chunk_size: (default: 50) Try reducing this number if you get this error from BigQuery:
-        "Not enough resources for query planning"
-    :return:
+        >>> from bigquery_frame.transformations_impl import analyze_aggs
+        >>> aggs = [
+        ...     analyze_aggs.column_number,
+        ...     analyze_aggs.column_name,
+        ...     analyze_aggs.count,
+        ...     analyze_aggs.count_distinct,
+        ...     analyze_aggs.count_null,
+        ... ]
+        >>> analyzed_df = analyze(df, group_by="main_type", _aggs=aggs)
+        Analyzing 5 columns ...
+        >>> analyzed_df.orderBy("`group`.main_type", "column_number").show()
+        +------------------------+---------------+------------------------+-------+----------------+------------+
+        |                  group | column_number |            column_name | count | count_distinct | count_null |
+        +------------------------+---------------+------------------------+-------+----------------+------------+
+        |  {'main_type': 'Fire'} |             0 |                     id |     3 |              3 |          0 |
+        |  {'main_type': 'Fire'} |             1 |                   name |     3 |              3 |          0 |
+        |  {'main_type': 'Fire'} |             2 |                 types! |     4 |              2 |          0 |
+        |  {'main_type': 'Fire'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
+        |  {'main_type': 'Fire'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
+        | {'main_type': 'Grass'} |             0 |                     id |     3 |              3 |          0 |
+        | {'main_type': 'Grass'} |             1 |                   name |     3 |              3 |          0 |
+        | {'main_type': 'Grass'} |             2 |                 types! |     6 |              2 |          0 |
+        | {'main_type': 'Grass'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
+        | {'main_type': 'Grass'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
+        | {'main_type': 'Water'} |             0 |                     id |     3 |              3 |          0 |
+        | {'main_type': 'Water'} |             1 |                   name |     3 |              3 |          0 |
+        | {'main_type': 'Water'} |             2 |                 types! |     3 |              1 |          0 |
+        | {'main_type': 'Water'} |             3 |   evolution.can_evolve |     3 |              2 |          0 |
+        | {'main_type': 'Water'} |             4 | evolution.evolves_from |     3 |              2 |          1 |
+        +------------------------+---------------+------------------------+-------+----------------+------------+
     """
     if group_by is None:
         group_by = []

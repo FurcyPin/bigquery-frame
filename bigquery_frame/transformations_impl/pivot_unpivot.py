@@ -15,71 +15,74 @@ def pivot(df: DataFrame, pivot_column: str, aggs: List[ColumnOrName], pivoted_co
     This uses BigQuery's
     `PIVOT operator <https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#pivot_operator>`_
 
-    Example:
-    >>> from bigquery_frame import BigQueryBuilder
-    >>> from bigquery_frame import functions as f
-    >>> bq = BigQueryBuilder()
-    >>> df = __get_test_unpivoted_df(bq)
-    >>> df.show()
-    +------+---------+---------+--------+
-    | year | product | country | amount |
-    +------+---------+---------+--------+
-    | 2018 |  Orange |  Canada |   null |
-    | 2018 |  Orange |   China |   4000 |
-    | 2018 |  Orange |  Mexico |   null |
-    | 2018 |   Beans |  Canada |   null |
-    | 2018 |   Beans |   China |   1500 |
-    | 2018 |   Beans |  Mexico |   2000 |
-    | 2018 |  Banana |  Canada |   2000 |
-    | 2018 |  Banana |   China |    400 |
-    | 2018 |  Banana |  Mexico |   null |
-    | 2018 | Carrots |  Canada |   2000 |
-    | 2018 | Carrots |   China |   1200 |
-    | 2018 | Carrots |  Mexico |   null |
-    | 2019 |  Orange |  Canada |   5000 |
-    | 2019 |  Orange |   China |   null |
-    | 2019 |  Orange |  Mexico |   5000 |
-    | 2019 |   Beans |  Canada |   null |
-    | 2019 |   Beans |   China |   1500 |
-    | 2019 |   Beans |  Mexico |   2000 |
-    | 2019 |  Banana |  Canada |   null |
-    | 2019 |  Banana |   China |   1400 |
-    +------+---------+---------+--------+
-    only showing top 20 rows
-    >>> pivot(df, pivot_column="country", aggs=["sum(amount)"]).show()
-    +------+---------+--------+-------+--------+
-    | year | product | Canada | China | Mexico |
-    +------+---------+--------+-------+--------+
-    | 2018 |  Orange |   null |  4000 |   null |
-    | 2018 |   Beans |   null |  1500 |   2000 |
-    | 2018 |  Banana |   2000 |   400 |   null |
-    | 2018 | Carrots |   2000 |  1200 |   null |
-    | 2019 |  Orange |   5000 |  null |   5000 |
-    | 2019 |   Beans |   null |  1500 |   2000 |
-    | 2019 |  Banana |   null |  1400 |    400 |
-    | 2019 | Carrots |   null |   200 |   null |
-    +------+---------+--------+-------+--------+
-    >>> pivot(
-    ...     df,
-    ...     pivot_column="country",
-    ...     aggs=["sum(amount) as total_amount", f.count(f.col("year")).alias("nb_years")]
-    ... ).show()
-    +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
-    | product | total_amount_Canada | nb_years_Canada | total_amount_China | nb_years_China | total_amount_Mexico | nb_years_Mexico |
-    +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
-    |  Orange |                5000 |               2 |               4000 |              2 |                5000 |               2 |
-    |   Beans |                null |               2 |               3000 |              2 |                4000 |               2 |
-    |  Banana |                2000 |               2 |               1800 |              2 |                 400 |               2 |
-    | Carrots |                2000 |               2 |               1400 |              2 |                null |               2 |
-    +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
+    Args:
+        df: A DataFrame
+        pivot_column: Name of the column to pivot.
+        aggs: Aggregations that will be applied.
+            If more than one aggregations are passed, they must be aliased
+        pivoted_columns: List of distinct values in the pivot column.
+            Execution will be faster if provided.
 
-    :param df: a DataFrame
-    :param pivot_column: column to pivot
-    :param aggs: aggregations that will be applied.
-                 If more than one aggregations are passed, they must be aliased
-    :param pivoted_columns: (Optional) list of distinct values in the pivot column.
-        Execution will be faster if provided.
-    :return:
+    Returns:
+        A new DataFrame containing the result of the pivot operation.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> from bigquery_frame import functions as f
+        >>> bq = BigQueryBuilder()
+        >>> df = __get_test_unpivoted_df(bq)
+        >>> df.show()
+        +------+---------+---------+--------+
+        | year | product | country | amount |
+        +------+---------+---------+--------+
+        | 2018 |  Orange |  Canada |   null |
+        | 2018 |  Orange |   China |   4000 |
+        | 2018 |  Orange |  Mexico |   null |
+        | 2018 |   Beans |  Canada |   null |
+        | 2018 |   Beans |   China |   1500 |
+        | 2018 |   Beans |  Mexico |   2000 |
+        | 2018 |  Banana |  Canada |   2000 |
+        | 2018 |  Banana |   China |    400 |
+        | 2018 |  Banana |  Mexico |   null |
+        | 2018 | Carrots |  Canada |   2000 |
+        | 2018 | Carrots |   China |   1200 |
+        | 2018 | Carrots |  Mexico |   null |
+        | 2019 |  Orange |  Canada |   5000 |
+        | 2019 |  Orange |   China |   null |
+        | 2019 |  Orange |  Mexico |   5000 |
+        | 2019 |   Beans |  Canada |   null |
+        | 2019 |   Beans |   China |   1500 |
+        | 2019 |   Beans |  Mexico |   2000 |
+        | 2019 |  Banana |  Canada |   null |
+        | 2019 |  Banana |   China |   1400 |
+        +------+---------+---------+--------+
+        only showing top 20 rows
+        >>> pivot(df, pivot_column="country", aggs=["sum(amount)"]).show()
+        +------+---------+--------+-------+--------+
+        | year | product | Canada | China | Mexico |
+        +------+---------+--------+-------+--------+
+        | 2018 |  Orange |   null |  4000 |   null |
+        | 2018 |   Beans |   null |  1500 |   2000 |
+        | 2018 |  Banana |   2000 |   400 |   null |
+        | 2018 | Carrots |   2000 |  1200 |   null |
+        | 2019 |  Orange |   5000 |  null |   5000 |
+        | 2019 |   Beans |   null |  1500 |   2000 |
+        | 2019 |  Banana |   null |  1400 |    400 |
+        | 2019 | Carrots |   null |   200 |   null |
+        +------+---------+--------+-------+--------+
+        >>> pivot(
+        ...     df,
+        ...     pivot_column="country",
+        ...     aggs=["sum(amount) as total_amount", f.count(f.col("year")).alias("nb_years")]
+        ... ).show()
+        +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
+        | product | total_amount_Canada | nb_years_Canada | total_amount_China | nb_years_China | total_amount_Mexico | nb_years_Mexico |
+        +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
+        |  Orange |                5000 |               2 |               4000 |              2 |                5000 |               2 |
+        |   Beans |                null |               2 |               3000 |              2 |                4000 |               2 |
+        |  Banana |                2000 |               2 |               1800 |              2 |                 400 |               2 |
+        | Carrots |                2000 |               2 |               1400 |              2 |                null |               2 |
+        +---------+---------------------+-----------------+--------------------+----------------+---------------------+-----------------+
     """  # noqa: E501
     if pivoted_columns is None:
         distinct_query = f"""SELECT DISTINCT {pivot_column} FROM {quote(df._alias)}"""
@@ -108,58 +111,61 @@ def unpivot(
     """Unpivot the given DataFrame along the specified pivot columns.
     All columns that are not pivot columns should have the same type.
 
-    Example:
-    >>> from bigquery_frame import BigQueryBuilder
-    >>> bq = BigQueryBuilder()
-    >>> df = __get_test_pivoted_df(bq)
-    >>> df.show()
-    +------+---------+--------+-------+--------+
-    | year | product | Canada | China | Mexico |
-    +------+---------+--------+-------+--------+
-    | 2018 |  Orange |   null |  4000 |   null |
-    | 2018 |   Beans |   null |  1500 |   2000 |
-    | 2018 |  Banana |   2000 |   400 |   null |
-    | 2018 | Carrots |   2000 |  1200 |   null |
-    | 2019 |  Orange |   5000 |  null |   5000 |
-    | 2019 |   Beans |   null |  1500 |   2000 |
-    | 2019 |  Banana |   null |  1400 |    400 |
-    | 2019 | Carrots |   null |   200 |   null |
-    +------+---------+--------+-------+--------+
-    >>> unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount').show()
-    +------+---------+---------+--------+
-    | year | product | country | amount |
-    +------+---------+---------+--------+
-    | 2018 |  Orange |  Canada |   null |
-    | 2018 |  Orange |   China |   4000 |
-    | 2018 |  Orange |  Mexico |   null |
-    | 2018 |   Beans |  Canada |   null |
-    | 2018 |   Beans |   China |   1500 |
-    | 2018 |   Beans |  Mexico |   2000 |
-    | 2018 |  Banana |  Canada |   2000 |
-    | 2018 |  Banana |   China |    400 |
-    | 2018 |  Banana |  Mexico |   null |
-    | 2018 | Carrots |  Canada |   2000 |
-    | 2018 | Carrots |   China |   1200 |
-    | 2018 | Carrots |  Mexico |   null |
-    | 2019 |  Orange |  Canada |   5000 |
-    | 2019 |  Orange |   China |   null |
-    | 2019 |  Orange |  Mexico |   5000 |
-    | 2019 |   Beans |  Canada |   null |
-    | 2019 |   Beans |   China |   1500 |
-    | 2019 |   Beans |  Mexico |   2000 |
-    | 2019 |  Banana |  Canada |   null |
-    | 2019 |  Banana |   China |   1400 |
-    +------+---------+---------+--------+
-    only showing top 20 rows
-
-    :param df: a DataFrame
-    :param pivot_columns: The list of columns names on which to perform the pivot
-    :param key_alias: alias given to the 'key' column
-    :param value_alias: alias given to the 'value' column
-    :param exclude_nulls: Exclude rows with null values if true
-    :param implem_version: (Possible values [1, 2]) Version of the code to use.
+    Args:
+        df: A DataFrame
+        pivot_columns: The list of columns names on which to perform the pivot.
+        key_alias: Alias given to the 'key' column.
+        value_alias: Alias given to the 'value' column.
+        exclude_nulls: Exclude rows with null values if true.
+        implem_version: (Possible values [1, 2]) Version of the code to use.
          Version 2 uses the BigQuery's UNPIVOT statement, while version 1 doesn't.
-    :return:
+
+    Returns:
+        A new DataFrame containing the result of the unpivot operation.
+
+    Examples:
+        >>> from bigquery_frame import BigQueryBuilder
+        >>> bq = BigQueryBuilder()
+        >>> df = __get_test_pivoted_df(bq)
+        >>> df.show()
+        +------+---------+--------+-------+--------+
+        | year | product | Canada | China | Mexico |
+        +------+---------+--------+-------+--------+
+        | 2018 |  Orange |   null |  4000 |   null |
+        | 2018 |   Beans |   null |  1500 |   2000 |
+        | 2018 |  Banana |   2000 |   400 |   null |
+        | 2018 | Carrots |   2000 |  1200 |   null |
+        | 2019 |  Orange |   5000 |  null |   5000 |
+        | 2019 |   Beans |   null |  1500 |   2000 |
+        | 2019 |  Banana |   null |  1400 |    400 |
+        | 2019 | Carrots |   null |   200 |   null |
+        +------+---------+--------+-------+--------+
+        >>> unpivot(df, ['year', 'product'], key_alias='country', value_alias='amount').show()
+        +------+---------+---------+--------+
+        | year | product | country | amount |
+        +------+---------+---------+--------+
+        | 2018 |  Orange |  Canada |   null |
+        | 2018 |  Orange |   China |   4000 |
+        | 2018 |  Orange |  Mexico |   null |
+        | 2018 |   Beans |  Canada |   null |
+        | 2018 |   Beans |   China |   1500 |
+        | 2018 |   Beans |  Mexico |   2000 |
+        | 2018 |  Banana |  Canada |   2000 |
+        | 2018 |  Banana |   China |    400 |
+        | 2018 |  Banana |  Mexico |   null |
+        | 2018 | Carrots |  Canada |   2000 |
+        | 2018 | Carrots |   China |   1200 |
+        | 2018 | Carrots |  Mexico |   null |
+        | 2019 |  Orange |  Canada |   5000 |
+        | 2019 |  Orange |   China |   null |
+        | 2019 |  Orange |  Mexico |   5000 |
+        | 2019 |   Beans |  Canada |   null |
+        | 2019 |   Beans |   China |   1500 |
+        | 2019 |   Beans |  Mexico |   2000 |
+        | 2019 |  Banana |  Canada |   null |
+        | 2019 |  Banana |   China |   1400 |
+        +------+---------+---------+--------+
+        only showing top 20 rows
     """
     if implem_version == 1:
         return unpivot_v1(df, pivot_columns, key_alias, value_alias, exclude_nulls)

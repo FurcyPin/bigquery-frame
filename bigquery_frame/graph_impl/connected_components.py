@@ -99,64 +99,67 @@ def connected_components(
     "Connected Components in MapReduce and Beyond"
     written by {rkiveris, silviol, mirrokni, rvibhor, sergeiv} @google.com
 
-    PERFORMANCE AND COST CONSIDERATIONS
-    -----------------------------------
-    This algorithm has been proved to converge in O(log(n)²) and is conjectured to converge in O(log(n)), where n
-    is the number of nodes in the graph. It was the most performant known distributed connected component algorithm
-    last time I checked (in 2017).
+    !!! note "PERFORMANCE AND COST CONSIDERATIONS"
+        This algorithm has been proved to converge in O(log(n)²) and is conjectured to converge in O(log(n)), where n
+        is the number of nodes in the graph. It was the most performant known distributed connected component algorithm
+        last time I checked (in 2017).
 
-    This implementation persists temporary results at each iteration loop: for the BigQuery pricing, you should
-    be expecting it to cost the equivalent of 15 to 30 scans on your input table. Since the input table has only
-    two columns, this should be reasonable, and we recommend using INTEGER columns rather than STRING when possible.
+        This implementation persists temporary results at each iteration loop: for the BigQuery pricing, you should
+        be expecting it to cost the equivalent of 15 to 30 scans on your input table. Since the input table has only
+        two columns, this should be reasonable, and we recommend using INTEGER columns rather than STRING when possible.
 
-    If your graph contains nodes with a very high number of neighbors, the algorithm may crash. It is recommended
-    to apply a pre-filtering on your nodes and remove nodes with a pathologically high cardinality.
-    You should also monitor actively the number of nodes filtered this way and their cardinality, as this could help
-    you detect a data quality deterioration in your input graph.
-    If the input graph contains duplicate edges, they will be automatically removed by the algorithm.
+        If your graph contains nodes with a very high number of neighbors, the algorithm may crash. It is recommended
+        to apply a pre-filtering on your nodes and remove nodes with a pathologically high cardinality.
+        You should also monitor actively the number of nodes filtered this way and their cardinality, as this could help
+        you detect a data quality deterioration in your input graph.
+        If the input graph contains duplicate edges, they will be automatically removed by the algorithm.
 
-    If you want to have isolated nodes (nodes that have no neighbors) in the resulting graph, there is two possible
-    ways to achieve this:
-    A. Add self-loops edges to all your nodes in your input graph (it also works if you add edges between all the graph
-       nodes and a fictitious node with id NULL)
-    B. Only add edges between distinct nodes to your input, and perform a join between your input graph and the
-       algorithm's output to find all the nodes that have disappeared. These will be the isolated nodes.
-    Method B. requires a little more work but it should also be cheaper.
+        If you want to have isolated nodes (nodes that have no neighbors) in the resulting graph, there is two possible
+        ways to achieve this:
+        A. Add self-loops edges to all your nodes in your input graph (it also works if you add edges between all the graph
+           nodes and a fictitious node with id NULL)
+        B. Only add edges between distinct nodes to your input, and perform a join between your input graph and the
+           algorithm's output to find all the nodes that have disappeared. These will be the isolated nodes.
+        Method B. requires a little more work, but it should also be cheaper.
 
-    Example:
-    >>> df = __get_test_df()
-    >>> df.show()
-    +--------+--------+
-    | l_node | r_node |
-    +--------+--------+
-    |      1 |      8 |
-    |      8 |      9 |
-    |      5 |      8 |
-    |      7 |      8 |
-    |      3 |      7 |
-    |      2 |      3 |
-    |      4 |      6 |
-    +--------+--------+
-    >>> connected_components(df, connected_component_col_name="cc_id").sort("node_id", "cc_id").show()
-    +---------+-------+
-    | node_id | cc_id |
-    +---------+-------+
-    |       1 |     1 |
-    |       2 |     1 |
-    |       3 |     1 |
-    |       4 |     4 |
-    |       5 |     1 |
-    |       6 |     4 |
-    |       7 |     1 |
-    |       8 |     1 |
-    |       9 |     1 |
-    +---------+-------+
+    Args:
+        df: A DataFrame with 2 columns representing the edges of the graph.
+        node_name: The name of the column representing the node in the output DataFrame (default: "node_id").
+        connected_component_col_name: The name of the column representing the connected component to which each node
+        belongs in the output DataFrame.
 
-    :param df:
-    :param node_name: Name of the column representing the node in the output DataFrame (default: "node_id")
-    :param connected_component_col_name: Name of the column representing the connected component to which each node
-        belongs in the output DataFrame (default: "cc_id")
-    :return:
+    Returns:
+        A new DataFrame[node_name, connected_component_col_name] giving for each node the id of the connected
+            component it belongs to.
+
+    Examples:
+        >>> df = __get_test_df()
+        >>> df.show()
+        +--------+--------+
+        | l_node | r_node |
+        +--------+--------+
+        |      1 |      8 |
+        |      8 |      9 |
+        |      5 |      8 |
+        |      7 |      8 |
+        |      3 |      7 |
+        |      2 |      3 |
+        |      4 |      6 |
+        +--------+--------+
+        >>> connected_components(df, connected_component_col_name="cc_id").sort("node_id", "cc_id").show()
+        +---------+-------+
+        | node_id | cc_id |
+        +---------+-------+
+        |       1 |     1 |
+        |       2 |     1 |
+        |       3 |     1 |
+        |       4 |     4 |
+        |       5 |     1 |
+        |       6 |     4 |
+        |       7 |     1 |
+        |       8 |     1 |
+        |       9 |     1 |
+        +---------+-------+
     """
     assert_true(len(df.columns) == 2, "Input DataFrame must have two columns")
     l_field: SchemaField

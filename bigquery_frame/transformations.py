@@ -1,3 +1,4 @@
+from bigquery_frame import _ref
 from bigquery_frame.transformations_impl.analyze import analyze
 from bigquery_frame.transformations_impl.flatten import flatten
 from bigquery_frame.transformations_impl.harmonize_dataframes import harmonize_dataframes
@@ -8,13 +9,13 @@ from bigquery_frame.transformations_impl.sort_columns import sort_columns
 from bigquery_frame.transformations_impl.transform_all_fields import transform_all_fields
 from bigquery_frame.transformations_impl.union_dataframes import union_dataframes
 
-analyze = analyze
-flatten = flatten
-harmonize_dataframes = harmonize_dataframes
-normalize_arrays = normalize_arrays
-pivot = pivot
-sort_all_arrays = sort_all_arrays
-sort_columns = sort_columns
-transform_all_fields = transform_all_fields
-union_dataframes = union_dataframes
-unpivot = unpivot
+_ref(analyze)
+_ref(flatten)
+_ref(harmonize_dataframes)
+_ref(normalize_arrays)
+_ref(pivot)
+_ref(sort_all_arrays)
+_ref(sort_columns)
+_ref(transform_all_fields)
+_ref(union_dataframes)
+_ref(unpivot)

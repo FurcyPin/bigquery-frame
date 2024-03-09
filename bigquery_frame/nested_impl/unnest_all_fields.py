@@ -11,6 +11,7 @@ def unnest_all_fields(df: DataFrame, keep_columns: Optional[List[str]] = None) -
     This produce one DataFrame for each possible granularity.
 
     For instance, given a DataFrame with the following flattened schema:
+
         id
         s1.a
         s2!.b
@@ -19,11 +20,12 @@ def unnest_all_fields(df: DataFrame, keep_columns: Optional[List[str]] = None) -
         s4!.e
         s4!.f
 
-    This will produce a dict with four granularity - DataFrames entries:
-        - '': DataFrame[id, s1.a] ('' corresponds to the root granularity)
-        - 's2': DataFrame[s2!.b, s2!.c]
-        - 's2!.s3': DataFrame[s2!.s3!.d]
-        - 's4': DataFrame[s4!.e, s4!.f]
+    This will produce a dict with four (granularity - DataFrames) entries:
+
+    - '': DataFrame[id, s1.a] ('' corresponds to the root granularity)
+    - 's2': DataFrame[s2!.b, s2!.c]
+    - 's2!.s3': DataFrame[s2!.s3!.d]
+    - 's4': DataFrame[s4!.e, s4!.f]
 
     !!! warning "Limitation: BigQuery does not support dots and exclamation marks in column names"
         For this reason, dots are replaced with the string "__ARRAY__" and exclamation mark are replaced

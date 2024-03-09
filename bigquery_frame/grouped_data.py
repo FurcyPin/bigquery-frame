@@ -14,6 +14,9 @@ from bigquery_frame.utils import assert_true, quote, str_to_cols, strip_margin
 
 
 class GroupedData:
+    """Special object returned by [DataFrame.groupBy][bigquery_frame.DataFrame.groupBy].
+    Used to write aggregation transformations."""
+
     def __init__(
         self,
         df: DataFrame,
