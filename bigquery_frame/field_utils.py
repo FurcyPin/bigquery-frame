@@ -46,6 +46,28 @@ def is_sub_field_or_equal_to_any(sub_field: str, fields: List[str]) -> bool:
     return any(is_sub_field_or_equal(sub_field, field) for field in fields)
 
 
+def get_granularity(field: str) -> str:
+    """Return True if `field` has the given granularity
+
+    >>> get_granularity("a")
+    ''
+    >>> get_granularity("s.z")
+    ''
+    >>> get_granularity("a!")
+    'a!'
+    >>> get_granularity("a!.b")
+    'a!'
+    >>> get_granularity("a!.b!.c")
+    'a!.b!'
+
+    """
+    granularity = substring_before_last_occurrence(field, "!")
+    if granularity == "":
+        return granularity
+    else:
+        return granularity + "!"
+
+
 def has_same_granularity(field: str, other_field: str) -> bool:
     """Return True if `field` is at the same granularity level as `other_field`
 
@@ -76,7 +98,7 @@ def has_same_granularity(field: str, other_field: str) -> bool:
     False
 
     """
-    return field.split("!.")[:-1] == other_field.split("!.")[:-1]
+    return get_granularity(field) == get_granularity(other_field)
 
 
 def has_same_granularity_as_any(field: str, other_fields: List[str]) -> bool:
@@ -123,6 +145,8 @@ def is_sub_field(sub_field: str, field: str) -> bool:
     >>> is_sub_field("a.b", "b")
     False
     >>> is_sub_field("a.b!", "a")
+    False
+    >>> is_sub_field("a!.b", "a")
     False
 
     >>> is_sub_field("a", "a.b")
