@@ -1078,7 +1078,7 @@ def sort_array(
         |        [] |
         +-----------+
 
-        >>> df = bq.sql('''SELECT [STRUCT(2 as a, "x" as b), STRUCT(1 as a, "z" as b), STRUCT(1 as a, "y" as b)] as s''')
+        >>> df = bq.sql('SELECT [STRUCT(2 as a, "x" as b), STRUCT(1 as a, "z" as b), STRUCT(1 as a, "y" as b)] as s')
         >>> df.show(simplify_structs=True)
         +--------------------------+
         |                        s |
@@ -1347,7 +1347,9 @@ def upper(col: ColumnOrName) -> Column:
 
 def when(condition: Column, value: Column) -> WhenColumn:
     """Evaluates a list of conditions and returns one of multiple possible result expressions.
-    If [otherwise][bigquery_frame.column.WhenColumn.otherwise] is not invoked, None is returned for unmatched conditions.
+
+    If [otherwise][bigquery_frame.column.WhenColumn.otherwise] is not invoked, None is returned for unmatched
+    conditions.
 
     Args:
         condition: A boolean Column expression.

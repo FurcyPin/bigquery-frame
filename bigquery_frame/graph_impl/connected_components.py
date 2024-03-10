@@ -116,10 +116,10 @@ def connected_components(
 
         If you want to have isolated nodes (nodes that have no neighbors) in the resulting graph, there is two possible
         ways to achieve this:
-        A. Add self-loops edges to all your nodes in your input graph (it also works if you add edges between all the graph
-           nodes and a fictitious node with id NULL)
+        A. Add self-loops edges to all your nodes in your input graph (it also works if you add edges between all
+            the graph nodes and a fictitious node with id NULL)
         B. Only add edges between distinct nodes to your input, and perform a join between your input graph and the
-           algorithm's output to find all the nodes that have disappeared. These will be the isolated nodes.
+            algorithm's output to find all the nodes that have disappeared. These will be the isolated nodes.
         Method B. requires a little more work, but it should also be cheaper.
 
     Args:

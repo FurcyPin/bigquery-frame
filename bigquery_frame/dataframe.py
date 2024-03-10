@@ -791,7 +791,9 @@ class DataFrame:
         Examples:
             >>> from bigquery_frame import BigQueryBuilder
             >>> bq = BigQueryBuilder()
-            >>> df = bq.sql("SELECT * FROM UNNEST([STRUCT(2 as age, 'Alice' as name), STRUCT(5 as age, 'Bob' as name)])")
+            >>> df = bq.sql(
+            ... "SELECT * FROM UNNEST([STRUCT(2 as age, 'Alice' as name), STRUCT(5 as age, 'Bob' as name)])"
+            ... )
 
         Examples: Example 1: Select all columns in the DataFrame.
             >>> df.select('*').show()
@@ -1195,7 +1197,9 @@ class DataFrame:
             +------+------+------+
 
             When the parameter `allowMissingColumns` is ``True``, the set of column names
-            in this and other [DataFrame][bigquery_frame.DataFrame] can differ; missing columns will be filled with null.
+            in this and other [DataFrame][bigquery_frame.DataFrame] can differ; missing columns will be filled
+            with null.
+
             Further, the missing columns of this [DataFrame][bigquery_frame.DataFrame] will be added at the end
             in the schema of the union result:
 
