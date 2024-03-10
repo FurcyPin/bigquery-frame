@@ -591,13 +591,13 @@ def _build_diff_dataframe_shards(
         keep_fields=join_cols,
     )
 
-    common_keys = sorted(
+    granularities = sorted(
         set(unnested_left_dfs.keys()).intersection(set(unnested_right_dfs.keys())),
     )
 
-    def build_shard(key: str) -> DataFrame:
-        l_df = unnested_left_dfs[key]
-        r_df = unnested_right_dfs[key]
+    def build_shard(granularity: str) -> DataFrame:
+        l_df = unnested_left_dfs[granularity]
+        r_df = unnested_right_dfs[granularity]
         schema_diff_result = diff_dataframe_schemas(l_df, r_df, join_cols)
         new_join_cols = [_replace_special_characters(col) for col in join_cols]
         new_join_cols = [col for col in new_join_cols if col in l_df.columns]
@@ -611,7 +611,7 @@ def _build_diff_dataframe_shards(
             l_df, r_df, schema_diff_result, new_join_cols, max_number_of_col_per_shard
         )
 
-    return {key: build_shard(key) for key in common_keys}
+    return {granularity: build_shard(granularity) for granularity in granularities}
 
 
 def _build_diff_dataframe_with_split(
@@ -873,7 +873,7 @@ def compare_dataframes(
         | my_array!.d |     4 |  3 |
         +-------------+-------+----+
         ##############################################################
-        Granularity : my_array (5 rows)
+        Granularity : my_array! (5 rows)
         <BLANKLINE>
         Row count ok: 3 rows
         <BLANKLINE>
