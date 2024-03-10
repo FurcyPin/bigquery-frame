@@ -70,7 +70,7 @@ def test_unnest_fields_with_fields_having_same_name_inside_array_structs(bq: Big
         ||  1 |              2 |
         |+----+----------------+"""
     )
-    assert result_df_list["s2"].show_string() == strip_margin(
+    assert result_df_list["s2!"].show_string() == strip_margin(
         """
         |+----+-------------------------+
         || id | s2__ARRAY____STRUCT__id |
@@ -78,7 +78,7 @@ def test_unnest_fields_with_fields_having_same_name_inside_array_structs(bq: Big
         ||  1 |                       3 |
         |+----+-------------------------+"""
     )
-    assert result_df_list["s2!.s3"].show_string() == strip_margin(
+    assert result_df_list["s2!.s3!"].show_string() == strip_margin(
         """
         |+----+----------------------------------------------+
         || id | s2__ARRAY____STRUCT__s3__ARRAY____STRUCT__id |
@@ -123,7 +123,7 @@ def test_unnest_fields_with_fields_having_same_name_inside_array_structs_and_nam
         ||     1 |                 2 |
         |+-------+-------------------+"""
     )
-    assert result_df_list["s2"].show_string() == strip_margin(
+    assert result_df_list["s2!"].show_string() == strip_margin(
         """
         |+-------+----------------------------+
         || group | s2__ARRAY____STRUCT__group |
@@ -131,7 +131,7 @@ def test_unnest_fields_with_fields_having_same_name_inside_array_structs_and_nam
         ||     1 |                          3 |
         |+-------+----------------------------+"""
     )
-    assert result_df_list["s2!.s3"].show_string() == strip_margin(
+    assert result_df_list["s2!.s3!"].show_string() == strip_margin(
         """
         |+-------+-------------------------------------------------+
         || group | s2__ARRAY____STRUCT__s3__ARRAY____STRUCT__group |
