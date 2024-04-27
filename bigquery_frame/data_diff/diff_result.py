@@ -123,7 +123,7 @@ class DiffResult:
 
     @cached_property
     def diff_stats_shards(self) -> Dict[str, DiffStats]:
-        return self._compute_diff_stats()
+        return self._compute_diff_stats_shards()
 
     @cached_property
     def top_per_col_state_df(self) -> DataFrame:
@@ -264,7 +264,7 @@ class DiffResult:
         | {False, True} |        False |
         +---------------+--------------+
 
-        >>> diff_result._compute_diff_stats()['']
+        >>> diff_result._compute_diff_stats_shards()['']
         DiffStats(total=6, no_change=1, changed=3, in_left=5, in_right=5, only_in_left=1, only_in_right=1)
         """
         res_df = diff_df_shard.select(
@@ -293,7 +293,7 @@ class DiffResult:
             **{k: (v if v is not None else 0) for k, v in dict(res[0]).items()},
         )
 
-    def _compute_diff_stats(self) -> Dict[str, DiffStats]:
+    def _compute_diff_stats_shards(self) -> Dict[str, DiffStats]:
         """Given a diff_df and its list of join_cols, return stats about the number of differing or missing rows
 
         >>> from bigquery_frame.data_diff.diff_result import _get_test_diff_result
@@ -310,7 +310,7 @@ class DiffResult:
         | {False, True} |        False |
         +---------------+--------------+
 
-        >>> diff_result._compute_diff_stats()['']
+        >>> diff_result._compute_diff_stats_shards()['']
         DiffStats(total=6, no_change=1, changed=3, in_left=5, in_right=5, only_in_left=1, only_in_right=1)
         """
         return {
