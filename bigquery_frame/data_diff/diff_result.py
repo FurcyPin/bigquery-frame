@@ -269,10 +269,20 @@ class DiffResult:
         """
         res_df = diff_df_shard.select(
             f.count(f.lit(1)).alias("total"),
-            f.sum(f.when(PREDICATES.present_in_both & PREDICATES.row_is_equal, f.lit(1),).otherwise(f.lit(0)),).alias(
+            f.sum(
+                f.when(
+                    PREDICATES.present_in_both & PREDICATES.row_is_equal,
+                    f.lit(1),
+                ).otherwise(f.lit(0)),
+            ).alias(
                 "no_change",
             ),
-            f.sum(f.when(PREDICATES.present_in_both & PREDICATES.row_changed, f.lit(1),).otherwise(f.lit(0)),).alias(
+            f.sum(
+                f.when(
+                    PREDICATES.present_in_both & PREDICATES.row_changed,
+                    f.lit(1),
+                ).otherwise(f.lit(0)),
+            ).alias(
                 "changed",
             ),
             f.sum(f.when(PREDICATES.in_left, f.lit(1)).otherwise(f.lit(0))).alias(
