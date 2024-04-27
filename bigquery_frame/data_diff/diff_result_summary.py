@@ -31,5 +31,4 @@ class DiffResultSummary:
     join_cols: List[str]
     same_schema: bool
     same_data: bool
-    is_ok: bool
     total_nb_rows: int

@@ -7,7 +7,6 @@ from bigquery_frame import functions as f
 from bigquery_frame.auth import get_bq_client
 from bigquery_frame.dataframe import is_repeated
 
-MAGIC_HASH_COL_NAME = "__MAGIC_HASH__"
 EXISTS_COL_NAME = "__EXISTS__"
 IS_EQUAL_COL_NAME = "__IS_EQUAL__"
 

@@ -346,7 +346,6 @@ class DiffResultAnalyzer:
             join_cols=diff_result.join_cols,
             same_schema=diff_result.same_schema,
             same_data=diff_result.same_data,
-            is_ok=diff_result.is_ok,
             total_nb_rows=diff_result.total_nb_rows,
         )
         return summary
