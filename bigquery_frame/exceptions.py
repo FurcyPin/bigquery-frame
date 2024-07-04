@@ -1,16 +1,13 @@
 class IllegalArgumentException(Exception):
-    """Passed an illegal or inappropriate argument.
-    """
+    """Passed an illegal or inappropriate argument."""
 
 
 class AnalysisException(Exception):
-    """Exception raised when an anomaly is detected during the preparation of a transformation.
-    """
+    """Exception raised when an anomaly is detected during the preparation of a transformation."""
 
 
 class UnsupportedOperationException(Exception):
-    """When the user does an operation that is not supported.
-    """
+    """When the user does an operation that is not supported."""
 
 
 class UnexpectedException(Exception):
@@ -27,8 +24,7 @@ class UnexpectedException(Exception):
 
 
 class DataframeComparatorException(Exception):
-    """Exception happening during data diff.
-    """
+    """Exception happening during data diff."""
 
 
 class CombinatorialExplosionError(DataframeComparatorException):

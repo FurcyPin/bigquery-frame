@@ -42,7 +42,9 @@ class SchemaDiffResult:
 
 
 def _schema_to_string(
-    schema: list[SchemaField], include_nullable: bool = False, include_description: bool = False,
+    schema: list[SchemaField],
+    include_nullable: bool = False,
+    include_description: bool = False,
 ) -> list[str]:
     """Return a list of strings representing the schema
 

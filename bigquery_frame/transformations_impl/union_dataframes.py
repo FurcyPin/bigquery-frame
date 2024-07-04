@@ -1,4 +1,3 @@
-
 from bigquery_frame import DataFrame
 from bigquery_frame.utils import quote
 

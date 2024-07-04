@@ -101,7 +101,8 @@ class DataframeWriter:
         """
         mode = mode.lower()
         assert_true(
-            mode in SUPPORTED_MODES, f"Write mode '{mode}' is not supported. Supported modes are: {SUPPORTED_MODES}",
+            mode in SUPPORTED_MODES,
+            f"Write mode '{mode}' is not supported. Supported modes are: {SUPPORTED_MODES}",
         )
         self.__options.mode = mode
         return self

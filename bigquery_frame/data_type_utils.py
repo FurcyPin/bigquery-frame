@@ -86,7 +86,8 @@ def list_wider_types(tpe: str) -> Generator[str, None, None]:
         counter += 1
         yield current_type
         assert_true(
-            counter < max_loop, "This should not happen. Please check thatBIGQUERY_CONVERSIONS does not contain a loop.",
+            counter < max_loop,
+            "This should not happen. Please check thatBIGQUERY_CONVERSIONS does not contain a loop.",
         )
         if next_type is None:
             break
@@ -259,7 +260,9 @@ def flatten_schema(
         yield from res
 
     def flatten_struct_type(
-        schema: list[SchemaField], previous_nullable: bool = False, prefix: str = "",
+        schema: list[SchemaField],
+        previous_nullable: bool = False,
+        prefix: str = "",
     ) -> Generator[SchemaField, None, None]:
         for schema_field in schema:
             yield from flatten_schema_field(

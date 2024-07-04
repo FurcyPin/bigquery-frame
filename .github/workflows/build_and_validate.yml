@@ -44,15 +44,18 @@ jobs:
       - name: Install project
         run: poetry install
 
+      - name: Linter ruff (check format)
+        run: poetry run ruff format --check .
+
       - name: Linter ruff (replaces black, isort, flake8 and safety)
         run: poetry run ruff check .
         continue-on-error: true
+
       - name: Linter mypy
         run: poetry run mypy ${{ env.PROJECT_NAME }}
         # We run mypy but ignore the results as there are too many things to fix for now.
         continue-on-error: true
-      - name: Security bandit
-        run: poetry run bandit .
+
       - name: Security safety
         run: poetry run safety check
 

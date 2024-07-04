@@ -19,7 +19,6 @@ ReturnType = TypeVar("ReturnType")
 
 @dataclass()
 class BigQueryStats:
-
     estimated_bytes_processed: int = 0
     """Estimation of the number of bytes computed before the query is run to dimension the query's provisioning."""
 

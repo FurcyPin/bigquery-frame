@@ -87,7 +87,9 @@ def _star_loop(df: DataFrame):
 
 
 def connected_components(
-    df: DataFrame, node_name: str = "node_id", connected_component_col_name: str = "connected_component_id",
+    df: DataFrame,
+    node_name: str = "node_id",
+    connected_component_col_name: str = "connected_component_id",
 ):
     """Compute the connected components of a non-directed graph.
 
@@ -163,7 +165,8 @@ def connected_components(
     r_field: SchemaField
     [l_field, r_field] = df.schema
     assert_true(
-        l_field.field_type == r_field.field_type, "The two columns of the input DataFrame must have the same type",
+        l_field.field_type == r_field.field_type,
+        "The two columns of the input DataFrame must have the same type",
     )
     assert_true(
         l_field.field_type in ["STRING", "INTEGER"],

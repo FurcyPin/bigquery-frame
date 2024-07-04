@@ -30,7 +30,8 @@ def _get_bq_client_from_credentials() -> Optional[Client]:
     except JSONDecodeError:
         return None
     credentials = service_account.Credentials.from_service_account_info(
-        info=json_credentials, scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        info=json_credentials,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
     client = google.cloud.bigquery.Client(credentials=credentials, project=credentials.project_id)
     return client

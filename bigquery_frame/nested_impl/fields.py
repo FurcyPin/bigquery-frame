@@ -1,4 +1,3 @@
-
 from bigquery_frame import DataFrame
 from bigquery_frame.data_type_utils import flatten_schema
 

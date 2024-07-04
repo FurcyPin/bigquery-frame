@@ -59,10 +59,16 @@ def _unpivot(diff_df: DataFrame) -> DataFrame:
     )
 
     unpivoted_df = transformations.unpivot(
-        diff_df, pivot_columns=[], key_alias="column_name", value_alias="diff", implem_version=1,
+        diff_df,
+        pivot_columns=[],
+        key_alias="column_name",
+        value_alias="diff",
+        implem_version=1,
     )
     unpivoted_df = unpivoted_df.withColumn(
-        "column_name", _restore_special_characters_from_col(f.col("column_name")), replace=True,
+        "column_name",
+        _restore_special_characters_from_col(f.col("column_name")),
+        replace=True,
     )
     return unpivoted_df
 

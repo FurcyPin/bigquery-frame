@@ -1,4 +1,3 @@
-
 from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame.column import ColumnOrName, cols_to_str
 from bigquery_frame.dataframe import strip_margin
