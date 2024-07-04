@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bigquery-frame"
-version = "0.4.4"
+version = "0.5.0"
 description = "A DataFrame API for Google BigQuery"
 authors = ["FurcyPin"]
 license = "Apache-2.0"
@@ -86,7 +86,7 @@ testpaths = [
 ]
 
 [tool.bumpversion]
-current_version = "0.4.4"
+current_version = "0.5.0"
 commit = true
 message = "Bump version: {current_version} → {new_version}"
 tag = true
