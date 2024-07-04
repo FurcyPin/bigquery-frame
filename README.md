@@ -662,7 +662,7 @@ or any other SQL engines SQL engine, I would be very glad to discuss it.
 
 **Breaking changes:**
 
-- Dropped support for Python 3.7
+- Dropped support for Python 3.7 and 3.8, but added support for Python 3.11 and 3.12
 - `DataFrame.join` does not supports string expression. For instance `df1.join(df2, on="col1 == col2")` 
   must be rewritten `df1.join(df2, on=df1["col1"] == df2["col2"])`
 - The signature of the `transformations.pivot` method has changed: 
