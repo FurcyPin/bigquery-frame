@@ -36,14 +36,14 @@ def test_write_with_mode_error(bq: BigQueryBuilder, random_test_dataset: str):
     bq.sql("SELECT 1 as a").write.save(f"{random_test_dataset}.my_table", mode="OVERWRITE")
     with pytest.raises(google.api_core.exceptions.Conflict) as e:
         bq.sql("SELECT 2 as a").write.mode("error").save(f"{random_test_dataset}.my_table")
-    assert "409 Already Exists" in str(e.value)
+    assert "409 " in str(e.value) and "Already Exists" in str(e.value)
 
 
 def test_write_with_mode_errorifexists(bq: BigQueryBuilder, random_test_dataset: str):
     bq.sql("SELECT 1 as a").write.save(f"{random_test_dataset}.my_table", mode="OVERWRITE")
     with pytest.raises(google.api_core.exceptions.Conflict) as e:
         bq.sql("SELECT 2 as a").write.mode("errorifexists").save(f"{random_test_dataset}.my_table")
-    assert "409 Already Exists" in str(e.value)
+    assert "409 " in str(e.value) and "Already Exists" in str(e.value)
 
 
 def test_write_with_options(bq: BigQueryBuilder, random_test_dataset: str, client: Client):
