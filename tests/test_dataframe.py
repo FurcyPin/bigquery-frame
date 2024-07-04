@@ -25,7 +25,8 @@ def test_createOrReplaceTempView(bq: BigQueryBuilder):
 
 def test_createOrReplaceTempView_with_reserved_keyword_alias(bq: BigQueryBuilder):
     """Some words like 'ALL' are reserved by BigQuery
-    and may not be used as table names without being backticked."""
+    and may not be used as table names without being backticked.
+    """
     bq.sql("""SELECT 1 as id""").createOrReplaceTempView("all")
     df = bq.table("all")
 
@@ -36,7 +37,8 @@ def test_createOrReplaceTempView_with_reserved_keyword_alias(bq: BigQueryBuilder
 
 def test_createOrReplaceTempView_multiple_times(bq: BigQueryBuilder):
     """When we call df.createOrReplaceTempView with the same view name multiple times,
-    it should overwrite the first view"""
+    it should overwrite the first view
+    """
     df1 = bq.sql("""SELECT 1 as id""")
     df2 = bq.sql("""SELECT 2 as id""")
     df1.createOrReplaceTempView("T")
@@ -47,7 +49,8 @@ def test_createOrReplaceTempView_multiple_times(bq: BigQueryBuilder):
 
 def test_createOrReplaceTempView_cyclic_dependency(bq: BigQueryBuilder):
     """When we call df.createOrReplaceTempView with the same view name multiple times,
-    it should overwrite the first view, but beware of cyclic dependencies!"""
+    it should overwrite the first view, but beware of cyclic dependencies!
+    """
     # This should work
     bq.sql("""SELECT 1 as id""").createOrReplaceTempView("T")
     bq.sql("""SELECT * FROM T""").createOrReplaceTempView("T2")
@@ -77,7 +80,8 @@ def test_createOrReplaceTempTable(bq: BigQueryBuilder):
 
 def test_createOrReplaceTempTable_with_reserved_keyword_alias(bq: BigQueryBuilder):
     """Some words like 'ALL' are reserved by BigQuery
-    and may not be used as table names without being backticked."""
+    and may not be used as table names without being backticked.
+    """
     bq.sql("""SELECT 1 as id""").createOrReplaceTempTable("all")
     df = bq.table("all")
 
@@ -88,7 +92,8 @@ def test_createOrReplaceTempTable_with_reserved_keyword_alias(bq: BigQueryBuilde
 
 def test_show_with_keyword_alias(bq: BigQueryBuilder):
     """Some words like 'ALL' are reserved by BigQuery
-    and may not be used as table names without being backticked."""
+    and may not be used as table names without being backticked.
+    """
     df = bq.sql("""SELECT 1 as id""").alias("all")
     df.show()
 
@@ -150,8 +155,7 @@ def test_count(bq: BigQueryBuilder):
 
 
 def test_sort_with_aliased_column(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame
+    """GIVEN a DataFrame
     WHEN we sort it on an aliased column
     THEN the query should be valid
     """
@@ -167,7 +171,7 @@ def test_sort_with_aliased_column(bq: BigQueryBuilder):
             ||  2 |
             ||  3 |
             |+----+
-            |"""
+            |""",
         )
         assert stdout.getvalue() == expected
 
@@ -238,7 +242,7 @@ def test_show_limit(bq: BigQueryBuilder):
             || 1 |
             |+---+
             |only showing top 1 row
-            |"""
+            |""",
         )
         assert stdout.getvalue() == expected
 
@@ -253,7 +257,7 @@ def test_show_limit(bq: BigQueryBuilder):
             || 2 |
             |+---+
             |only showing top 2 rows
-            |"""
+            |""",
         )
         assert stdout.getvalue() == expected
 
@@ -268,7 +272,7 @@ def test_show_limit(bq: BigQueryBuilder):
             || 2 |
             || 3 |
             |+---+
-            |"""
+            |""",
         )
         assert stdout.getvalue() == expected
 

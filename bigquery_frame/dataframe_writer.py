@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from google.cloud.bigquery import Client, Dataset
@@ -29,7 +29,7 @@ DEFAULT_MODE = "error"
 @dataclass
 class DataframeWriterOptions:
     partition_by: Optional[str]
-    options: Dict[str, Any]
+    options: dict[str, Any]
     mode: str = DEFAULT_MODE
 
     def __init__(self):
@@ -63,7 +63,7 @@ class DataframeWriter:
           which means that any pre-existing schema, partitioning, clustering, table or column option
           (including column description) will be removed and replaced with the new table
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> from bigquery_frame.auth import get_bq_client
@@ -101,7 +101,7 @@ class DataframeWriter:
         """
         mode = mode.lower()
         assert_true(
-            mode in SUPPORTED_MODES, f"Write mode '{mode}' is not supported. Supported modes are: {SUPPORTED_MODES}"
+            mode in SUPPORTED_MODES, f"Write mode '{mode}' is not supported. Supported modes are: {SUPPORTED_MODES}",
         )
         self.__options.mode = mode
         return self
@@ -154,7 +154,7 @@ class DataframeWriter:
         - It is not possible to use the "OVERWRITE" mode to replace a table with a different kind of partitioning.
           Instead, DROP the table, and then use a "ERROR" mode statement to recreate it.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> from bigquery_frame.auth import get_bq_client
@@ -180,7 +180,7 @@ class DataframeWriter:
         options = self.__options.options
 
         def to_str(v: Any):
-            if isinstance(v, Dict):
+            if isinstance(v, dict):
                 return repr(list(v.items()))
             else:
                 return repr(v)
@@ -223,7 +223,7 @@ class DataframeWriter:
     def save(self, table_name: str, mode=None, partition_by=None, **options) -> None:
         """Saves the content of the :class:`DataFrame` to a BigQuery table.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> from bigquery_frame.auth import get_bq_client

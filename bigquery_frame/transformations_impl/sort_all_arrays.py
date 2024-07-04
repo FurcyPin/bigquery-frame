@@ -110,7 +110,7 @@ def sort_all_arrays(df: DataFrame) -> DataFrame:
         if is_repeated(field):
             if is_struct(field):
                 return f.sort_array(
-                    col, lambda c: [json_if_not_sortable(c[_field.name], _field) for _field in field.fields]
+                    col, lambda c: [json_if_not_sortable(c[_field.name], _field) for _field in field.fields],
                 )
             else:
                 return f.sort_array(col)

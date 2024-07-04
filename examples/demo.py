@@ -1,6 +1,6 @@
 from bigquery_frame import BigQueryBuilder
-from bigquery_frame.auth import get_bq_client
 from bigquery_frame import functions as f
+from bigquery_frame.auth import get_bq_client
 
 bigquery = BigQueryBuilder(get_bq_client())
 
@@ -10,7 +10,7 @@ df = bigquery.sql(
     SELECT 1 as id, "Bulbasaur" as name, ["Grass", "Poison"] as types, NULL as other_col
     UNION ALL
     SELECT 2 as id, "Ivysaur" as name, ["Grass", "Poison"] as types, NULL as other_col
-"""
+""",
 )
 df.select("id", "name", "types").createOrReplaceTempView("pokedex")
 

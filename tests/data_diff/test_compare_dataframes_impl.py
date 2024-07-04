@@ -278,8 +278,7 @@ def test_compare_df_with_arrays(bq: BigQueryBuilder):
 
 
 def test_compare_df_with_empty_and_null_arrays(bq: BigQueryBuilder):
-    """
-    GIVEN two DataFrames, one with an empty array, the other with a null array
+    """GIVEN two DataFrames, one with an empty array, the other with a null array
     WHEN we compare them
     THEN a difference should be found
 
@@ -318,8 +317,7 @@ def test_compare_df_with_empty_and_null_arrays(bq: BigQueryBuilder):
 
 
 def test_compare_df_with_missing_empty_and_null_arrays(bq: BigQueryBuilder):
-    """
-    GIVEN two DataFrames, one with a null and an empty array, the other without those rows
+    """GIVEN two DataFrames, one with a null and an empty array, the other without those rows
     WHEN we compare them
     THEN differences should be found
 
@@ -612,8 +610,7 @@ def test_compare_df_with_differing_types(bq: BigQueryBuilder):
 
 
 def test_compare_df_when_flattened_column_name_collision(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame with a nested column `s`.`a` and a column `s_a`
+    """GIVEN a DataFrame with a nested column `s`.`a` and a column `s_a`
     WHEN we run a diff on it
     THEN it should not crash
     """
@@ -645,8 +642,7 @@ def test_compare_df_when_flattened_column_name_collision(bq: BigQueryBuilder):
 
 
 def test_compare_df_with_null_join_cols(bq: BigQueryBuilder):
-    """
-    GIVEN two DataFrames
+    """GIVEN two DataFrames
     WHEN we diff them using join_cols that are sometimes null
     THEN the null values should correctly be matched together
     """
@@ -838,8 +834,7 @@ def test_compare_df_with_renamed_columns_inside_structs(bq: BigQueryBuilder):
 
 
 def test_automatically_infer_join_col(bq: BigQueryBuilder):
-    """
-    - GIVEN two DataFrames with two columns each
+    """- GIVEN two DataFrames with two columns each
     - WHEN one column is unique in both DataFrames and the other is almost unique
     - THEN the unique column should be selected
     """
@@ -921,7 +916,7 @@ def test_join_cols_should_not_be_displayed_first(bq: BigQueryBuilder):
 def _build_huge_struct(value: Column, depth: int, width: int) -> Column:
     if depth == 0:
         return value.alias("s")
-    return f.struct(*[_build_huge_struct(value, depth - 1, width).alias(f"c{i}") for i in range(0, width)])
+    return f.struct(*[_build_huge_struct(value, depth - 1, width).alias(f"c{i}") for i in range(width)])
 
 
 def test_compare_df_with_huge_table(bq: BigQueryBuilder):

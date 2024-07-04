@@ -1,9 +1,8 @@
 from functools import lru_cache
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
-from bigquery_frame import BigQueryBuilder, DataFrame
+from bigquery_frame import BigQueryBuilder, DataFrame, nested
 from bigquery_frame import functions as f
-from bigquery_frame import nested
 from bigquery_frame.column import cols_to_str
 from bigquery_frame.special_characters import _restore_special_characters
 from bigquery_frame.transformations import pivot
@@ -13,11 +12,10 @@ if TYPE_CHECKING:
     from bigquery_frame.data_diff.diff_result import DiffResult
 
 
-def _get_col_df(columns: List[str], bq: BigQueryBuilder) -> DataFrame:
+def _get_col_df(columns: list[str], bq: BigQueryBuilder) -> DataFrame:
     """Create a DataFrame listing the column names with their column number
 
     Examples:
-
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
         >>> df = _get_col_df(["id", "c1", "c2__ARRAY__a"], bq)
@@ -46,8 +44,8 @@ def _get_col_df(columns: List[str], bq: BigQueryBuilder) -> DataFrame:
         |  s[0] as column_number, s[1] as column_name
         |FROM UNNEST([
         |{cols_to_str(column_structs, indentation=2)}
-        |]) as s"""
-        )
+        |]) as s""",
+        ),
     )
     return col_df
 
@@ -59,7 +57,6 @@ def _get_pivoted_df(
     """Pivot the top_per_col_state_df
 
     Examples:
-
         >>> from bigquery_frame.data_diff.diff_result import _get_test_diff_result
         >>> diff_result = _get_test_diff_result()
         >>> diff_result.top_per_col_state_df.orderBy("column_name", "state", "left_value", "right_value").show(100)
@@ -119,8 +116,8 @@ def _get_pivoted_df(
     return pivoted_df
 
 
-def _format_diff_per_col_df(pivoted_df: DataFrame, col_df: DataFrame) -> DataFrame:
-    """
+def _format_col_df(pivoted_df: DataFrame, col_df: DataFrame) -> DataFrame:
+    """Format the col_df DataFrame
 
     Examples:
         >>> from bigquery_frame.data_diff.diff_result import _get_test_diff_result
@@ -150,7 +147,7 @@ def _format_diff_per_col_df(pivoted_df: DataFrame, col_df: DataFrame) -> DataFra
         |          id |       None |                     [] |            4 | [{1, 1, 1}, {2, 2, 1}, {3, 3, 1}, {4, 4, 1}] |               1 |                             [{5, None, 1}] |                1 |                             [{None, 6, 1}] |
         +-------------+------------+------------------------+--------------+----------------------------------------------+-----------------+--------------------------------------------+------------------+--------------------------------------------+
 
-        >>> diff_per_col_df = _format_diff_per_col_df(pivoted_df, col_df)
+        >>> diff_per_col_df = _format_col_df(pivoted_df, col_df)
         >>> nested.print_schema(diff_per_col_df)
         root
          |-- column_number: INTEGER (nullable = true)
@@ -231,7 +228,7 @@ def _format_diff_per_col_df(pivoted_df: DataFrame, col_df: DataFrame) -> DataFra
     return formatted_df.orderBy("column_number")
 
 
-@lru_cache()
+@lru_cache
 def _get_diff_per_col_df_with_cache(diff_result: "DiffResult", max_nb_rows_per_col_state: int) -> DataFrame:
     return _get_diff_per_col_df(
         top_per_col_state_df=diff_result.top_per_col_state_df,
@@ -242,7 +239,7 @@ def _get_diff_per_col_df_with_cache(diff_result: "DiffResult", max_nb_rows_per_c
 
 def _get_diff_per_col_df(
     top_per_col_state_df: DataFrame,
-    columns: List[str],
+    columns: list[str],
     max_nb_rows_per_col_state: int,
 ) -> DataFrame:
     """Given a top_per_col_state_df, return a DataFrame that gives for each column and each
@@ -384,5 +381,5 @@ def _get_diff_per_col_df(
     bq = top_per_col_state_df.bigquery
     pivoted_df = _get_pivoted_df(top_per_col_state_df, max_nb_rows_per_col_state)
     col_df = _get_col_df(columns, bq)
-    df = _format_diff_per_col_df(pivoted_df, col_df)
+    df = _format_col_df(pivoted_df, col_df)
     return df

@@ -1,10 +1,9 @@
-from typing import List
 
 from bigquery_frame import DataFrame
 from bigquery_frame.utils import quote
 
 
-def union_dataframes(dfs: List[DataFrame]) -> DataFrame:
+def union_dataframes(dfs: list[DataFrame]) -> DataFrame:
     """Returns the union between multiple DataFrames"""
     if len(dfs) == 0:
         raise ValueError("input list is empty")

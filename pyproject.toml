@@ -26,15 +26,17 @@ tqdm = "^4.64.0"
 [tool.poetry.dev-dependencies]
 types-tqdm = "^4.64.6"
 types-tabulate = "^0.8.11"
+types-setuptools = "^65.6.0.3"
+
 black = "^24.3.0"
-isort = "^5.10.1"
-flake8 = "^5.0.4"
+ruff = "^0.1.6"
 mypy = "^0.971"
-bandit = "^1.7.4"
 safety = "^2.1.1"
+
 pytest = "^7.4.4"
 pytest-cov = "^4.1.0"
 pytest-xdist="^3.5.0"
+
 pipdeptree = "2.2.1"
 bump-my-version = "^0.20.3"
 
@@ -107,3 +109,5 @@ replace = "__version__ = \"{new_version}\""
 filename = "sonar-project.properties"
 search = "sonar.projectVersion={current_version}"
 replace = "sonar.projectVersion={new_version}"
+
+

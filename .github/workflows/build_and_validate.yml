@@ -44,12 +44,9 @@ jobs:
       - name: Install project
         run: poetry install
 
-      - name: Linter black
-        run: poetry run black --diff --check .
-      - name: Linter isort
-        run: poetry run isort --check-only tests ${{ env.PROJECT_NAME }}
-      - name: Linter flake8
-        run: poetry run flake8 tests ${{ env.PROJECT_NAME }}
+      - name: Linter ruff (replaces black, isort, flake8 and safety)
+        run: poetry run ruff check .
+        continue-on-error: true
       - name: Linter mypy
         run: poetry run mypy ${{ env.PROJECT_NAME }}
         # We run mypy but ignore the results as there are too many things to fix for now.

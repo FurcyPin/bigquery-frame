@@ -1,0 +1,173 @@
+line-length = 120
+target-version = "py39"
+
+select = [
+    "C", # mccabe
+    "D", # pydocstyle
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "I", # isort
+    "F", # Pyflakes
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "S", # bandit
+    "YTT",
+    "ANN",
+    "ASYNC",
+    "BLE",
+    "FBT",
+    "B",
+    "A",
+    "COM",
+#   "CPY", # copyright notice at top of files
+    "C4",
+    "DTZ",
+    "T10",
+    "EM",
+    "EXE",
+    "ISC",
+    "ICN",
+    "G",
+    "INP",
+    "PIE",
+    "T20",
+    "PYI",
+    "PT",
+    "Q",
+    "RSE",
+    "RET",
+    "SLF",
+    "SLOT",
+    "SIM",
+    "TID",
+    "TCH",
+    "INT",
+    "ARG",
+    "PTH",
+    "TD",
+    "FIX",
+    "ERA",
+    "PD", # pandas-vet
+    "PGH",
+    "PL",
+    "TRY",
+    "FLY",
+    "NPY",
+    "AIR",
+    "PERF",
+    "RUF",
+]
+
+ignore = [
+    "ARG005", # Unused lambda argument
+    # If a method expect as argument a higher order function of type "A -> B", I find it more confusing to feed it
+    # with "lambda: B.default_value" than with "lambda a: B.default_value", even if a is not used.
+
+    "RET504", # Unnecessary assignment to `...` before `return` statement
+    # Naming the return argument before returning it is makes the code more readable and easier to debug.
+
+    "RET505", # Unnecessary `else` after `return` statement
+    "RET506", # Unnecessary `else` after `raise` statement
+    # I find the functionnal-programming version less confusing than the imperative version:
+    #
+    # # Functionnal-programming version:
+    # if P:
+    #   return B
+    # else:
+    #   return C
+    #
+    # # Imperative version:
+    # if P:
+    #   return B
+    # return C
+    #
+
+    "SIM108", # Replace multiline if then else with one-liners
+    # # Personally, I find this:
+    # if predicate():
+    #     x = 1
+    # else:
+    #     x = 2
+    #
+    # # More readable than this:
+    # x = 1 if predicate() else 2
+
+    "FBT001", # Boolean-typed positional argument in function definition
+    "FBT002", # Boolean default positional argument in function definition
+    # These rules makes sense but there are several cases where working around it makes the code more confusing than less
+    # Plus, the spark API does not follow this rule already (for instance, df.show(10, true) works)
+
+    "ANN101", # Missing type annotation for `self` in method
+    # This rule is not necessary when self is automatically infered by smart type checkers
+
+    "D100", # Missing docstring in public module
+    "D104", # Missing docstring in public package
+
+    "E221",
+    "E222",
+    "E223",
+    "E224",
+    "E225",
+]
+
+fixable = [
+    "A", "B", "C", "D", "E", "F", "G", "I", "N", "Q", "S", "T", "W",
+    "ANN", "ARG", "BLE", "COM", "DJ", "DTZ", "EM", "ERA", "EXE",
+    "FBT", "ICN", "INP", "ISC", "NPY", "PD", "PGH", "PIE", "PL",
+    "PT", "PTH", "PYI", "RET", "RSE", "RUF", "SIM", "SLF", "TCH",
+    "TID", "TRY", "UP", "YTT"
+]
+unfixable = []
+
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+extend-exclude = [
+    "conftest.py",
+]
+
+
+[mccabe]
+max-complexity = 10
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.isort]
+known-first-party = ["spark_frame"]
+
+[pylint]
+max-args = 8 # PLR0913:  Too many arguments in function definition (8 > 5)
+
+[per-file-ignores]
+"tests/**/*.py" = [
+    # at least this three should be fine in tests:
+    "S101", # asserts allowed in tests...
+    "PLR2004", # Magic value used in comparison
+#    "ARG", # Unused function args -> fixtures nevertheless are functionally relevant...
+#    "FBT", # Don't care about booleans as positional arguments in tests, e.g. via @pytest.mark.parametrize()
+#    # The below are debateable
+#    "S311", # Standard pseudo-random generators are not suitable for cryptographic purposes
+]
+
+

@@ -14,7 +14,7 @@ def test_number_lines():
     |6: 6
     |7: 7
     |8: 8
-    |9: 9"""
+    |9: 9""",
     )
     assert number_lines(s) == expected
 
@@ -30,6 +30,6 @@ def test_number_lines():
     |07: 7
     |08: 8
     |09: 9
-    |10: 10"""
+    |10: 10""",
     )
     assert number_lines(s) == expected

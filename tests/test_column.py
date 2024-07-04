@@ -17,7 +17,7 @@ def test_when_otherwise(bq: BigQueryBuilder):
             STRUCT(true as a),
             STRUCT(null as a)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -28,7 +28,7 @@ def test_when_otherwise(bq: BigQueryBuilder):
         ||  True | 1 |
         ||  null | 0 |
         |+-------+---+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -38,8 +38,7 @@ def test_when_otherwise(bq: BigQueryBuilder):
 
 
 def test_alias_with_keyword(bq: BigQueryBuilder):
-    """
-    GIVEN a column
+    """GIVEN a column
     WHEN we alias is with a name which is a reserved SQL keyword
     THEN the query should remain valid
     """
@@ -51,7 +50,7 @@ def test_alias_with_keyword(bq: BigQueryBuilder):
         |+-------+
         ||     1 |
         |+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         df.select(f.col("a").alias("group")).show()
@@ -74,7 +73,7 @@ def test_and(bq: BigQueryBuilder):
             STRUCT(true as a, null as b),
             STRUCT(null as a, null as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -91,7 +90,7 @@ def test_and(bq: BigQueryBuilder):
         ||  True |  null |  null |
         ||  null |  null |  null |
         |+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -117,7 +116,7 @@ def test_or(bq: BigQueryBuilder):
             STRUCT(true as a, null as b),
             STRUCT(null as a, null as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -134,7 +133,7 @@ def test_or(bq: BigQueryBuilder):
         ||  True |  null |  True |
         ||  null |  null |  null |
         |+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -154,7 +153,7 @@ def test_invert(bq: BigQueryBuilder):
             STRUCT(true as a),
             STRUCT(null as a)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -165,7 +164,7 @@ def test_invert(bq: BigQueryBuilder):
         ||  True | False |
         ||  null |  null |
         |+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -184,7 +183,7 @@ def test_mod(bq: BigQueryBuilder):
             STRUCT(2 as a),
             STRUCT(3 as a)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -195,7 +194,7 @@ def test_mod(bq: BigQueryBuilder):
         || 2 | 0 |
         || 3 | 1 |
         |+---+---+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -213,7 +212,7 @@ def test_add(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -224,7 +223,7 @@ def test_add(bq: BigQueryBuilder):
         ||    2 | null | null |
         || null |    2 | null |
         |+------+------+------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -244,7 +243,7 @@ def test_sub(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -255,7 +254,7 @@ def test_sub(bq: BigQueryBuilder):
         ||    2 | null | null |
         || null |    2 | null |
         |+------+------+------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -275,7 +274,7 @@ def test_mul(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -286,7 +285,7 @@ def test_mul(bq: BigQueryBuilder):
         ||    2 | null | null |
         || null |    2 | null |
         |+------+------+------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -306,7 +305,7 @@ def test_div(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -317,7 +316,7 @@ def test_div(bq: BigQueryBuilder):
         ||    2 | null | null |
         || null |    2 | null |
         |+------+------+------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
@@ -338,7 +337,7 @@ def test_eq(bq: BigQueryBuilder):
             STRUCT("a" as a, null as b),
             STRUCT(null as a, "b" as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -350,12 +349,12 @@ def test_eq(bq: BigQueryBuilder):
         ||    a | null |  null |  null |  null |
         || null |    b |  null | False | False |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a == b).withColumn("d", "a" == b).withColumn("e", b == "a").show()
+        df.withColumn("c", a == b).withColumn("d", b == "a").withColumn("e", b == "a").show()
         assert stdout.getvalue() == expected
     with pytest.raises(ValueError):
         a = f.col("a").alias("a")
@@ -373,7 +372,7 @@ def test_neq(bq: BigQueryBuilder):
             STRUCT("a" as a, null as b),
             STRUCT(null as a, "b" as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -385,12 +384,12 @@ def test_neq(bq: BigQueryBuilder):
         ||    a | null |  null |  null |  null |
         || null |    b |  null |  True |  True |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a != b).withColumn("d", "a" != b).withColumn("e", b != "a").show()
+        df.withColumn("c", a != b).withColumn("d", b != "a").withColumn("e", b != "a").show()
         assert stdout.getvalue() == expected
 
 
@@ -406,7 +405,7 @@ def test_lt(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -419,12 +418,12 @@ def test_lt(bq: BigQueryBuilder):
         ||    2 | null |  null | False | False |
         || null |    2 |  null |  null |  null |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a < b).withColumn("d", a < 2).withColumn("e", 2 < a).show()
+        df.withColumn("c", a < b).withColumn("d", a < 2).withColumn("e", a > 2).show()
         assert stdout.getvalue() == expected
 
 
@@ -440,7 +439,7 @@ def test_le(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -453,12 +452,12 @@ def test_le(bq: BigQueryBuilder):
         ||    2 | null |  null |  True |  True |
         || null |    2 |  null |  null |  null |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a <= b).withColumn("d", a <= 2).withColumn("e", 2 <= a).show()
+        df.withColumn("c", a <= b).withColumn("d", a <= 2).withColumn("e", a >= 2).show()
         assert stdout.getvalue() == expected
 
 
@@ -474,7 +473,7 @@ def test_gt(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -487,12 +486,12 @@ def test_gt(bq: BigQueryBuilder):
         ||    2 | null |  null | False | False |
         || null |    2 |  null |  null |  null |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a > b).withColumn("d", a > 2).withColumn("e", 2 > a).show()
+        df.withColumn("c", a > b).withColumn("d", a > 2).withColumn("e", a < 2).show()
         assert stdout.getvalue() == expected
 
 
@@ -508,7 +507,7 @@ def test_ge(bq: BigQueryBuilder):
             STRUCT(2 as a, null as b),
             STRUCT(null as a, 2 as b)
         ])
-    """
+    """,
     )
     expected = strip_margin(
         """
@@ -521,12 +520,12 @@ def test_ge(bq: BigQueryBuilder):
         ||    2 | null |  null |  True |  True |
         || null |    2 |  null |  null |  null |
         |+------+------+-------+-------+-------+
-        |"""
+        |""",
     )
     with captured_output() as (stdout, stderr):
         a = f.col("a").alias("a")
         b = f.col("b").alias("b")
-        df.withColumn("c", a >= b).withColumn("d", a >= 2).withColumn("e", 2 >= a).show()
+        df.withColumn("c", a >= b).withColumn("d", a >= 2).withColumn("e", a <= 2).show()
         assert stdout.getvalue() == expected
 
 
@@ -539,7 +538,7 @@ def test_isin(bq: BigQueryBuilder):
             STRUCT(1 as id, 1 as a, 2 as b),
             STRUCT(2 as id, 1 as a, 3 as b)
         ])
-    """
+    """,
     )
     actual = df.withColumn("id equal a or b", f.col("id").isin(f.col("a"), f.col("b")))
     expected = strip_margin(
@@ -549,14 +548,13 @@ def test_isin(bq: BigQueryBuilder):
         |+----+---+---+-----------------+
         ||  1 | 1 | 2 |            True |
         ||  2 | 1 | 3 |           False |
-        |+----+---+---+-----------------+"""
+        |+----+---+---+-----------------+""",
     )
     assert actual.show_string() == expected
 
 
 def test_operation_after_explode(bq: BigQueryBuilder):
-    """
-    GIVEN an array column
+    """GIVEN an array column
     WHEN we explode it and try to perform another operation in the same select
     THEN an AnalysisException should be raised
     """

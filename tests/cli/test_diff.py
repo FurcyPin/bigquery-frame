@@ -14,7 +14,7 @@ def df(bq: BigQueryBuilder, random_test_dataset: str) -> DataFrame:
                 STRUCT(2 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array),
                 STRUCT(3 as id, [STRUCT(1 as a, 2 as b, 3 as c)] as my_array)
             ])
-        """
+        """,
     )
     return df
 
@@ -42,7 +42,7 @@ def test_cli_diff(t1: str, t2: str):
 def test_cli_diff_with_output_option(t1: str, t2: str):
     with captured_output() as (stdout, stderr):
         diff.main(
-            ["--tables", f"{t1}", f"{t2}", "--join-cols", "id", "--output", "test_working_dir/test_cli_diff.html"]
+            ["--tables", f"{t1}", f"{t2}", "--join-cols", "id", "--output", "test_working_dir/test_cli_diff.html"],
         )
     assert "Report exported as test_working_dir/test_cli_diff.html" in stdout.getvalue()
 

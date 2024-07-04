@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 from google.cloud.bigquery import SchemaField
 
@@ -13,7 +13,7 @@ from bigquery_frame.transformations_impl.union_dataframes import union_dataframe
 from bigquery_frame.utils import quote
 
 
-def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[Column]] = None):
+def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[list[Column]] = None):
     """Recursively unnest a :class:`DataFrame`'s column
 
     >>> bq = BigQueryBuilder()
@@ -66,7 +66,7 @@ def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[Column]] =
     if extra_cols is None:
         extra_cols = []
 
-    def build_cross_join_statement(split: List[str]):
+    def build_cross_join_statement(split: list[str]):
         previous = ""
         counter = 1
         for sub in split[:-1]:
@@ -95,14 +95,14 @@ def _unnest_column(df: DataFrame, col: str, extra_cols: Optional[List[Column]] =
             |SELECT
             |  {cols_to_str(extra_cols + [f.expr(col)], 2)}
             |FROM {quote(df._alias)}
-            |{cross_join_str}"""
+            |{cross_join_str}""",
         )
         return df._apply_query(query)
     else:
         return df
 
 
-def _select_group_by(df: DataFrame, *columns: ColumnOrName, group_by: List[Column]) -> "DataFrame":
+def _select_group_by(df: DataFrame, *columns: ColumnOrName, group_by: list[Column]) -> "DataFrame":
     """Projects a set of expressions and returns a new :class:`DataFrame`."""
     group_by_str = ""
     if len(group_by) > 0:
@@ -110,7 +110,7 @@ def _select_group_by(df: DataFrame, *columns: ColumnOrName, group_by: List[Colum
     query = strip_margin(
         f"""SELECT
         |{cols_to_str(columns, 2)}
-        |FROM {quote(df._alias)}{group_by_str}"""
+        |FROM {quote(df._alias)}{group_by_str}""",
     )
     return df._apply_query(query)
 
@@ -119,8 +119,8 @@ def _analyze_column(
     df: DataFrame,
     schema_field: SchemaField,
     col_num: int,
-    group_by: List[str],
-    aggs: List[Callable[[str, SchemaField, int], Column]],
+    group_by: list[str],
+    aggs: list[Callable[[str, SchemaField, int], Column]],
 ):
     col = schema_field.name
     is_repeated = "!" in col
@@ -143,7 +143,7 @@ def _analyze_column(
     return res
 
 
-def __chunks(lst: List, n: int):
+def __chunks(lst: list, n: int):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         # fmt: off
@@ -151,7 +151,7 @@ def __chunks(lst: List, n: int):
         # fmt: on
 
 
-default_aggs: List[Callable[[str, SchemaField, int], Column]] = [
+default_aggs: list[Callable[[str, SchemaField, int], Column]] = [
     analyze_aggs.column_number,
     analyze_aggs.column_name,
     analyze_aggs.column_type,
@@ -166,8 +166,8 @@ default_aggs: List[Callable[[str, SchemaField, int], Column]] = [
 
 def analyze(
     df: DataFrame,
-    group_by: Optional[Union[str, List[str]]] = None,
-    _aggs: Optional[List[Callable[[str, SchemaField, int], Column]]] = None,
+    group_by: Optional[Union[str, list[str]]] = None,
+    _aggs: Optional[list[Callable[[str, SchemaField, int], Column]]] = None,
     _chunk_size: int = 50,
 ) -> DataFrame:
     """Analyze a DataFrame by computing various stats for each column.

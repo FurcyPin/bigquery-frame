@@ -1,6 +1,7 @@
 import math
 import re
-from typing import TYPE_CHECKING, Dict, Iterable, List, Tuple, TypeVar, Union
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, TypeVar, Union
 
 if TYPE_CHECKING:
     from bigquery_frame import Column
@@ -27,7 +28,6 @@ def strip_margin(text: str):
         A stripped string
 
     Examples:
-
         >>> print(strip_margin('''
         ...     |a
         ...     |b
@@ -55,7 +55,7 @@ def indent(str, nb) -> str:
     return " " * nb + str.replace("\n", "\n" + " " * nb)
 
 
-def group_by_key(items: Iterable[Tuple[K, V]]) -> Dict[K, List[V]]:
+def group_by_key(items: Iterable[tuple[K, V]]) -> dict[K, list[V]]:
     """Group the values of a list of tuples by their key.
 
     Args:
@@ -72,7 +72,7 @@ def group_by_key(items: Iterable[Tuple[K, V]]) -> Dict[K, List[V]]:
         >>> group_by_key([])
         {}
     """
-    result: Dict[K, List[V]] = {}
+    result: dict[K, list[V]] = {}
     for key, value in items:
         if key in result:
             result[key].append(value)
@@ -87,7 +87,6 @@ def quote(string) -> str:
     If the column name is a reference to a nested column (i.e. if it contains dots), each part is quoted separately.
 
     Examples:
-
     >>> quote("table")
     '`table`'
     >>> quote("`table`")
@@ -101,7 +100,7 @@ def quote(string) -> str:
     return ".".join(["`" + s + "`" if s != "*" else "*" for s in string.replace("`", "").split(".")])
 
 
-def quote_columns(columns: List[str]) -> List[str]:
+def quote_columns(columns: list[str]) -> list[str]:
     """Puts every column name of the given list into quotes."""
     return [quote(col) for col in columns]
 
@@ -110,7 +109,6 @@ def str_to_col(args: "ColumnOrName") -> "Column":
     """Converts string or Column argument to Column types
 
     Examples:
-
     >>> str_to_col("id")
     Column<'`id`'>
     >>> from bigquery_frame import functions as f
@@ -128,11 +126,10 @@ def str_to_col(args: "ColumnOrName") -> "Column":
         return args
 
 
-def str_to_cols(args: Iterable["ColumnOrName"]) -> List["Column"]:
+def str_to_cols(args: Iterable["ColumnOrName"]) -> list["Column"]:
     """Converts string or Column arguments to Column types
 
     Examples:
-
         >>> str_to_cols(["c1", "c2"])
         [Column<'`c1`'>, Column<'`c2`'>]
         >>> from bigquery_frame import functions as f
@@ -148,7 +145,6 @@ def lit_to_col(args: "LitOrColumn") -> "Column":
     """Converts literal string or Column argument to Column type
 
     Examples:
-
         >>> lit_to_col("id")
         Column<'r\"\"\"id\"\"\"'>
         >>> from bigquery_frame import functions as f
@@ -166,11 +162,10 @@ def lit_to_col(args: "LitOrColumn") -> "Column":
         return f.lit(args)
 
 
-def lit_to_cols(args: Iterable["LitOrColumn"]) -> List["Column"]:
+def lit_to_cols(args: Iterable["LitOrColumn"]) -> list["Column"]:
     """Converts literal string or Column argument to Column type
 
     Examples:
-
         >>> lit_to_cols(["id", "c"])
         [Column<'r\"\"\"id\"\"\"'>, Column<'r\"\"\"c\"\"\"'>]
         >>> from bigquery_frame import functions as f
@@ -227,11 +222,12 @@ def assert_true(assertion: bool, error: Union[str, BaseException] = None) -> Non
         elif isinstance(error, str):
             raise AssertionError(error)
         else:
-            raise AssertionError()
+            raise AssertionError
 
 
-def list_or_tuple_to_list(*columns: Union[List[T], T]) -> List[T]:
-    """
+def list_or_tuple_to_list(*columns: Union[list[T], T]) -> list[T]:
+    """Convert a list or a tuple to a list
+
     >>> list_or_tuple_to_list()
     []
     >>> list_or_tuple_to_list(1, 2)

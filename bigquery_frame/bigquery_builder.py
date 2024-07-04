@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Optional
 
 from google.cloud.bigquery import Client, SchemaField
 from google.cloud.bigquery.table import RowIterator
@@ -18,8 +18,8 @@ class BigQueryBuilder(HasBigQueryClient):
         if client is None:
             client = get_bq_client()
         super().__init__(client, use_session)
-        self._views: Dict[str, "DataFrame"] = {}
-        self._temp_tables: Set[str] = set()
+        self._views: dict[str, "DataFrame"] = {}
+        self._temp_tables: set[str] = set()
         self.debug = debug
 
     def table(self, full_table_name: str) -> "DataFrame":
@@ -38,7 +38,7 @@ class BigQueryBuilder(HasBigQueryClient):
     def _generate_header(self) -> str:
         return f"/* This query was generated using bigquery-frame v{bigquery_frame.__version__} */\n"
 
-    def _get_query_schema(self, query: str) -> List[SchemaField]:
+    def _get_query_schema(self, query: str) -> list[SchemaField]:
         query = self._generate_header() + query
         return super()._get_query_schema(query)
 
@@ -56,17 +56,17 @@ class BigQueryBuilder(HasBigQueryClient):
         self._execute_query(query)
         return self.table(alias)
 
-    def _compile_views(self) -> Dict[str, str]:
+    def _compile_views(self) -> dict[str, str]:
         return {
             alias: strip_margin(
                 f"""{quote(alias)} AS (
                 |{indent(df._compile_with_deps(), 2)}
-                |)"""
+                |)""",
             )
             for alias, df in self._views.items()
         }
 
-    def _check_alias(self, new_alias, deps: List[Tuple[str, "DataFrame"]]) -> None:
+    def _check_alias(self, new_alias, deps: list[tuple[str, "DataFrame"]]) -> None:
         """Checks that the alias follows BigQuery constraints, such as:
 
         - BigQuery does not allow having two CTEs with the same name in a query.

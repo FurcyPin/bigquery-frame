@@ -1,6 +1,6 @@
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.auth import get_bq_client
-from bigquery_frame.transformations import unpivot, pivot
+from bigquery_frame.transformations import pivot, unpivot
 
 bigquery = BigQueryBuilder(get_bq_client())
 
@@ -9,7 +9,7 @@ bigquery = BigQueryBuilder(get_bq_client())
 
 df = bigquery.sql(
     """
-    SELECT 
+    SELECT
         *
     FROM UNNEST ([
         STRUCT(2018 as year,  "Orange" as product, null as Canada, 4000 as China,  null as Mexico),
@@ -21,7 +21,7 @@ df = bigquery.sql(
         STRUCT(2019 as year,  "Banana" as product, null as Canada, 1400 as China,   400 as Mexico),
         STRUCT(2019 as year, "Carrots" as product, null as Canada,  200 as China,  null as Mexico)
     ])
-"""
+""",
 )
 df.show()
 # +------+---------+--------+-------+--------+

@@ -1,4 +1,3 @@
-from typing import List
 
 from bigquery_frame.conf import REPETITION_MARKER
 
@@ -23,7 +22,7 @@ def is_sub_field_or_equal(sub_field: str, field: str) -> bool:
     return sub_field == field or sub_field.startswith(field + ".")
 
 
-def is_sub_field_or_equal_to_any(sub_field: str, fields: List[str]) -> bool:
+def is_sub_field_or_equal_to_any(sub_field: str, fields: list[str]) -> bool:
     """Return True if `sub_field` is a sub-field of any field in `fields`
 
     >>> is_sub_field_or_equal_to_any("a", ["a", "b"])
@@ -101,7 +100,7 @@ def has_same_granularity(field: str, other_field: str) -> bool:
     return get_granularity(field) == get_granularity(other_field)
 
 
-def has_same_granularity_as_any(field: str, other_fields: List[str]) -> bool:
+def has_same_granularity_as_any(field: str, other_fields: list[str]) -> bool:
     """Return True if `field` is equal to or has the same parent as any field in `other_fields`
 
     >>> has_same_granularity_as_any("a", ["a", "b"])
@@ -163,7 +162,7 @@ def is_sub_field(sub_field: str, field: str) -> bool:
     )
 
 
-def is_sub_field_of_any(direct_sub_field: str, fields: List[str]) -> bool:
+def is_sub_field_of_any(direct_sub_field: str, fields: list[str]) -> bool:
     """Return True if `direct_sub_field` is a sub-field of any field in `fields`
 
     >>> is_sub_field_of_any("a", ["a", "b"])
@@ -211,7 +210,7 @@ def is_parent_field(field: str, other_field: str) -> bool:
     return other_field.startswith((field + ".", field + "!."))
 
 
-def is_parent_field_of_any(field: str, other_fields: List[str]) -> bool:
+def is_parent_field_of_any(field: str, other_fields: list[str]) -> bool:
     """Return True if any field in `other_fields` is a sub-field of `field`
 
     >>> is_parent_field_of_any("a", ["a", "b"])
@@ -235,7 +234,8 @@ def is_parent_field_of_any(field: str, other_fields: List[str]) -> bool:
 
 
 def substring_before_last_occurrence(s: str, sep: str) -> str:
-    """
+    """Returns the substring before the last occurrence of `sep` in `s`
+
     >>> substring_before_last_occurrence("abc", ".")
     ''
     >>> substring_before_last_occurrence("abc.d", ".")
@@ -252,7 +252,8 @@ def substring_before_last_occurrence(s: str, sep: str) -> str:
 
 
 def substring_after_last_occurrence(s: str, sep: str) -> str:
-    """
+    """Returns the substring after the last occurrence of `sep` in `s`
+
     >>> substring_after_last_occurrence("abc", ".")
     'abc'
     >>> substring_after_last_occurrence("abc.d", ".")

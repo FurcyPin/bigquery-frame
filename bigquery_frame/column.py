@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from bigquery_frame.exceptions import AnalysisException, UnexpectedException
 from bigquery_frame.temp_names import _get_temp_column_name
@@ -8,7 +8,7 @@ LitOrColumn = Union[object, "Column"]
 ColumnOrName = Union[str, "Column"]
 
 
-def cols_to_str(cols: List[ColumnOrName], indentation: Optional[int] = None, sep: str = ",") -> str:
+def cols_to_str(cols: list[ColumnOrName], indentation: Optional[int] = None, sep: str = ",") -> str:
     assert_true(isinstance(cols, (list, tuple)), UnexpectedException("Incorrect type"))
     str_cols = [str(col) for col in cols]
     if indentation is not None:
@@ -56,7 +56,7 @@ class Column:
         return res
 
     def __repr__(self):
-        return f"Column<'{str(self)}'>"
+        return f"Column<'{self!s}'>"
 
     __add__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
     __radd__: Callable[["Column", LitOrColumn], "Column"] = _bin_op("+")
@@ -88,13 +88,13 @@ class Column:
     def __bool__(self):
         raise ValueError(
             "Cannot convert column into bool: please use '&' for 'and', '|' for 'or', "
-            "'~' for 'not' when building DataFrame boolean expressions."
+            "'~' for 'not' when building DataFrame boolean expressions.",
         )
 
     def __getitem__(self, item: Union[str, int]):
         """Returns the column as a :class:`Column`.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
@@ -168,7 +168,7 @@ class Column:
         """Casts the column into the specified
         `BigQuery type <https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_rules>`_
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import functions as f
         >>> df = f._get_test_df_1()
@@ -223,7 +223,7 @@ class Column:
     def eqNullSafe(self, other: LitOrColumn) -> "Column":
         """Equality test that is safe for null values.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame import functions as f
@@ -285,7 +285,7 @@ class Column:
         """A boolean expression that is evaluated to true if the value of this
         expression is contained by the evaluated values of the arguments.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
@@ -320,7 +320,7 @@ class Column:
     def isNull(self) -> "Column":
         """True if the current expression is null.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
@@ -358,7 +358,7 @@ class Column:
     def isNotNull(self) -> "Column":
         """True if the current expression is NOT null.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import BigQueryBuilder
         >>> bq = BigQueryBuilder()
@@ -401,9 +401,9 @@ class Column:
 
 
 class WhenColumn(Column):
-    def __init__(self, when_condition: List[Tuple["Column", "Column"]]):
+    def __init__(self, when_condition: list[tuple["Column", "Column"]]):
         super().__init__("")
-        self._when_condition: List[Tuple["Column", "Column"]] = when_condition
+        self._when_condition: list[tuple["Column", "Column"]] = when_condition
 
     def _compile(self, when_default: Optional[Column] = None):
         conditions_str = [f"WHEN {condition} THEN {value}" for condition, value in self._when_condition]
@@ -415,7 +415,7 @@ class WhenColumn(Column):
             f"""
             |CASE
             |{cols_to_str(conditions_str, indentation=2, sep="")}{default_str}
-            |END"""
+            |END""",
         )
         return res
 
@@ -427,7 +427,7 @@ class WhenColumn(Column):
         """Evaluates a list of conditions and returns one of multiple possible result expressions.
         If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import functions as f
         >>> df = f._get_test_df_1()
@@ -448,7 +448,7 @@ class WhenColumn(Column):
         |    2 |  yes |
         +------+------+
 
-        See Also
+        See Also:
         --------
         bigquery_frame.functions.when
 
@@ -462,7 +462,7 @@ class WhenColumn(Column):
         """Evaluates a list of conditions and returns one of multiple possible result expressions.
         If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame import functions as f
         >>> df = f._get_test_df_1()
@@ -475,7 +475,7 @@ class WhenColumn(Column):
         |    2 | yes |
         +------+-----+
 
-        See Also
+        See Also:
         --------
         bigquery_frame.functions.when
 
@@ -489,11 +489,11 @@ class SortedArrayColumn(Column):
     def __init__(
         self,
         array: Column,
-        sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]],
+        sort_keys: Optional[Callable[[Column], Union[Column, list[Column]]]],
     ) -> None:
         super().__init__("")
         self._array: Column = array
-        self._sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = sort_keys
+        self._sort_keys: Optional[Callable[[Column], Union[Column, list[Column]]]] = sort_keys
 
     def _compile(self):
         temp_col_alias = quote(_get_temp_column_name())
@@ -514,7 +514,7 @@ class SortedArrayColumn(Column):
             |    {temp_col_alias}
             |  FROM UNNEST({array}) as {temp_col_alias}
             |  {sort_str}
-            |)"""
+            |)""",
         )
 
     @property
@@ -539,7 +539,7 @@ class TransformedArrayColumn(Column):
             |  SELECT
             |    {self._func(temp_col)}
             |  FROM UNNEST({array}) as {temp_col_alias}
-            |)"""
+            |)""",
         )
 
     @property

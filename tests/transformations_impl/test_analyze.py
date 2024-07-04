@@ -16,7 +16,7 @@ def _get_expected():
     ||             2 |                 types! |      STRING |    13 |              5 |          0 |      Fire |     Water |                                                                                  [{Grass, 3}, {Poison, 3}, {Fire, 3}, {Water, 3}, {Flying, 1}] |
     ||             3 |   evolution.can_evolve |     BOOLEAN |     9 |              2 |          0 |     false |      true |                                                                                                                        [{true, 6}, {false, 3}] |
     ||             4 | evolution.evolves_from |     INTEGER |     9 |              6 |          3 |         1 |         8 |                                                                                    [{NULL, 3}, {1, 1}, {2, 1}, {4, 1}, {5, 1}, {7, 1}, {8, 1}] |
-    |+---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------+"""  # noqa: E501
+    |+---------------+------------------------+-------------+-------+----------------+------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------+""",  # noqa: E501
     )
 
 
@@ -28,8 +28,7 @@ def test_analyze(bq: BigQueryBuilder):
 
 
 def test_analyze_with_keyword_column_names(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame containing field names that are reserved keywords
+    """GIVEN a DataFrame containing field names that are reserved keywords
     WHEN we analyze it
     THEN no crash should occur
     """
@@ -43,13 +42,12 @@ def test_analyze_with_keyword_column_names(bq: BigQueryBuilder):
     |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+----------------+
     ||             0 |        FROM |     INTEGER |     1 |              1 |          0 |   1 |   1 |       [{1, 1}] |
     ||             1 |   UNION.ALL |      STRING |     1 |              1 |          0 |   a |   a |       [{a, 1}] |
-    |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+----------------+"""
-    )  # noqa: E501
+    |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+----------------+""",
+    )
 
 
 def test_analyze_with_array_struct_array(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame containing an ARRAY<STRUCT<ARRAY<INT>>>
+    """GIVEN a DataFrame containing an ARRAY<STRUCT<ARRAY<INT>>>
     WHEN we analyze it
     THEN no crash should occur
     """
@@ -62,13 +60,12 @@ def test_analyze_with_array_struct_array(bq: BigQueryBuilder):
     || column_number | column_name | column_type | count | count_distinct | count_null | min | max |           approx_top_100 |
     |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+--------------------------+
     ||             0 |       a!.b! |     INTEGER |     3 |              3 |          0 |   1 |   3 | [{1, 1}, {2, 1}, {3, 1}] |
-    |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+--------------------------+"""  # noqa: E501
+    |+---------------+-------------+-------------+-------+----------------+------------+-----+-----+--------------------------+""",  # noqa: E501
     )
 
 
 def test_analyze_with_bytes(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame containing a column of type bytes
+    """GIVEN a DataFrame containing a column of type bytes
     WHEN we analyze it
     THEN no crash should occur
     """
@@ -81,13 +78,12 @@ def test_analyze_with_bytes(bq: BigQueryBuilder):
     || column_number | column_name | column_type | count | count_distinct | count_null |  min |  max | approx_top_100 |
     |+---------------+-------------+-------------+-------+----------------+------------+------+------+----------------+
     ||             0 |           s |       BYTES |     1 |              1 |          0 | /+A= | /+A= |    [{/+A=, 1}] |
-    |+---------------+-------------+-------------+-------+----------------+------------+------+------+----------------+"""  # noqa: E501
+    |+---------------+-------------+-------------+-------+----------------+------------+------+------+----------------+""",
     )
 
 
 def test_analyze_with_nested_field_in_group_and_array_column(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame containing a STRUCT and an array column
+    """GIVEN a DataFrame containing a STRUCT and an array column
     WHEN we analyze it by grouping on a column inside this struct
     THEN no crash should occur
     """
@@ -102,14 +98,14 @@ def test_analyze_with_nested_field_in_group_and_array_column(bq: BigQueryBuilder
     ||   {2} |             0 |          id |     INTEGER |     1 |              1 |          0 |   1 |   1 |                 [{1, 1}] |
     ||   {2} |             2 |         a.c |     INTEGER |     1 |              1 |          0 |   3 |   3 |                 [{3, 1}] |
     ||   {2} |             3 |        arr! |     INTEGER |     3 |              3 |          0 |   1 |   3 | [{1, 1}, {2, 1}, {3, 1}] |
-    |+-------+---------------+-------------+-------------+-------+----------------+------------+-----+-----+--------------------------+"""  # noqa: E501
+    |+-------+---------------+-------------+-------------+-------+----------------+------------+-----+-----+--------------------------+""",  # noqa: E501
     )
 
 
 def _build_huge_struct(value: Column, depth: int, width: int) -> Column:
     if depth == 0:
         return value.alias("s")
-    return f.struct(*[_build_huge_struct(value, depth - 1, width).alias(f"c{i}") for i in range(0, width)])
+    return f.struct(*[_build_huge_struct(value, depth - 1, width).alias(f"c{i}") for i in range(width)])
 
 
 def test_compare_df_with_huge_table(bq: BigQueryBuilder):

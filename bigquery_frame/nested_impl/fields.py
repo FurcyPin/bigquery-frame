@@ -1,10 +1,9 @@
-from typing import List
 
 from bigquery_frame import DataFrame
 from bigquery_frame.data_type_utils import flatten_schema
 
 
-def fields(df: DataFrame, keep_non_leaf_fields: bool = False) -> List[str]:
+def fields(df: DataFrame, keep_non_leaf_fields: bool = False) -> list[str]:
     """Return the name of all the fields (including nested sub-fields) in the given DataFrame.
 
     - Structs are flattened with a `.` after their name.

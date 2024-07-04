@@ -1,4 +1,0 @@
-[flake8]
-max-line-length = 120
-# Flake8 is wrong, black is right: https://github.com/psf/black/issues/315
-extend-ignore = E203

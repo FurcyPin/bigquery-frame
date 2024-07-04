@@ -1,10 +1,10 @@
-from typing import List, Optional
+from typing import Optional
 
 from bigquery_frame import DataFrame
 from bigquery_frame.nested_impl.package import unnest_fields
 
 
-def unnest_field(df: DataFrame, field_name: str, keep_columns: Optional[List[str]] = None) -> DataFrame:
+def unnest_field(df: DataFrame, field_name: str, keep_columns: Optional[list[str]] = None) -> DataFrame:
     """Given a DataFrame, return a new DataFrame where the specified column has been recursively
     unnested (a.k.a. exploded).
 

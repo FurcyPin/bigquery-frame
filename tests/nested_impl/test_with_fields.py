@@ -1,13 +1,11 @@
-from bigquery_frame import BigQueryBuilder
+from bigquery_frame import BigQueryBuilder, nested
 from bigquery_frame import functions as f
-from bigquery_frame import nested
 from bigquery_frame.nested_impl.schema_string import schema_string
 from bigquery_frame.utils import strip_margin
 
 
 def test_with_fields(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame with nested fields
+    """GIVEN a DataFrame with nested fields
     WHEN we use with_fields to add a new field
     THEN the other fields should remain undisturbed
     """

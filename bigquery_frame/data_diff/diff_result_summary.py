@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from bigquery_frame import DataFrame
 from bigquery_frame.data_diff.schema_diff import SchemaDiffResult
@@ -28,7 +27,7 @@ class DiffResultSummary:
     diff_per_col_df: DataFrame
 
     schema_diff_result: SchemaDiffResult
-    join_cols: List[str]
+    join_cols: list[str]
     same_schema: bool
     same_data: bool
     total_nb_rows: int

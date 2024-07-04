@@ -1,4 +1,3 @@
-from typing import List
 
 from google.cloud.bigquery import SchemaField
 
@@ -7,17 +6,17 @@ from bigquery_frame.data_type_utils import flatten_schema
 from bigquery_frame.dataframe import is_nullable
 
 
-def _flat_schema_to_tree_string(schema: List[SchemaField]) -> str:
+def _flat_schema_to_tree_string(schema: list[SchemaField]) -> str:
     """Generates a string representing a flat schema in tree format"""
 
-    def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
+    def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> list[str]:
         res = [
             f"{prefix}{schema_field.name}: {schema_field.field_type} "
             f"(nullable = {str(is_nullable(schema_field)).lower()})",
         ]
         return res
 
-    def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
+    def str_gen_schema(schema: list[SchemaField], prefix: str) -> list[str]:
         return [string for schema_field in schema for string in str_gen_schema_field(schema_field, prefix)]
 
     res = ["root", *str_gen_schema(schema, " |-- ")]

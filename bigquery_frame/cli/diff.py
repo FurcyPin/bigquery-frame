@@ -1,13 +1,12 @@
 import sys
 from argparse import ArgumentParser
-from typing import List
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.data_diff import compare_dataframes
 from bigquery_frame.data_diff.export import DEFAULT_HTML_REPORT_OUTPUT_FILE_PATH
 
 
-def main(argv: List[str] = None):
+def main(argv: list[str] = None):
     if argv is None:
         argv = sys.argv[1:]
     if len(argv) == 0:

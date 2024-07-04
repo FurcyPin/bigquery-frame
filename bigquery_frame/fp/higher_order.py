@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from bigquery_frame import Column, DataFrame, fp
 from bigquery_frame import functions as f
@@ -49,7 +49,7 @@ def struct_get(key: str) -> PrintableFunction:
     return PrintableFunction(lambda s: _safe_struct_get(s, key), lambda s: _safe_struct_get_alias(s, key))
 
 
-def recursive_struct_get(keys: List[str]) -> PrintableFunction:
+def recursive_struct_get(keys: list[str]) -> PrintableFunction:
     """Return a PrintableFunction that recursively applies get to a nested structure.
 
     Examples:
@@ -78,13 +78,14 @@ def transform(transformation: PrintableFunction) -> PrintableFunction:
 
 def _partial_box_right(func: Callable, args: Any) -> Callable:
     """Given a function and an array of arguments, return a new function that takes an argument, add it to the
-    array, and pass it to the original function."""
+    array, and pass it to the original function.
+    """
     if isinstance(args, str):
         args = [args]
     return lambda a: func([*args, a])
 
 
-def boxed_transform(transformation: PrintableFunction, parents: List[str]) -> PrintableFunction:
+def boxed_transform(transformation: PrintableFunction, parents: list[str]) -> PrintableFunction:
     """Return a PrintableFunction version of the `bigquery_frame.functions.transform` method,
     which applies the given transformation to any array column.
     """
