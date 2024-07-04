@@ -125,12 +125,15 @@ def _dedup_key_value_list(items: list[tuple[A, B]]) -> list[tuple[A, B]]:
 
 
 class DataFrame:
-
     __deps: list[tuple[str, "DataFrame"]]
     _alias: str
 
     def __init__(
-        self, query: str, alias: Optional[str], bigquery: "BigQueryBuilder", deps: Optional[list["DataFrame"]] = None,
+        self,
+        query: str,
+        alias: Optional[str],
+        bigquery: "BigQueryBuilder",
+        deps: Optional[list["DataFrame"]] = None,
     ):
         self.__query = query
         if deps is None:
@@ -1068,7 +1071,10 @@ class DataFrame:
         return self.collect_iterator().to_dataframe(**kwargs)
 
     def transform(
-        self, func: typing.Callable[..., "DataFrame"], *args: typing.Any, **kwargs: typing.Any,
+        self,
+        func: typing.Callable[..., "DataFrame"],
+        *args: typing.Any,
+        **kwargs: typing.Any,
     ) -> "DataFrame":
         """Returns a new :class:`DataFrame`. Concise syntax for chaining custom transformations.
 
@@ -1114,7 +1120,8 @@ class DataFrame:
         """
         result = func(self, *args, **kwargs)
         assert isinstance(
-            result, DataFrame,
+            result,
+            DataFrame,
         ), "Func returned an instance of type [%s], should have been DataFrame." % type(result)
         return result
 

@@ -20,7 +20,8 @@ A = TypeVar("A")
 
 
 def _shard_column_dict_but_keep_arrays_grouped(
-    columns: dict[str, A], max_number_of_col_per_shard: int,
+    columns: dict[str, A],
+    max_number_of_col_per_shard: int,
 ) -> list[dict[str, A]]:
     """Separate the specified columns into shards, but make sure that arrays are kept together.
 
@@ -317,7 +318,9 @@ def _get_join_cols(left_df: DataFrame, right_df: DataFrame, join_cols: Optional[
 
 
 def _check_join_cols(
-    specified_join_cols: Optional[list[str]], join_cols: list[str], self_join_growth_estimate: float,
+    specified_join_cols: Optional[list[str]],
+    join_cols: list[str],
+    self_join_growth_estimate: float,
 ) -> None:
     """Check the self_join_growth_estimate and raise an Exception if it is bigger than 2.
 
@@ -608,7 +611,11 @@ def _build_diff_dataframe_shards(
         )
         _check_join_cols(specified_join_cols, new_join_cols, self_join_growth_estimate)
         return _build_diff_dataframe_with_split(
-            l_df, r_df, schema_diff_result, new_join_cols, max_number_of_col_per_shard,
+            l_df,
+            r_df,
+            schema_diff_result,
+            new_join_cols,
+            max_number_of_col_per_shard,
         )
 
     return {granularity: build_shard(granularity) for granularity in granularities}
@@ -639,7 +646,10 @@ def _build_diff_dataframe_with_split(
 
         for index, columns_shard in enumerate(tqdm(columns_shards)):
             l_df, r_df = _harmonize_and_normalize_dataframes(
-                _left_df, _right_df, columns_shard, skip_make_dataframes_comparable=schema_diff_result.same_schema,
+                _left_df,
+                _right_df,
+                columns_shard,
+                skip_make_dataframes_comparable=schema_diff_result.same_schema,
             )
             diff_df = _build_diff_dataframe(
                 l_df,
@@ -925,7 +935,12 @@ def compare_dataframes(
 
     global_schema_diff_result = diff_dataframe_schemas(left_df, right_df, join_cols)
     diff_dataframe_shards = _build_diff_dataframe_shards(
-        left_df, right_df, global_schema_diff_result, join_cols, specified_join_cols, _max_number_of_col_per_shard,
+        left_df,
+        right_df,
+        global_schema_diff_result,
+        join_cols,
+        specified_join_cols,
+        _max_number_of_col_per_shard,
     )
     diff_result = DiffResult(
         global_schema_diff_result,

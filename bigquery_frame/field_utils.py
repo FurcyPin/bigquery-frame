@@ -1,4 +1,3 @@
-
 from bigquery_frame.conf import REPETITION_MARKER
 
 

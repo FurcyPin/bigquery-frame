@@ -64,7 +64,9 @@ class TestFunctions:
 
         df = bq.sql("SELECT 1 as id, STRUCT([1, 2, 3] as int_list, ['a', 'b'] as char_list) as s")
         df = df.select(
-            "id", f.posexplode_outer("s.int_list").alias("an_int"), f.posexplode_outer("s.char_list").alias("a_char"),
+            "id",
+            f.posexplode_outer("s.int_list").alias("an_int"),
+            f.posexplode_outer("s.char_list").alias("a_char"),
         )
         expected = strip_margin(
             """
@@ -265,10 +267,14 @@ class TestTransform:
         """
         df = bq.sql("""SELECT ["y", "x"] as array_col""")
         df1 = df.withColumn(
-            "array_col", f.sort_array(f.transform(f.col("array_col"), lambda c: f.concat(c, f.lit("a")))), replace=True,
+            "array_col",
+            f.sort_array(f.transform(f.col("array_col"), lambda c: f.concat(c, f.lit("a")))),
+            replace=True,
         )
         df2 = df.withColumn(
-            "array_col", f.transform(f.sort_array(f.col("array_col")), lambda c: f.concat(c, f.lit("a"))), replace=True,
+            "array_col",
+            f.transform(f.sort_array(f.col("array_col")), lambda c: f.concat(c, f.lit("a"))),
+            replace=True,
         )
         expected = strip_margin(
             """

@@ -1,4 +1,3 @@
-
 from google.cloud.bigquery import SchemaField
 
 from bigquery_frame import DataFrame

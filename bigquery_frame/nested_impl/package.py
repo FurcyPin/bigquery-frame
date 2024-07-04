@@ -103,7 +103,8 @@ def build_transformation_from_schema(
         return res
 
     def recurse_fields(
-        struct: list[SchemaField], parent_structs: list[str],
+        struct: list[SchemaField],
+        parent_structs: list[str],
     ) -> Generator[PrintableFunction, None, None]:
         for field in struct:
             field_transformation = recurse_schema_field(
