@@ -6,8 +6,7 @@ from bigquery_frame import BigQueryBuilder
 
 
 def test_without_debug(client: Client):
-    """
-    GIVEN a BigQueryBuilder
+    """GIVEN a BigQueryBuilder
     WHEN we run an incorrect query without the debug mode
     THEN it will fail only at the end
     """
@@ -19,8 +18,7 @@ def test_without_debug(client: Client):
 
 
 def test_with_debug(client: Client):
-    """
-    GIVEN a BigQueryBuilder
+    """GIVEN a BigQueryBuilder
     WHEN we run an incorrect query without the debug mode
     THEN it will fail only at the end
     """

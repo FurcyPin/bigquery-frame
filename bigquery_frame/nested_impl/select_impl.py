@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from bigquery_frame import DataFrame
 from bigquery_frame.nested_impl.package import ColumnTransformation, resolve_nested_fields
@@ -37,7 +37,6 @@ def select(df: DataFrame, fields: Mapping[str, ColumnTransformation]) -> DataFra
         transformations were applied to each of them.
 
     Examples:
-
         *Example 1: non-repeated fields*
 
         >>> from bigquery_frame import BigQueryBuilder

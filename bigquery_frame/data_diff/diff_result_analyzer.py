@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from bigquery_frame import Column, DataFrame
 from bigquery_frame import functions as f
@@ -27,7 +27,7 @@ class DiffResultAnalyzer:
             diff_format_options = DiffFormatOptions()
         self.diff_format_options = diff_format_options
 
-    def _format_diff_df(self, join_cols: List[str], diff_df: DataFrame) -> DataFrame:
+    def _format_diff_df(self, join_cols: list[str], diff_df: DataFrame) -> DataFrame:
         """Given a diff DataFrame, rename the columns to prefix them with the left_df_alias and right_df_alias."""
         return diff_df.select(
             *[diff_df[quote(col_name)]["left_value"].alias(col_name) for col_name in join_cols],
@@ -50,7 +50,7 @@ class DiffResultAnalyzer:
         self,
         diff_df: DataFrame,
         diff_per_col_df: DataFrame,
-        join_cols: List[str],
+        join_cols: list[str],
     ) -> None:
         """For each column that has differences, print examples of rows where such a difference occurs.
 
@@ -125,7 +125,6 @@ class DiffResultAnalyzer:
         that changed in this diff.
 
         Example:
-
         >>> diff_per_col_df = _get_test_diff_per_col_df()
         >>> diff_per_col_df.show(simplify_structs=True)
         +---------------+-------------+-----------------+------------------------------------------------------------+
@@ -178,7 +177,7 @@ class DiffResultAnalyzer:
             |FROM {quote(df._alias)}
             |JOIN UNNEST(diff.changed) as diff
             |ORDER BY column_number, diff.nb DESC
-            |"""
+            |""",
         )
         df = df._apply_query(explode_query)
         df = df.select(
@@ -203,7 +202,6 @@ class DiffResultAnalyzer:
         that changed in this diff.
 
         Example:
-
         >>> diff_per_col_df = _get_test_diff_per_col_df()
         >>> diff_per_col_df.show(simplify_structs=True)
         +---------------+-------------+-----------------+------------------------------------------------------------+
@@ -268,7 +266,7 @@ class DiffResultAnalyzer:
             |  diff
             |FROM {quote(diff_per_col_df._alias)}
             |JOIN UNNEST(diff.only_in_{left_or_right}) as diff
-            |"""
+            |""",
         )
         df = diff_per_col_df._apply_query(explode_query)
 

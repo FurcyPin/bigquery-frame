@@ -1,7 +1,8 @@
 import copy
 from collections import OrderedDict
+from collections.abc import Generator, Iterable, Mapping
 from difflib import SequenceMatcher
-from typing import Callable, Dict, Generator, Iterable, List, Mapping, Optional, Set, Tuple, Union, cast
+from typing import Callable, Optional, Union, cast
 
 from google.cloud.bigquery import SchemaField
 
@@ -27,7 +28,7 @@ AnyKindOfTransformation = Union[
     "PrintableFunction",
     None,
 ]
-OrderedTree = Union["OrderedTree", Dict[str, Union["OrderedTree", Optional[AnyKindOfTransformation]]]]  # type: ignore
+OrderedTree = Union["OrderedTree", dict[str, Union["OrderedTree", Optional[AnyKindOfTransformation]]]]  # type: ignore
 
 
 def _identity_column_transformation(col: Column, _: SchemaField) -> Column:
@@ -35,7 +36,7 @@ def _identity_column_transformation(col: Column, _: SchemaField) -> Column:
 
 
 def build_transformation_from_schema(
-    schema: List[SchemaField],
+    schema: list[SchemaField],
     column_transformation: Optional[Callable[[Column, SchemaField], Optional[Column]]] = None,
     name_transformation: Optional[Callable[[str], str]] = None,
 ) -> PrintableFunction:
@@ -75,7 +76,7 @@ def build_transformation_from_schema(
 
     def recurse_schema_field(
         schema_field: SchemaField,
-        parent_structs: List[str],
+        parent_structs: list[str],
     ) -> PrintableFunction:
         new_parent_structs = [] if is_repeated(schema_field) else parent_structs
         if is_struct(schema_field):
@@ -102,7 +103,7 @@ def build_transformation_from_schema(
         return res
 
     def recurse_fields(
-        struct: List[SchemaField], parent_structs: List[str]
+        struct: list[SchemaField], parent_structs: list[str],
     ) -> Generator[PrintableFunction, None, None]:
         for field in struct:
             field_transformation = recurse_schema_field(
@@ -139,7 +140,7 @@ def __find_first_occurrence(string: str, *chars: str) -> int:
 def _split_string_and_keep_separator(
     string: str,
     *separators: str,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
     """Split a string in half on the first occurrence of any one of the given separator.
     The separator is kept in the second half of the string.
     If the input string does not contain any of the separator, returns the string and None.
@@ -159,7 +160,7 @@ def _split_string_and_keep_separator(
         return string[:i], string[i:]
 
 
-def _deepest_granularity(field_name: str) -> List[str]:
+def _deepest_granularity(field_name: str) -> list[str]:
     """Return the part of a field_name corresponding to it's deepest granularity
 
     Examples:
@@ -188,27 +189,35 @@ def _build_nested_struct_tree(
 
     Examples:
         >>> _build_nested_struct_tree({
-        ...   "s!.c": PrintableFunction(lambda s: s["c"], 'trans_c') ,
-        ...   "s!.d": PrintableFunction(lambda s: s["d"].cast("FLOAT64"), 'trans_d'),
-        ... })
-        OrderedDict([('s', OrderedDict([('!', OrderedDict([('.', OrderedDict([('c', trans_c), ('d', trans_d)]))]))]))])
+        ...   "s!.c": "trans_c" ,
+        ...   "s!.d": "trans_d",
+        ... }) == OrderedDict(
+        ...     [('s', OrderedDict([('!', OrderedDict([('.', OrderedDict([('c', "trans_c"), ('d', "trans_d")]))]))]))]
+        ... )
+        True
 
         >>> _build_nested_struct_tree({
-        ...   "e!!.c": PrintableFunction(lambda s: s["c"], 'trans_c') ,
-        ...   "e!!.d": PrintableFunction(lambda s: s["d"].cast("FLOAT64"), 'trans_d'),
-        ... })
-        OrderedDict([('e', OrderedDict([('!', OrderedDict([('!', OrderedDict([('.', OrderedDict([('c', trans_c), ('d', trans_d)]))]))]))]))])
+        ...   "e!!.c": "trans_c",
+        ...   "e!!.d": "trans_d",
+        ... }) == OrderedDict(
+        ...     [('e', OrderedDict(
+        ...         [('!', OrderedDict(
+        ...             [('!', OrderedDict([('.', OrderedDict([('c', "trans_c"), ('d', "trans_d")]))]))]
+        ...         ))]
+        ...     ))]
+        ... )
+        True
 
         >>> _build_nested_struct_tree({
-        ...   "e!": PrintableFunction(lambda e: e.cast("FLOAT64"), 'trans_e')
-        ... })
-        OrderedDict([('e', OrderedDict([('!', trans_e)]))])
+        ...   "e!": "trans_e"
+        ... }) == OrderedDict([('e', OrderedDict([('!', "trans_e")]))])
+        True
 
         >>> _build_nested_struct_tree({
-        ...   "e!!": PrintableFunction(lambda e: e.cast("FLOAT64"), 'trans_e')
-        ... })
-        OrderedDict([('e', OrderedDict([('!', OrderedDict([('!', trans_e)]))]))])
-    """  # noqa: E501
+        ...   "e!!": "trans_e"
+        ... }) == OrderedDict([('e', OrderedDict([('!', OrderedDict([('!', "trans_e")]))]))])
+        True
+    """
 
     def rec_insert(node: OrderedTree, alias: str, column: Optional[AnyKindOfTransformation]) -> None:
         node_col, child_col = _split_string_and_keep_separator(alias, STRUCT_SEPARATOR, REPETITION_MARKER)
@@ -230,7 +239,7 @@ def _build_nested_struct_tree(
 
 def _convert_transformation_to_printable_function(
     transformation: AnyKindOfTransformation,
-    parent_structs: List[str],
+    parent_structs: list[str],
 ) -> PrintableFunction:
     """Transform any kind of column transformation (str, Column, Callable[[Column], Column], PrintableFunction)
     into a PrintableFunction.
@@ -270,7 +279,7 @@ def _convert_transformation_to_printable_function(
     return res
 
 
-def _merge_functions(functions: List[PrintableFunction]) -> PrintableFunction:
+def _merge_functions(functions: list[PrintableFunction]) -> PrintableFunction:
     """Merge a list of column expressions or functions that each "take a struct `s` and return a column"
     into a single function that "takes a struct `s` and returns a list containing the result of each function or
     the fixed column expressions"
@@ -298,17 +307,17 @@ def _build_transformation_from_tree(root: OrderedTree) -> PrintableFunction:
 
     def recurse_node_with_multiple_items(
         node: OrderedTree,
-        parent_structs: List[str],
-    ) -> List[PrintableFunction]:
+        parent_structs: list[str],
+    ) -> list[PrintableFunction]:
         return [recurse_item(node, key, col_or_children, parent_structs) for key, col_or_children in node.items()]
 
     def recurse_node_with_one_item(
         col_or_children: Union[AnyKindOfTransformation, OrderedTree],
-        parent_structs: List[str],
+        parent_structs: list[str],
     ) -> PrintableFunction:
-        has_children = isinstance(col_or_children, Dict)
+        has_children = isinstance(col_or_children, dict)
         if has_children:
-            node = cast(Dict, col_or_children)
+            node = cast(dict, col_or_children)
             assert_true(
                 len(node) == 1,
                 "Error, this should not happen: non-struct node with more than one child",
@@ -325,14 +334,14 @@ def _build_transformation_from_tree(root: OrderedTree) -> PrintableFunction:
         node: OrderedTree,
         key: str,
         col_or_children: Union[AnyKindOfTransformation, OrderedTree],
-        parent_structs: List[str],
+        parent_structs: list[str],
     ) -> PrintableFunction:
         if key == STRUCT_SEPARATOR:
             assert_true(
                 len(node) == 1,
                 "Error, this should not happen: tree node of type struct with siblings",
             )
-            has_children = isinstance(col_or_children, Dict)
+            has_children = isinstance(col_or_children, dict)
             assert_true(
                 has_children,
                 "Error, this should not happen: struct without children",
@@ -395,7 +404,8 @@ def _get_prefixes_of_repeated_field(
     repeated_field: str,
     separator: str,
 ) -> Generator[str, None, None]:
-    """
+    """Get the prefixes of repeated fields
+
     >>> list(_get_prefixes_of_repeated_field("a!.b!.c", separator="!"))
     ['a!', 'a!.b!']
     >>> list(_get_prefixes_of_repeated_field("a.b.c", separator="!"))
@@ -407,8 +417,9 @@ def _get_prefixes_of_repeated_field(
         yield prefix
 
 
-def _get_repeated_fields(fields: List[str]) -> Set[str]:
-    """
+def _get_repeated_fields(fields: list[str]) -> set[str]:
+    """Get repeated fields
+
     >>> sorted(list(_get_repeated_fields(["s1!.a!", "s1!.b", "s2!.c", "s3!!!", "s4.a.b"])))
     ['s1!', 's1!.a!', 's2!', 's3!', 's3!!', 's3!!!']
     """
@@ -426,7 +437,7 @@ def _find_fields_starting_with_prefix(
     prefix: str,
     fields: Iterable[str],
     separator: str,
-) -> List[str]:
+) -> list[str]:
     """Given a prefix, find in the list all field names that start with this prefix and contain exactly one more
     exclamation mark.
 
@@ -456,7 +467,7 @@ def _find_fields_starting_with_prefix(
 
 def validate_is_repeated_field_known(
     field_name: str,
-    known_repeated_fields: Set[str],
+    known_repeated_fields: set[str],
 ) -> Generator[str, None, None]:
     """Check for the following error:
 
@@ -491,14 +502,14 @@ def validate_is_repeated_field_known(
             return
 
 
-def _fail_if_errors(errors: List[str]) -> None:
+def _fail_if_errors(errors: list[str]) -> None:
     if len(errors) > 0:
         raise AnalysisException(errors[0])
 
 
 def validate_nested_field_names(
     *field_names: str,
-    known_fields: Optional[List[str]] = None,
+    known_fields: Optional[list[str]] = None,
 ) -> None:
     """Perform various checks on the given nested field names and raise an `bigquery_frame.utils.AnalysisException`
     if any is found.
@@ -530,8 +541,11 @@ def validate_nested_field_names(
     _fail_if_errors(list(iterate()))
 
 
-def _validate_field_exists(field_name: str, known_fields: List[str]) -> Generator[str, None, None]:
-    """
+def _validate_field_exists(field_name: str, known_fields: list[str]) -> Generator[str, None, None]:
+    """Check that the given field name exists in the list of known fields. Yields an error string if not.
+
+    Yields: an error string
+
     >>> list(_validate_field_exists(field_name="a", known_fields=["a"]))
     []
     >>> list(_validate_field_exists(field_name="a", known_fields=["b"]))
@@ -554,7 +568,7 @@ def _validate_field_exists(field_name: str, known_fields: List[str]) -> Generato
         yield f"Field '{field_name}' does not exist: Did you mean one of the following? [{', '.join(candidates)}]"
 
 
-def validate_fields_exist(field_names: List[str], known_fields: List[str]) -> None:
+def validate_fields_exist(field_names: list[str], known_fields: list[str]) -> None:
     """Check that the given field names exist in the list of known fields. Raise an AnalysisException if not.
 
     Args:
@@ -582,7 +596,7 @@ def validate_fields_exist(field_names: List[str], known_fields: List[str]) -> No
 def resolve_nested_fields(
     fields: Mapping[str, AnyKindOfTransformation],
     starting_level: Union[Column, DataFrame, None] = None,
-) -> List[Column]:
+) -> list[Column]:
     """Builds a list of column expressions to manipulate structs and repeated records
 
     The syntax for field names works as follows:
@@ -651,7 +665,7 @@ def resolve_nested_fields(
     return root_transformation([starting_level])
 
 
-def _get_deepest_unnested_field(col_names: List[str]) -> str:
+def _get_deepest_unnested_field(col_names: list[str]) -> str:
     """Given a list of field names, give the name of the deepest that has been unnested in that list.
 
     >>> _get_deepest_unnested_field(['id1', 'id2'])
@@ -671,9 +685,9 @@ def _get_deepest_unnested_field(col_names: List[str]) -> str:
 
 def _explode_dataframe_for_each_field(
     df: DataFrame,
-    fields: List[str],
-    keep_columns_dict: Dict[str, str],
-) -> Generator[Tuple[DataFrame, Column], None, None]:
+    fields: list[str],
+    keep_columns_dict: dict[str, str],
+) -> Generator[tuple[DataFrame, Column], None, None]:
     """For each field in `fields`, build a couple (DataFrame, Column) that gives an exploded version of the DataFrame
     `df` and a Column expression corresponding to that field.
     The columns in keep_columns_list are kept in the exploded DataFrame when possible.
@@ -684,7 +698,7 @@ def _explode_dataframe_for_each_field(
         current_df: DataFrame,
         prefix: str,
         quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+    ) -> Generator[tuple[DataFrame, Column], None, None]:
         for key, children in node.items():
             yield from recurse_item(
                 node,
@@ -700,7 +714,7 @@ def _explode_dataframe_for_each_field(
         current_df: DataFrame,
         prefix: str,
         quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+    ) -> Generator[tuple[DataFrame, Column], None, None]:
         has_children = children is not None
         if has_children:
             node = cast(OrderedTree, children)
@@ -724,7 +738,7 @@ def _explode_dataframe_for_each_field(
         current_df: DataFrame,
         prefix: str,
         quoted_prefix: str,
-    ) -> Generator[Tuple[DataFrame, Column], None, None]:
+    ) -> Generator[tuple[DataFrame, Column], None, None]:
         if key == STRUCT_SEPARATOR:
             assert_true(
                 len(node) == 1,
@@ -783,9 +797,9 @@ def _explode_dataframe_for_each_field(
 
 
 def _get_keep_columns_for_final_select(
-    cols: List[Column],
+    cols: list[Column],
     df: DataFrame,
-    keep_columns_dict: Dict[str, str],
+    keep_columns_dict: dict[str, str],
 ) -> Generator[Column, None, None]:
     cols_in_df = df.columns
     cols_after_select = df.select(*cols).columns
@@ -801,9 +815,9 @@ def _get_keep_columns_for_final_select(
 
 def unnest_fields(
     df: DataFrame,
-    fields: Union[str, List[str]],
-    keep_fields: Optional[List[str]] = None,
-) -> Dict[str, DataFrame]:
+    fields: Union[str, list[str]],
+    keep_fields: Optional[list[str]] = None,
+) -> dict[str, DataFrame]:
     """Given a DataFrame, return a list of DataFrames where all the specified columns have been recursively
     unnested (a.k.a. exploded). This produce one DataFrame for each possible granularity.
 
@@ -1040,7 +1054,7 @@ def unnest_fields(
 
     validate_nested_field_names(*fields, known_fields=nested.fields(df))
 
-    dataframe_and_columns: Generator[Tuple[DataFrame, Column], None, None] = _explode_dataframe_for_each_field(
+    dataframe_and_columns: Generator[tuple[DataFrame, Column], None, None] = _explode_dataframe_for_each_field(
         df,
         fields,
         keep_columns_dict,

@@ -59,7 +59,7 @@ def test_pivot_v2_with_multiple_aggs(bq: BigQueryBuilder):
                 "total_amount_Mexico": 4,
                 "nb_years_Mexico": 5,
             },
-        )
+        ),
     ]
     assert pivoted.collect() == expected
 

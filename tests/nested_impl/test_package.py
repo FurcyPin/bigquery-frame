@@ -1,12 +1,11 @@
-from typing import Callable, Dict
+from typing import Callable
 
 import pytest
 
 import bigquery_frame
 import bigquery_frame.exceptions
-from bigquery_frame import BigQueryBuilder, Column
+from bigquery_frame import BigQueryBuilder, Column, nested
 from bigquery_frame import functions as f
-from bigquery_frame import nested
 from bigquery_frame.fp.printable_function import PrintableFunction
 from bigquery_frame.nested_impl.package import (
     _build_nested_struct_tree,
@@ -17,8 +16,8 @@ from bigquery_frame.utils import strip_margin
 
 
 def replace_named_functions_with_functions(
-    transformations: Dict[str, PrintableFunction],
-) -> Dict[str, Callable[[Column], Column]]:
+    transformations: dict[str, PrintableFunction],
+) -> dict[str, Callable[[Column], Column]]:
     return {alias: transformation.func for alias, transformation in transformations.items()}
 
 
@@ -28,8 +27,7 @@ class TestBuildTransformationFromTree:
     """
 
     def test_value_with_string_expr_and_string_alias(self):
-        """
-        GIVEN a transformation that returns a string expression and has an alias of type str
+        """GIVEN a transformation that returns a string expression and has an alias of type str
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -45,8 +43,7 @@ class TestBuildTransformationFromTree:
         assert str(actual) == """lambda x: [f.col('a').alias('a')]"""
 
     def test_value_with_col_expr(self):
-        """
-        GIVEN a transformation that returns a column
+        """GIVEN a transformation that returns a column
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -64,8 +61,7 @@ class TestBuildTransformationFromTree:
         assert str(actual) == """lambda x: [Column<'`a`'>.alias('a')]"""
 
     def test_value_with_aliased_col_expr(self):
-        """
-        GIVEN a transformation that returns an aliased column
+        """GIVEN a transformation that returns an aliased column
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -86,8 +82,7 @@ class TestBuildTransformationFromTree:
         assert str(actual) == """lambda x: [Column<'`a` AS `other_alias`'>.alias('a')]"""
 
     def test_struct(self):
-        """
-        GIVEN a transformation on a struct
+        """GIVEN a transformation on a struct
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -103,8 +98,7 @@ class TestBuildTransformationFromTree:
         assert str(actual_named) == """lambda x: [f.struct([f.col("s.a").cast("FLOAT64").alias('a')]).alias('s')]"""
 
     def test_struct_with_static_expression(self):
-        """
-        GIVEN a transformation on a struct that uses the full name of one of the struct's field (s.a)
+        """GIVEN a transformation on a struct that uses the full name of one of the struct's field (s.a)
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -120,8 +114,7 @@ class TestBuildTransformationFromTree:
         assert str(actual_named) == """lambda x: [f.struct([f.col("s.a").cast("FLOAT64").alias('a')]).alias('s')]"""
 
     def test_array(self):
-        """
-        GIVEN a transformation on an array
+        """GIVEN a transformation on an array
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -137,8 +130,7 @@ class TestBuildTransformationFromTree:
         assert str(actual_named) == """lambda x: [f.transform(x['e'], lambda x: x.cast("FLOAT64")).alias('e')]"""
 
     def test_array_struct(self):
-        """
-        GIVEN a transformation on an array<struct>
+        """GIVEN a transformation on an array<struct>
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -156,8 +148,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_struct_in_struct(self):
-        """
-        GIVEN a transformation on a struct inside a struct
+        """GIVEN a transformation on a struct inside a struct
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -176,8 +167,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_in_struct(self):
-        """
-        GIVEN a transformation on an array inside a struct
+        """GIVEN a transformation on an array inside a struct
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -195,8 +185,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_struct_in_struct(self):
-        """
-        GIVEN a transformation on an array<struct> inside a struct
+        """GIVEN a transformation on an array<struct> inside a struct
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -215,8 +204,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_in_array(self):
-        """
-        GIVEN a transformation on an array inside an array
+        """GIVEN a transformation on an array inside an array
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -234,8 +222,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_struct_in_array(self):
-        """
-        GIVEN a transformation on array<struct> inside an array
+        """GIVEN a transformation on array<struct> inside an array
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -254,8 +241,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_struct_in_array_struct(self):
-        """
-        GIVEN a transformation on struct inside an array<struct>
+        """GIVEN a transformation on struct inside an array<struct>
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -274,8 +260,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_in_array_struct(self):
-        """
-        GIVEN a transformation on an array inside an array<struct>
+        """GIVEN a transformation on an array inside an array<struct>
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -294,8 +279,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_array_struct_in_array_struct(self):
-        """
-        GIVEN a transformation on an array<struct> inside an array<struct>
+        """GIVEN a transformation on an array<struct> inside an array<struct>
         WHEN we print the PrintableFunction generated in resolve_nested_columns
         THEN the result should be human-readable
         """
@@ -316,8 +300,7 @@ class TestBuildTransformationFromTree:
     def test_array_struct_in_array_struct_with_transformation_using_field_from_first_array(
         self,
     ):
-        """
-        GIVEN a DataFrame with an array<struct> inside another array<struct>
+        """GIVEN a DataFrame with an array<struct> inside another array<struct>
         WHEN we use resolve_nested_columns on it with a transformation that uses data from the first array
         THEN the transformation should work
         """
@@ -337,8 +320,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_struct_in_array_struct_in_array_struct(self):
-        """
-        GIVEN a DataFrame with a struct inside an array<struct> inside an array<struct>
+        """GIVEN a DataFrame with a struct inside an array<struct> inside an array<struct>
         WHEN we use resolve_nested_columns with a transformation that access an element from the outermost struct
         THEN the transformation should work
         """
@@ -360,8 +342,7 @@ class TestBuildTransformationFromTree:
         )
 
     def test_struct_in_struct_in_array_struct_in_struct_in_array_struct(self):
-        """
-        GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
+        """GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
         WHEN we use resolve_nested_columns with a transformation that access an element from the outermost struct
         THEN the transformation should work
         """
@@ -390,8 +371,7 @@ class TestBuildTransformationFromTree:
 
 class TestResolveNestedFields:
     def test_with_error(self):
-        """
-        GIVEN a DataFrame with a simple value
+        """GIVEN a DataFrame with a simple value
         WHEN we use resolve_nested_columns on it with an incorrect expression
         THEN an AnalysisException should be raised
         """
@@ -401,8 +381,7 @@ class TestResolveNestedFields:
         assert "Invalid field name 'a!b'" in str(e.value)
 
     def test_value_with_string_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a simple value
+        """GIVEN a DataFrame with a simple value
         WHEN we use resolve_nested_columns on it with a string expression
         THEN the transformation should work
         """
@@ -429,8 +408,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations)).show_string() == expected
 
     def test_value_with_col_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a simple value
+        """GIVEN a DataFrame with a simple value
         WHEN we use resolve_nested_columns on it with a column expression
         THEN the transformation should work
         """
@@ -459,8 +437,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations)).show_string() == expected
 
     def test_value_with_aliased_col_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a simple value
+        """GIVEN a DataFrame with a simple value
         WHEN we use resolve_nested_columns on it with a column expression using a different alias
         THEN the transformation should work and the alias should be ignored
         """
@@ -492,8 +469,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations)).show_string() == expected
 
     def test_value_with_get_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a simple value
+        """GIVEN a DataFrame with a simple value
         WHEN we use resolve_nested_columns on it with a lambda function that accesses the root level
         THEN the transformation should work
         """
@@ -522,8 +498,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations, starting_level=df)).show_string() == expected
 
     def test_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a struct
+        """GIVEN a DataFrame with a struct
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -555,8 +530,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations)).show_string(simplify_structs=True) == expected
 
     def test_struct_with_static_expression(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a struct
+        """GIVEN a DataFrame with a struct
         WHEN we use resolve_nested_columns on it without lambda expression
         THEN the transformation should work
         """
@@ -588,8 +562,7 @@ class TestResolveNestedFields:
         assert df.select(*resolve_nested_fields(transformations)).show_string(simplify_structs=True) == expected
 
     def test_array(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array
+        """GIVEN a DataFrame with an array
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -637,8 +610,7 @@ class TestResolveNestedFields:
         assert actual.show_string() == expected
 
     def test_array_with_none(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array
+        """GIVEN a DataFrame with an array
         WHEN we use resolve_nested_columns on it with a transformation being None
         THEN the transformation should work
         """
@@ -677,8 +649,7 @@ class TestResolveNestedFields:
         assert actual_named.show_string() == expected
 
     def test_array_with_str_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array
+        """GIVEN a DataFrame with an array
         WHEN we use resolve_nested_columns on it with a transformation being a string expression
         THEN the transformation should work
         """
@@ -719,8 +690,7 @@ class TestResolveNestedFields:
         assert actual_named.show_string() == expected
 
     def test_array_with_col_expr(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array
+        """GIVEN a DataFrame with an array
         WHEN we use resolve_nested_columns on it with a transformation being a Column expression
         THEN the transformation should work
         """
@@ -759,8 +729,7 @@ class TestResolveNestedFields:
         assert actual_named.show_string() == expected
 
     def test_array_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array<struct>
+        """GIVEN a DataFrame with an array<struct>
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -810,8 +779,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_struct_in_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a struct inside a struct
+        """GIVEN a DataFrame with a struct inside a struct
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -863,8 +831,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_array_in_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array inside a struct
+        """GIVEN a DataFrame with an array inside a struct
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -914,8 +881,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_array_struct_in_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array<struct> inside a struct
+        """GIVEN a DataFrame with an array<struct> inside a struct
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -967,8 +933,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_struct_in_array_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a struct inside a struct inside an array
+        """GIVEN a DataFrame with a struct inside a struct inside an array
         WHEN we use resolve_nested_columns with a transformation that access an element from the outermost struct
         THEN the transformation should work
         """
@@ -1024,8 +989,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_array_in_array_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array inside an array<struct>
+        """GIVEN a DataFrame with an array inside an array<struct>
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -1075,8 +1039,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_array_struct_in_array_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with an array<struct> inside another array<struct>
+        """GIVEN a DataFrame with an array<struct> inside another array<struct>
         WHEN we use resolve_nested_columns on it
         THEN the transformation should work
         """
@@ -1131,8 +1094,7 @@ class TestResolveNestedFields:
         self,
         bq: BigQueryBuilder,
     ):
-        """
-        GIVEN a DataFrame with an array<struct> inside another array<struct>
+        """GIVEN a DataFrame with an array<struct> inside another array<struct>
         WHEN we use resolve_nested_columns on it with a transformation that uses data from the first array
         THEN the transformation should work
         """
@@ -1187,8 +1149,7 @@ class TestResolveNestedFields:
         assert actual.show_string(simplify_structs=True) == expected
 
     def test_struct_in_array_struct_in_array_struct(self, bq: BigQueryBuilder):
-        """
-        GIVEN a DataFrame with a struct inside an array<struct> inside an array<struct>
+        """GIVEN a DataFrame with a struct inside an array<struct> inside an array<struct>
         WHEN we use resolve_nested_columns with a transformation that access an element from the outermost struct
         THEN the transformation should work
         """
@@ -1243,8 +1204,7 @@ class TestResolveNestedFields:
         self,
         bq: BigQueryBuilder,
     ):
-        """
-        GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
+        """GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
         WHEN we use resolve_nested_columns with a transformation that access an element from the outermost struct
         THEN the transformation should work
         """
@@ -1308,8 +1268,7 @@ class TestResolveNestedFields:
         self,
         bq: BigQueryBuilder,
     ):
-        """
-        GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
+        """GIVEN a DataFrame with a struct inside a struct inside an array<struct> inside a struct inside an array<struct>
         WHEN we use resolve_nested_columns with a None transformation
         THEN the transformation should work
         """

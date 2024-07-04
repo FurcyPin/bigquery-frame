@@ -9,8 +9,7 @@ from bigquery_frame.utils import strip_margin
 
 
 def test_error_handling(client: Client):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query with an incorrect syntax
     THEN a BadRequest exception should be raised
      AND it should contain the numbered text of the query
@@ -23,8 +22,7 @@ def test_error_handling(client: Client):
 
 
 def test_runtime_error_handling(client: Client):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query that compiles but fails at runtime
     THEN a BadRequest exception should be raised
      AND it should contain the numbered text of the query
@@ -37,8 +35,7 @@ def test_runtime_error_handling(client: Client):
 
 
 def test_retry(client: Client):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query and an InternalServerError happens
     THEN we retry the query 3 times
     """
@@ -56,8 +53,7 @@ def test_retry(client: Client):
 
 
 def test_stats_human_readable(client: Client, random_test_dataset: str):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query that reads from a table
      AND we display the query stats in human_readable mode
     THEN they should be correctly displayed
@@ -71,14 +67,13 @@ def test_stats_human_readable(client: Client, random_test_dataset: str):
     |Estimated bytes processed : 16.00 B
     |Total bytes processed : 16.00 B
     |Total bytes billed : 20.00 MiB
-    |"""
+    |""",
     )
     assert bq_client.stats.human_readable() == expected
 
 
 def test_cache_enabled(client: Client, random_test_dataset: str):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query that reads from a table with the query cache ENABLED
     THEN the number of bytes processed/billed SHOULD NOT increase the second time
     """
@@ -95,8 +90,7 @@ def test_cache_enabled(client: Client, random_test_dataset: str):
 
 
 def test_cache_disabled(client: Client, random_test_dataset: str):
-    """
-    GIVEN a HasBigQueryClient
+    """GIVEN a HasBigQueryClient
     WHEN we execute a query that reads from a table with the query cache DISABLED
     THEN the number of bytes processed/billed SHOULD increase the second time
     """

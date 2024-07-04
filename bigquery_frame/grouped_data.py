@@ -1,7 +1,7 @@
 import datetime
 import decimal
 from functools import cached_property
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Optional
 
 from bigquery_frame import Column, DataFrame, functions
 from bigquery_frame.column import ColumnOrName, LitOrColumn, cols_to_str
@@ -17,14 +17,14 @@ class GroupedData:
     def __init__(
         self,
         df: DataFrame,
-        grouped_columns: List[ColumnOrName],
+        grouped_columns: list[ColumnOrName],
         pivot_column: Optional[str] = None,
-        pivoted_columns: Optional[List[LitOrColumn]] = None,
+        pivoted_columns: Optional[list[LitOrColumn]] = None,
     ):
         self.__df = df
-        self.__grouped_columns: List[ColumnOrName] = grouped_columns
+        self.__grouped_columns: list[ColumnOrName] = grouped_columns
         self.__pivot_column = pivot_column
-        self.__pivoted_columns: Optional[List[LitOrColumn]] = pivoted_columns
+        self.__pivoted_columns: Optional[list[LitOrColumn]] = pivoted_columns
 
     @cached_property
     def __flat_schema(self):
@@ -89,7 +89,6 @@ class GroupedData:
             *cols: column names. Non-numeric columns are ignored.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df()
             >>> df.show()
@@ -136,7 +135,6 @@ class GroupedData:
         """Counts the number of records for each group.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df().select("age", "name")
             >>> df.show()
@@ -169,7 +167,6 @@ class GroupedData:
             *cols: column names. Non-numeric columns are ignored.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df()
             >>> df.show()
@@ -219,7 +216,6 @@ class GroupedData:
             *cols: column names. Non-numeric columns are ignored.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df()
             >>> df.show()
@@ -269,7 +265,6 @@ class GroupedData:
             *cols: column names. Non-numeric columns are ignored.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df()
             >>> df.show()
@@ -319,7 +314,6 @@ class GroupedData:
             *cols: column names. Non-numeric columns are ignored.
 
         Examples:
-
             >>> from bigquery_frame.grouped_data import _get_test_df
             >>> df = _get_test_df()
             >>> df.show()
@@ -362,7 +356,7 @@ class GroupedData:
         """
         return self.__numeric_agg(functions.sum, "sum", *cols)
 
-    def pivot(self, pivot_column: str, pivoted_columns: Optional[List[LitOrColumn]] = None) -> "GroupedData":
+    def pivot(self, pivot_column: str, pivoted_columns: Optional[list[LitOrColumn]] = None) -> "GroupedData":
         """Pivots a column of the current :class:`DataFrame` and perform the specified aggregation.
         There are two versions of the pivot function: one that requires the caller
         to specify the list of distinct values to pivot on, and one that does not.
@@ -377,7 +371,6 @@ class GroupedData:
             bigquery_frame.exceptions.UnsupportedOperationException: if `.pivot(...)` is called multiple times
 
         Returns:
-
             >>> from bigquery_frame import functions as f
             >>> from bigquery_frame import BigQueryBuilder
             >>> bq = BigQueryBuilder()
@@ -435,7 +428,7 @@ class GroupedData:
         assert_true(
             self.__pivot_column is None,
             UnsupportedOperationException(
-                "[REPEATED_CLAUSE] The PIVOT clause may be used at most once per SUBQUERY operation."
+                "[REPEATED_CLAUSE] The PIVOT clause may be used at most once per SUBQUERY operation.",
             ),
         )
         return GroupedData(self.__df, self.__grouped_columns, pivot_column, pivoted_columns)
@@ -450,7 +443,7 @@ class GroupedData:
             f"""
             |SELECT
             |{cols_to_str(grouped_columns + list(agg_cols), indentation=2)}
-            |FROM {self.__df._alias}{group_by_str}"""
+            |FROM {self.__df._alias}{group_by_str}""",
         )
         return query
 
@@ -467,7 +460,7 @@ class GroupedData:
                     AnalysisException(
                         f"Cannot pivot after groupBy on struct field '{grouped_col}': "
                         f"BigQuery does not support this operation with struct fields. "
-                        f"Please rename this field as a root level column first."
+                        f"Please rename this field as a root level column first.",
                     ),
                 )
         grouped_columns = str_to_cols(self.__grouped_columns)
@@ -493,7 +486,7 @@ class GroupedData:
             |PIVOT(
             |{cols_to_str(agg_cols, indentation=2)}
             |FOR {self.__pivot_column} IN ({cols_to_str(pivoted_columns_expr)}))
-            |"""
+            |""",
         )
         return query
 
@@ -508,7 +501,7 @@ class GroupedData:
                 len(non_numeric_cols) == 0,
                 AnalysisException(
                     f"""Aggregation function can only be applied on a numeric columns. *
-                    The following columns are not numeric: {non_numeric_cols}"""
+                    The following columns are not numeric: {non_numeric_cols}""",
                 ),
             )
         if self.__pivot_column is not None and len(cols) == 1:
@@ -519,7 +512,7 @@ class GroupedData:
                 *[
                     agg(col).alias(f"{agg_name}_{substring_after_last_occurrence(col, STRUCT_SEPARATOR)}")
                     for col in cols
-                ]
+                ],
             )
 
 
@@ -582,7 +575,7 @@ def _aliased_lit(col: Any, field_type: str) -> Column:
         Their values must be provided manually as aliased columns via the pivoted_columns argument.
 
         Create a literal from a list.
-    """  # noqa E502
+    """  # E502
     if col is None:
         return Column("NULL").alias("NULL")
     elif isinstance(col, Column):
@@ -599,7 +592,7 @@ def _aliased_lit(col: Any, field_type: str) -> Column:
         assert_true(
             field_type in allowed_types,
             UnexpectedException(
-                f"field_type is not one of the expected type {allowed_types} but is instead: {field_type}"
+                f"field_type is not one of the expected type {allowed_types} but is instead: {field_type}",
             ),
         )
         return Column(f"{field_type} '{str(col)}'").alias(
@@ -611,7 +604,7 @@ def _aliased_lit(col: Any, field_type: str) -> Column:
         f"Pivoted columns type {field_type} "
         f"can not be automatically inferred.\n"
         f"Their values must be provided manually as aliased columns "
-        f"via the pivoted_columns argument."
+        f"via the pivoted_columns argument.",
     )
 
 

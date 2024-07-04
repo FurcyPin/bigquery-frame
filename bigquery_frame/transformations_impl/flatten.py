@@ -1,4 +1,3 @@
-from typing import List
 
 from google.cloud.bigquery import SchemaField
 
@@ -47,7 +46,7 @@ def flatten(df: DataFrame, struct_separator: str = "_") -> DataFrame:
     # The idea is to recursively write a "SELECT s.b.c as s_b_c" for each nested column.
     cols = []
 
-    def expand_struct(struct: List[SchemaField], col_stack: List[str]):
+    def expand_struct(struct: list[SchemaField], col_stack: list[str]):
         for field in struct:
             if is_struct(field) and not is_repeated(field):
                 expand_struct(field.fields, col_stack + [field.name])

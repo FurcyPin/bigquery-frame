@@ -1,7 +1,6 @@
 import difflib
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List
 
 from google.cloud.bigquery import SchemaField
 
@@ -26,7 +25,7 @@ class SchemaDiffResult:
     same_schema: bool
     diff_str: str
     nb_cols: int
-    column_names_diff: Dict[str, DiffPrefix]
+    column_names_diff: dict[str, DiffPrefix]
     """The diff per column names.
     Used to determine which columns appeared or disappeared and the order in which the columns shall be displayed"""
 
@@ -38,13 +37,13 @@ class SchemaDiffResult:
             print(f"Schema: ok ({self.nb_cols})")
 
     @property
-    def column_names(self) -> List[str]:
+    def column_names(self) -> list[str]:
         return list(self.column_names_diff.keys())
 
 
 def _schema_to_string(
-    schema: List[SchemaField], include_nullable: bool = False, include_description: bool = False
-) -> List[str]:
+    schema: list[SchemaField], include_nullable: bool = False, include_description: bool = False,
+) -> list[str]:
     """Return a list of strings representing the schema
 
     Args:
@@ -106,7 +105,7 @@ def _schema_to_string(
     return [field_to_string(field, sep=" ") + meta_str(field) for field in schema]
 
 
-def diff_dataframe_schemas(left_df: DataFrame, right_df: DataFrame, join_cols: List[str]) -> SchemaDiffResult:
+def diff_dataframe_schemas(left_df: DataFrame, right_df: DataFrame, join_cols: list[str]) -> SchemaDiffResult:
     """Compares two DataFrames schemas and print out the differences.
     Ignore the nullable and comment attributes.
 
@@ -161,7 +160,7 @@ def diff_dataframe_schemas(left_df: DataFrame, right_df: DataFrame, join_cols: L
         {'id': ' ', 'c1': ' ', 'c2': '-', 'c3': '+', 'c4!.a': ' ', 'c4!.b': '-', 'c4!.d': '+'}
     """
 
-    def explode_schema_according_to_join_cols(schema: List[SchemaField]) -> List[SchemaField]:
+    def explode_schema_according_to_join_cols(schema: list[SchemaField]) -> list[SchemaField]:
         exploded_schema = flatten_schema(schema, explode=True, keep_non_leaf_fields=True)
         return [
             field
@@ -175,10 +174,10 @@ def diff_dataframe_schemas(left_df: DataFrame, right_df: DataFrame, join_cols: L
     left_schema_flat_exploded = explode_schema_according_to_join_cols(left_df.schema)
     right_schema_flat_exploded = explode_schema_according_to_join_cols(right_df.schema)
 
-    left_schema: List[str] = _schema_to_string(left_schema_flat_exploded)
-    right_schema: List[str] = _schema_to_string(right_schema_flat_exploded)
-    left_columns_flat: List[str] = [field.name for field in left_schema_flat_exploded]
-    right_columns_flat: List[str] = [field.name for field in right_schema_flat_exploded]
+    left_schema: list[str] = _schema_to_string(left_schema_flat_exploded)
+    right_schema: list[str] = _schema_to_string(right_schema_flat_exploded)
+    left_columns_flat: list[str] = [field.name for field in left_schema_flat_exploded]
+    right_columns_flat: list[str] = [field.name for field in right_schema_flat_exploded]
 
     diff_str = list(difflib.unified_diff(left_schema, right_schema, n=10000))[2:]
     column_names_diff = _diff_dataframe_column_names(left_columns_flat, right_columns_flat)
@@ -193,7 +192,7 @@ def diff_dataframe_schemas(left_df: DataFrame, right_df: DataFrame, join_cols: L
     )
 
 
-def _remove_potential_duplicates_from_diff(diff: List[str]) -> List[str]:
+def _remove_potential_duplicates_from_diff(diff: list[str]) -> list[str]:
     """In some cases (e.g. swapping the order of two columns), the difflib.unified_diff produces results
     where a column is added and then removed. This method replaces such duplicates with a single occurrence
     of the column marked as unchanged. We keep the column ordering of the left side.
@@ -213,7 +212,7 @@ def _remove_potential_duplicates_from_diff(diff: List[str]) -> List[str]:
     ]
 
 
-def _diff_dataframe_column_names(left_col_names: List[str], right_col_names: List[str]) -> Dict[str, DiffPrefix]:
+def _diff_dataframe_column_names(left_col_names: list[str], right_col_names: list[str]) -> dict[str, DiffPrefix]:
     """Compares the column names of two DataFrames.
 
     Returns a list of column names that preserves the ordering of the left DataFrame when possible.
@@ -231,7 +230,6 @@ def _diff_dataframe_column_names(left_col_names: List[str], right_col_names: Lis
         A list of column names prefixed with a character: ' ', '+' or '-'
 
     Examples:
-
         >>> left_cols = ["id", "col1", "col2", "col3"]
         >>> right_cols = ["id", "col1", "col4", "col3"]
         >>> _diff_dataframe_column_names(left_cols, right_cols)

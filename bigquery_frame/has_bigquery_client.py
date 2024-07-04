@@ -2,7 +2,7 @@ import copy
 import sys
 import traceback
 from dataclasses import dataclass
-from typing import Callable, List, Optional, TypeVar, cast
+from typing import Callable, Optional, TypeVar, cast
 
 from google.api_core.exceptions import BadRequest, InternalServerError
 from google.cloud.bigquery import ConnectionProperty, QueryJob, QueryJobConfig, SchemaField
@@ -57,7 +57,7 @@ class BigQueryStats:
             |{self.human_readable_estimated_bytes_processed()}
             |{self.human_readable_total_bytes_processed()}
             |{self.human_readable_total_bytes_billed()}
-            |"""
+            |""",
         )
 
 
@@ -125,9 +125,9 @@ class HasBigQueryClient:
         print(f"Retrying query (Try n°{try_count}/{self.max_try_count})", file=sys.stderr)
         return self._execute_job(query, action, dry_run=dry_run, use_query_cache=use_query_cache, try_count=try_count)
 
-    def _get_query_schema(self, query: str) -> List[SchemaField]:
-        def action(job: QueryJob) -> List[SchemaField]:
-            return cast(List[SchemaField], job.schema)
+    def _get_query_schema(self, query: str) -> list[SchemaField]:
+        def action(job: QueryJob) -> list[SchemaField]:
+            return cast(list[SchemaField], job.schema)
 
         return self._execute_job(query, action, dry_run=True, use_query_cache=False)
 

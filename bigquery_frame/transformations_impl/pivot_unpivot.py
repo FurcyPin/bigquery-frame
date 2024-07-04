@@ -1,4 +1,3 @@
-from typing import List
 
 from bigquery_frame import BigQueryBuilder, DataFrame
 from bigquery_frame.column import ColumnOrName, cols_to_str
@@ -6,7 +5,7 @@ from bigquery_frame.dataframe import strip_margin
 from bigquery_frame.utils import quote
 
 
-def pivot(df: DataFrame, pivot_column: str, aggs: List[ColumnOrName], pivoted_columns: List[str] = None) -> DataFrame:
+def pivot(df: DataFrame, pivot_column: str, aggs: list[ColumnOrName], pivoted_columns: list[str] = None) -> DataFrame:
     """Pivots a column of the current :class:`DataFrame` and performs the specified aggregation.
     There are two versions of pivot function: one that requires the caller to specify the list
     of distinct values to pivot on, and one that does not. The latter is more concise but less
@@ -92,14 +91,14 @@ def pivot(df: DataFrame, pivot_column: str, aggs: List[ColumnOrName], pivoted_co
         | *
         |FROM {quote(df._alias)}
         |PIVOT({cols_to_str(aggs)} FOR {pivot_column} IN ({cols_to_str(quoted_pivoted_columns)}))
-        |"""
+        |""",
     )
     return df._apply_query(group_query)
 
 
 def unpivot(
     df: DataFrame,
-    pivot_columns: List[str],
+    pivot_columns: list[str],
     key_alias: str = "key",
     value_alias: str = "value",
     exclude_nulls: bool = False,
@@ -171,7 +170,7 @@ def unpivot(
 
 def unpivot_v1(
     df: DataFrame,
-    pivot_columns: List[str],
+    pivot_columns: list[str],
     key_alias: str = "key",
     value_alias: str = "value",
     exclude_nulls: bool = False,
@@ -199,14 +198,14 @@ def unpivot_v1(
         |{cols_to_str(struct_cols, 2)}
         |]) as pivoted
         |{exclude_nulls_str}
-        |"""
+        |""",
     )
     return df._apply_query(query)
 
 
 def unpivot_v2(
     df: DataFrame,
-    pivot_columns: List[str],
+    pivot_columns: list[str],
     key_alias: str = "key",
     value_alias: str = "value",
     exclude_nulls: bool = False,
@@ -225,7 +224,7 @@ def unpivot_v2(
         |  *
         |FROM {quote(df._alias)}
         |UNPIVOT {exclude_nulls_str}({value_alias} FOR {key_alias} IN ({cols_to_str(cols)}))
-        |"""
+        |""",
     )
     return df._apply_query(query)
 

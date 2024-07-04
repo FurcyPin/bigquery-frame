@@ -15,7 +15,8 @@ _replacements = str.maketrans(_replacement_mapping)
 
 
 def _replace_special_characters_except_last_granularity(col_name: str) -> str:
-    """
+    """Replace special characters except for the ones at the last granularity
+
     >>> _replace_special_characters_except_last_granularity("a.b.c")
     'a.b.c'
     >>> _replace_special_characters_except_last_granularity("a!.b!.c.d")
@@ -30,7 +31,8 @@ def _replace_special_characters_except_last_granularity(col_name: str) -> str:
 
 
 def _replace_special_characters(col_name: str) -> str:
-    """
+    """Replace special characters
+
     >>> _replace_special_characters("a.b!.c")
     'a__STRUCT__b__ARRAY____STRUCT__c'
     """
@@ -38,7 +40,8 @@ def _replace_special_characters(col_name: str) -> str:
 
 
 def _restore_special_characters(col_name: str) -> str:
-    """
+    """Restore special characters
+
     >>> _restore_special_characters("a__STRUCT__b__ARRAY____STRUCT__c")
     'a.b!.c'
     """

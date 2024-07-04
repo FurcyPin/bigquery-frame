@@ -1,6 +1,7 @@
 import typing
 import warnings
-from typing import TYPE_CHECKING, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Optional, TypeVar, Union
 
 from google.cloud.bigquery import Row, SchemaField
 from google.cloud.bigquery.table import RowIterator
@@ -57,13 +58,12 @@ def is_nullable(schema_field: SchemaField) -> bool:
     return schema_field.mode == "NULLABLE"
 
 
-def schema_to_simple_string(schema: List[SchemaField]):
+def schema_to_simple_string(schema: list[SchemaField]):
     """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
     The field names are kept, with a '.' separator for struct fields.
     If `explode` option is set, arrays are exploded with a '!' separator.
 
     Example:
-
     >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql('SELECT 1 as id, STRUCT(1 as a, [STRUCT(2 as c, 3 as d)] as b, [4, 5] as e) as s')
@@ -93,16 +93,16 @@ def schema_to_simple_string(schema: List[SchemaField]):
     return f"{cols_to_string}"
 
 
-def schema_to_tree_string(schema: List[SchemaField]) -> str:
+def schema_to_tree_string(schema: list[SchemaField]) -> str:
     """Generates a string representing the schema in tree format"""
 
-    def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> List[str]:
+    def str_gen_schema_field(schema_field: SchemaField, prefix: str) -> list[str]:
         res = [f"{prefix}{schema_field.name}: {schema_field.field_type} ({schema_field.mode})"]
         if is_struct(schema_field):
             res += str_gen_schema(schema_field.fields, " |   " + prefix)
         return res
 
-    def str_gen_schema(schema: List[SchemaField], prefix: str) -> List[str]:
+    def str_gen_schema(schema: list[SchemaField], prefix: str) -> list[str]:
         return [str for schema_field in schema for str in str_gen_schema_field(schema_field, prefix)]
 
     res = ["root"] + str_gen_schema(schema, " |-- ")
@@ -110,7 +110,7 @@ def schema_to_tree_string(schema: List[SchemaField]) -> str:
     return "\n".join(res) + "\n"
 
 
-def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
+def _dedup_key_value_list(items: list[tuple[A, B]]) -> list[tuple[A, B]]:
     """Deduplicate a list of key, values by their keys.
     Unlike `list(set(l))`, this does preserve ordering.
 
@@ -126,24 +126,24 @@ def _dedup_key_value_list(items: List[Tuple[A, B]]) -> List[Tuple[A, B]]:
 
 class DataFrame:
 
-    __deps: List[Tuple[str, "DataFrame"]]
+    __deps: list[tuple[str, "DataFrame"]]
     _alias: str
 
     def __init__(
-        self, query: str, alias: Optional[str], bigquery: "BigQueryBuilder", deps: Optional[List["DataFrame"]] = None
+        self, query: str, alias: Optional[str], bigquery: "BigQueryBuilder", deps: Optional[list["DataFrame"]] = None,
     ):
         self.__query = query
         if deps is None:
             deps = []
         deps_with_aliases = [dep for df in deps for dep in df.__deps] + [(df._alias, df) for df in deps]
-        self.__deps: List[Tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
+        self.__deps: list[tuple[str, "DataFrame"]] = _dedup_key_value_list(deps_with_aliases)
         if alias is None:
             alias = _get_alias()
         else:
             bigquery._check_alias(alias, self.__deps)
         self._alias = alias
         self.bigquery: "BigQueryBuilder" = bigquery
-        self._schema: Optional[List[SchemaField]] = None
+        self._schema: Optional[list[SchemaField]] = None
         if self.bigquery.debug:
             self.__validate()
 
@@ -159,7 +159,7 @@ class DataFrame:
     def __getitem__(self, item: Union[ColumnOrName, Iterable[ColumnOrName], int]):
         """Returns the column as a :class:`Column`.
 
-        Examples
+        Examples:
         --------
         >>> df = __get_test_df()
         >>> df.select(df['id']).show()
@@ -204,25 +204,25 @@ class DataFrame:
         else:
             raise TypeError("unexpected item type: %s" % type(item))
 
-    def _apply_query(self, query: str, deps: Optional[List["DataFrame"]] = None) -> "DataFrame":
+    def _apply_query(self, query: str, deps: Optional[list["DataFrame"]] = None) -> "DataFrame":
         if deps is None:
             deps = [self]
         return DataFrame(query, None, self.bigquery, deps=deps)
 
-    def _compute_schema(self) -> List[SchemaField]:
+    def _compute_schema(self) -> list[SchemaField]:
         return self.bigquery._get_query_schema(self.compile())
 
-    def _compile_deps(self) -> Dict[str, str]:
+    def _compile_deps(self) -> dict[str, str]:
         return {
             alias: strip_margin(
                 f"""{quote(alias)} AS (
                 |{indent(cte.__query, 2)}
-                |)"""
+                |)""",
             )
             for (alias, cte) in self.__deps
         }
 
-    def _compile_with_ctes(self, ctes: Dict[str, str]) -> str:
+    def _compile_with_ctes(self, ctes: dict[str, str]) -> str:
         if len(ctes) > 0:
             query = "WITH " + "\n, ".join(ctes.values()) + "\n" + self.__query
         else:
@@ -239,12 +239,12 @@ class DataFrame:
         return self._compile_with_ctes(ctes)
 
     @property
-    def columns(self) -> List[str]:
+    def columns(self) -> list[str]:
         """Returns all column names as a list."""
         return [field.name for field in self.schema]
 
     @property
-    def schema(self) -> List[SchemaField]:
+    def schema(self) -> list[SchemaField]:
         """Returns the schema of this :class:`DataFrame` as a list of :class:`google.cloud.bigquery.SchemaField`."""
         if self._schema is None:
             self._schema = self._compute_schema()
@@ -281,7 +281,7 @@ class DataFrame:
         """Returns a new :class:`DataFrame` with an alias set."""
         return DataFrame(self.__query, alias, self.bigquery, deps=[df for alias, df in self.__deps])
 
-    def collect(self) -> List[Row]:
+    def collect(self) -> list[Row]:
         """Returns all the records as list of :class:`Row`."""
         return list(self.bigquery._execute_query(self.compile()))
 
@@ -383,7 +383,7 @@ class DataFrame:
             query = strip_margin(
                 f"""SELECT
                 |  * EXCEPT ({cols_to_str(cols_in_schema)})
-                |FROM {quote(self._alias)}"""
+                |FROM {quote(self._alias)}""",
             )
             return self._apply_query(query)
 
@@ -393,11 +393,11 @@ class DataFrame:
             f"""
             |SELECT *
             |FROM {quote(self._alias)}
-            |WHERE {str(condition)}"""
+            |WHERE {condition!s}""",
         )
         return self._apply_query(query)
 
-    def groupBy(self, *cols: Union[ColumnOrName, List[ColumnOrName]]) -> "GroupedData":
+    def groupBy(self, *cols: Union[ColumnOrName, list[ColumnOrName]]) -> "GroupedData":
         """Groups the :class:`DataFrame` using the specified columns, so we can run aggregation on them.
         See :class:`GroupedData` for all the available aggregate functions.
 
@@ -467,7 +467,7 @@ class DataFrame:
     def join(
         self,
         other: "DataFrame",
-        on: Optional[Union[List[ColumnOrName], ColumnOrName]] = None,
+        on: Optional[Union[list[ColumnOrName], ColumnOrName]] = None,
         how: Optional[str] = None,
     ):
         """Joins with another :class:`DataFrame`, using the given join expression.
@@ -666,7 +666,7 @@ class DataFrame:
             |{cols_to_str(selected_columns, 2)}
             |FROM {quote(self._alias)}
             |{join_str} {quote(other._alias)}{on_clause}
-            |{where_str}"""
+            |{where_str}""",
         )
         return self._apply_query(query, deps=[self, other])
 
@@ -693,7 +693,6 @@ class DataFrame:
         """Prints out the schema in tree format.
 
         Examples:
-
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
             >>> bq = BigQueryBuilder()
         >>> df = bq.sql('''SELECT 1 as id, STRUCT(1 as a, [STRUCT(1 as c)] as b) as s''')
@@ -713,7 +712,6 @@ class DataFrame:
         """Prints out the SQL query generated to materialize this :class:`DataFrame`.
 
         Examples:
-
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> bq = BigQueryBuilder()
         >>> from bigquery_frame import functions as f
@@ -739,7 +737,7 @@ class DataFrame:
         """
         print(self.compile())
 
-    def _select_with_exploded_columns(self, cols: List[ColumnOrName]) -> "DataFrame":
+    def _select_with_exploded_columns(self, cols: list[ColumnOrName]) -> "DataFrame":
         from bigquery_frame.column import ExplodedColumn
 
         exploded_cols = [col for col in cols if isinstance(col, ExplodedColumn)]
@@ -751,7 +749,7 @@ class DataFrame:
             pos_str = f" WITH OFFSET as {quote(alias + '_pos')}" if col.with_index else ""
             return f"{join_str} UNNEST({col.exploded_col.expr}) AS {alias}{pos_str}"
 
-        def col_to_select(col: Column) -> List[ColumnOrName]:
+        def col_to_select(col: Column) -> list[ColumnOrName]:
             if isinstance(col, ExplodedColumn):
                 alias = col.get_alias()
                 if col.with_index:
@@ -769,11 +767,11 @@ class DataFrame:
             |{cols_to_str(cols, 2)}
             |FROM {quote(self._alias)}
             |{cols_to_str(unnest_clause, indentation=0, sep="")}
-            | """
+            | """,
         )
         return self._apply_query(query)
 
-    def select(self, *columns: Union[ColumnOrName, List[ColumnOrName]]) -> "DataFrame":
+    def select(self, *columns: Union[ColumnOrName, list[ColumnOrName]]) -> "DataFrame":
         """Projects a set of expressions and returns a new :class:`DataFrame`.
 
         Args:
@@ -817,7 +815,7 @@ class DataFrame:
             query = strip_margin(
                 f"""SELECT
                 |{cols_to_str(cols, 2)}
-                |FROM {quote(self._alias)}"""
+                |FROM {quote(self._alias)}""",
             )
             return self._apply_query(query)
 
@@ -987,7 +985,7 @@ class DataFrame:
         res = self.limit(n + 1).collect_iterator()
         return tabulate_results(res, format_args, limit=n, simplify_structs=simplify_structs)
 
-    def sort(self, *cols: Union[ColumnOrName, List[ColumnOrName]]):
+    def sort(self, *cols: Union[ColumnOrName, list[ColumnOrName]]):
         """Returns a new :class:`DataFrame` sorted by the specified column(s).
 
         Args:
@@ -1030,7 +1028,7 @@ class DataFrame:
             f"""
             |SELECT *
             |FROM {quote(self._alias)}
-            |ORDER BY {cols_to_str(str_cols)}"""
+            |ORDER BY {cols_to_str(str_cols)}""",
         )
         return self._apply_query(query)
 
@@ -1070,7 +1068,7 @@ class DataFrame:
         return self.collect_iterator().to_dataframe(**kwargs)
 
     def transform(
-        self, func: typing.Callable[..., "DataFrame"], *args: typing.Any, **kwargs: typing.Any
+        self, func: typing.Callable[..., "DataFrame"], *args: typing.Any, **kwargs: typing.Any,
     ) -> "DataFrame":
         """Returns a new :class:`DataFrame`. Concise syntax for chaining custom transformations.
 
@@ -1116,8 +1114,8 @@ class DataFrame:
         """
         result = func(self, *args, **kwargs)
         assert isinstance(
-            result, DataFrame
-        ), "Func returned an instance of type [%s], " "should have been DataFrame." % type(result)
+            result, DataFrame,
+        ), "Func returned an instance of type [%s], should have been DataFrame." % type(result)
         return result
 
     def treeString(self):
@@ -1145,7 +1143,7 @@ class DataFrame:
         This is different from both `UNION ALL` and `UNION DISTINCT` in SQL. To do a SQL-style set
         union (that does deduplication of elements), use this function followed by :func:`distinct`.
 
-        Examples
+        Examples:
         --------
         The difference between this function and :func:`union` is that this function
         resolves columns by name (not by position):
@@ -1203,7 +1201,7 @@ class DataFrame:
                 f"UnionByName: dataFrames must have the same columns, "
                 f"unless allowMissingColumns is set to True.\n"
                 f"Columns in first DataFrame: [{cols_to_str(self.columns)}]\n"
-                f"Columns in second DataFrame: [{cols_to_str(other.columns)}]"
+                f"Columns in second DataFrame: [{cols_to_str(other.columns)}]",
             )
 
         def optional_comma(_list: Sequence[object]):
@@ -1222,7 +1220,7 @@ class DataFrame:
             |  {cols_to_str(common_cols, 2)}{optional_comma(common_cols)}
             |  {cols_to_str(other_only_cols, 2)}
             |FROM {quote(other._alias)}
-            |"""
+            |""",
         )
         return self._apply_query(query, deps=[self, other])
 
@@ -1283,7 +1281,7 @@ class DataFrame:
             return self.select(f"{self._alias}.*", col_expr.alias(col_name))
         return self._apply_query(query)
 
-    def with_nested_columns(self, fields: Dict[str, ColumnOrName]) -> "DataFrame":
+    def with_nested_columns(self, fields: dict[str, ColumnOrName]) -> "DataFrame":
         """Returns a new :class:`DataFrame` by adding or replacing (when they already exist) columns.
 
         Unlike the :func:`withColumn` method, this method works on repeated elements
@@ -1380,7 +1378,7 @@ class DataFrame:
     def write(self):
         """Interface for saving the content of the :class:`DataFrame` out into external storage.
 
-        Examples
+        Examples:
         --------
         >>> from bigquery_frame.bigquery_builder import BigQueryBuilder
         >>> from bigquery_frame.auth import get_bq_client
@@ -1430,13 +1428,13 @@ def __get_test_df() -> DataFrame:
     return bq.sql(query)
 
 
-def _has_exploded_columns(cols: List[Column]):
+def _has_exploded_columns(cols: list[Column]):
     from bigquery_frame.column import ExplodedColumn
 
     return any(isinstance(col, ExplodedColumn) for col in cols)
 
 
-def __get_test_dfs() -> Tuple[DataFrame, ...]:
+def __get_test_dfs() -> tuple[DataFrame, ...]:
     from bigquery_frame.auth import get_bq_client
     from bigquery_frame.bigquery_builder import BigQueryBuilder
 
@@ -1447,8 +1445,8 @@ def __get_test_dfs() -> Tuple[DataFrame, ...]:
         |SELECT 2 as age, "Alice" as name
         |UNION ALL
         |SELECT 5 as age, "Bob" as name
-        |"""
-        )
+        |""",
+        ),
     )
     df2 = bq.sql(
         strip_margin(
@@ -1456,8 +1454,8 @@ def __get_test_dfs() -> Tuple[DataFrame, ...]:
         |SELECT 80 as height, "Tom" as name
         |UNION ALL
         |SELECT 85 as height, "Bob" as name
-        |"""
-        )
+        |""",
+        ),
     )
     df3 = df1
     df4 = bq.sql(
@@ -1469,8 +1467,8 @@ def __get_test_dfs() -> Tuple[DataFrame, ...]:
         |    STRUCT(NULL as age, NULL as height, "Tom" as name),
         |    STRUCT(NULL as age, NULL as height, NULL as name)
         |])
-        |"""
-        )
+        |""",
+        ),
     )
     return df1, df2, df3, df4
 

@@ -3,8 +3,7 @@ from bigquery_frame.utils import strip_margin
 
 
 def test_groupBy_with_struct_columns(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame with nested fields
+    """GIVEN a DataFrame with nested fields
     WHEN we use a pivot.agg statement
     THEN the result should be correct
     """
@@ -25,7 +24,7 @@ def test_groupBy_with_struct_columns(bq: BigQueryBuilder):
         |+-------+---------+
         || Alice |     2.5 |
         ||   Bob |     7.5 |
-        |+-------+---------+"""
+        |+-------+---------+""",
     )
 
     assert df.groupBy().avg("child.age", "child.height").show_string() == strip_margin(
@@ -34,13 +33,12 @@ def test_groupBy_with_struct_columns(bq: BigQueryBuilder):
         || avg_age | avg_height |
         |+---------+------------+
         ||     5.0 |      110.0 |
-        |+---------+------------+"""
+        |+---------+------------+""",
     )
 
 
 def test_pivot_with_struct_columns(bq: BigQueryBuilder):
-    """
-    GIVEN a DataFrame with nested fields
+    """GIVEN a DataFrame with nested fields
     WHEN we use a pivot.agg statement
     THEN the result should be correct
     """
@@ -75,7 +73,7 @@ def test_pivot_with_struct_columns(bq: BigQueryBuilder):
     |+----------+--------+-------+
     ||   expert |  15000 | 30000 |
     ||   junior |  48000 | 20000 |
-    |+----------+--------+-------+"""
+    |+----------+--------+-------+""",
     )
     df2 = df.groupBy().pivot("sales.course", ["dotNET", "Java"]).sum("sales.earnings")
     assert df2.show_string(simplify_structs=True) == strip_margin(
@@ -85,7 +83,7 @@ def test_pivot_with_struct_columns(bq: BigQueryBuilder):
     |+--------+-------+
     ||  15000 | 30000 |
     ||  48000 | 20000 |
-    |+--------+-------+"""
+    |+--------+-------+""",
     )
     df3 = df.groupBy("training").pivot("sales.course").sum("sales.earnings")
     assert df3.show_string(simplify_structs=True) == strip_margin(
@@ -95,7 +93,7 @@ def test_pivot_with_struct_columns(bq: BigQueryBuilder):
     |+----------+-------+--------+
     ||   expert | 30000 |  15000 |
     ||   junior | 20000 |  48000 |
-    |+----------+-------+--------+"""
+    |+----------+-------+--------+""",
     )
     df4 = df.groupBy().pivot("sales.course").sum("sales.earnings")
     assert df4.show_string(simplify_structs=True) == strip_margin(
@@ -105,5 +103,5 @@ def test_pivot_with_struct_columns(bq: BigQueryBuilder):
     |+-------+--------+
     || 30000 |  15000 |
     || 20000 |  48000 |
-    |+-------+--------+"""
+    |+-------+--------+""",
     )

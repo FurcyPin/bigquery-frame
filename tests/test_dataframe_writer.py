@@ -8,7 +8,6 @@ from bigquery_frame import BigQueryBuilder
 @pytest.fixture(autouse=True)
 def clean(bq: BigQueryBuilder, random_test_dataset: str):
     bq._execute_query(f"DROP TABLE IF EXISTS {random_test_dataset}.my_table")
-    return
 
 
 def test_write_with_mode_overwrite(bq: BigQueryBuilder, random_test_dataset: str):

@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from bigquery_frame import DataFrame, nested
 from bigquery_frame.nested_impl.package import AnyKindOfTransformation, resolve_nested_fields
@@ -36,7 +36,6 @@ def with_fields(df: DataFrame, fields: Mapping[str, AnyKindOfTransformation]) ->
         it will be added to the output DataFrame. If it did exist, the original value will be replaced with the new one.
 
     Examples:
-
         *Example 1: non-repeated fields*
         >>> from bigquery_frame import BigQueryBuilder
         >>> from bigquery_frame import functions as f

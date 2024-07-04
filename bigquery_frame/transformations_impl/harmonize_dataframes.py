@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 from bigquery_frame import Column, DataFrame
 from bigquery_frame import functions as f
@@ -9,9 +9,9 @@ from bigquery_frame.data_type_utils import flatten_schema, get_common_columns
 def harmonize_dataframes(
     left_df: DataFrame,
     right_df: DataFrame,
-    common_columns: Optional[Dict[str, Optional[str]]] = None,
+    common_columns: Optional[dict[str, Optional[str]]] = None,
     keep_missing_columns: bool = False,
-) -> Tuple[DataFrame, DataFrame]:
+) -> tuple[DataFrame, DataFrame]:
     """Given two DataFrames, returns two new corresponding DataFrames with the same schemas by applying the following
     changes:
 

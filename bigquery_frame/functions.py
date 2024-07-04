@@ -1,7 +1,8 @@
 import datetime
 import decimal
 import typing
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from collections.abc import Iterable
+from typing import Callable, Optional, Union
 
 from bigquery_frame import BigQueryBuilder
 from bigquery_frame.column import (
@@ -19,7 +20,7 @@ from bigquery_frame.exceptions import IllegalArgumentException
 from bigquery_frame.utils import list_or_tuple_to_list, quote, str_to_col, str_to_cols
 
 RawType = Union[str, bool, int, float, bytes, decimal.Decimal, datetime.date, datetime.time, datetime.datetime]
-ComplexType = Union[RawType, List["ComplexType"], Dict[str, "ComplexType"]]
+ComplexType = Union[RawType, list["ComplexType"], dict[str, "ComplexType"]]
 
 
 def _invoke_function_over_column(function_name: str, col: ColumnOrName):
@@ -56,7 +57,7 @@ def approx_count_distinct(col: ColumnOrName) -> Column:
     return _invoke_function_over_column("APPROX_COUNT_DISTINCT", col)
 
 
-def array(*cols: Union[List[ColumnOrName], ColumnOrName]) -> Column:
+def array(*cols: Union[list[ColumnOrName], ColumnOrName]) -> Column:
     """Creates a new array column.
 
     Limitations
@@ -65,7 +66,7 @@ def array(*cols: Union[List[ColumnOrName], ColumnOrName]) -> Column:
     This means that arrays may contain NULL values during the query computation for intermediary results, but
     when the query result is returned or written, an exception will occur if an array contains a NULL value.
 
-    Examples
+    Examples:
     --------
     >>> df = _get_test_df_1()
     >>> from bigquery_frame import functions as f
@@ -90,26 +91,24 @@ def array(*cols: Union[List[ColumnOrName], ColumnOrName]) -> Column:
     :return:
     """
     columns: Iterable[ColumnOrName]
-    if len(cols) == 1 and isinstance(cols[0], (List, Set)):
+    if len(cols) == 1 and isinstance(cols[0], (list, set)):
         columns = cols[0]
     else:
-        columns = typing.cast(Tuple[ColumnOrName], cols)
+        columns = typing.cast(tuple[ColumnOrName], cols)
     str_cols = [col.expr for col in str_to_cols(columns)]
     return Column(f"[{cols_to_str(str_cols)}]")
 
 
 def array_agg(
     col: ColumnOrName,
-    order_by: Optional[Union[ColumnOrName, List[ColumnOrName]]] = None,
+    order_by: Optional[Union[ColumnOrName, list[ColumnOrName]]] = None,
     distinct: bool = False,
     ignore_nulls: bool = False,
     limit: Optional[int] = None,
 ) -> Column:
-    """
-    Aggregates this column into an array of values.
+    """Aggregates this column into an array of values.
 
-
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -298,7 +297,7 @@ def concat(*cols: ColumnOrName) -> Column:
     """Concatenates one or more values into a single result. All values must be BYTES or data types
     that can be cast to STRING. The function returns NULL if any input argument is NULL.
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 'abcd' as s, '123' as d")
@@ -499,7 +498,7 @@ def from_base32(col: ColumnOrName) -> Column:
     """Converts the base32-encoded input string_expr into BYTES format.
     To convert BYTES to a base32-encoded STRING, use :func:`to_base32`.
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -523,7 +522,7 @@ def from_base64(col: ColumnOrName) -> Column:
     are used to encode the 64 digits and padding. See RFC 4648 for details.
     This function expects the alphabet [A-Za-z0-9+/=].
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -554,7 +553,7 @@ def from_base64(col: ColumnOrName) -> Column:
 def hash(*cols: Union[str, Column]) -> Column:
     """Calculates the hash code of given columns, and returns the result as an int column.
 
-    Examples
+    Examples:
     --------
     >>> df = _get_test_df_1()
     >>> from bigquery_frame import functions as f
@@ -593,7 +592,7 @@ def length(col: ColumnOrName) -> Column:
     The length of character data includes the trailing spaces. The length of binary data
     includes binary zeros.
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -604,7 +603,6 @@ def length(col: ColumnOrName) -> Column:
     |      4 |
     +--------+
     """
-
     return _invoke_function_over_column("LENGTH", col)
 
 
@@ -1025,14 +1023,14 @@ def replace(original_value: ColumnOrName, from_value: LitOrColumn, replace_value
 
 def sort_array(
     array: ColumnOrName,
-    sort_keys: Optional[Callable[[Column], Union[Column, List[Column]]]] = None,
+    sort_keys: Optional[Callable[[Column], Union[Column, list[Column]]]] = None,
 ) -> Column:
     """Collection function: sorts the input array according to the natural ordering of the array elements,
     or, if `sort_keys` specified, according to the `sort_keys`.
     `sort_keys` is a function that takes as argument a Column representing the array's elements and returns
     the Column or the list of Columns used for sorting (`asc` and `desc` can be used here).
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql('''
@@ -1086,11 +1084,11 @@ def substring(col: ColumnOrName, pos: LitOrColumn, len: Optional[LitOrColumn] = 
     """Return the substring that starts at `pos` and is of length `len`.
     If `len` is not specified, returns the substring that starts at `pos` until the end of the string
 
-    Notes
+    Notes:
     -----
     The position is not zero based, but 1 based index.
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> df = bq.sql("SELECT 'abcd' as s")
@@ -1151,10 +1149,10 @@ def sum(col: ColumnOrName) -> Column:
     return _invoke_function_over_column("SUM", col)
 
 
-def struct(*cols: Union[ColumnOrName, List[ColumnOrName], Set[ColumnOrName]]) -> Column:
+def struct(*cols: Union[ColumnOrName, list[ColumnOrName], set[ColumnOrName]]) -> Column:
     """Creates a new struct column.
 
-    Examples
+    Examples:
     --------
     >>> df = _get_test_df_1()
     >>> from bigquery_frame import functions as f
@@ -1187,7 +1185,7 @@ def to_base32(col: ColumnOrName) -> Column:
     """Converts a sequence of BYTES into a base32-encoded STRING.
     To convert a base32-encoded STRING into BYTES, use :func:`from_base32`.
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -1212,7 +1210,7 @@ def to_base64(col: ColumnOrName) -> Column:
     See `RFC 4648 <https://tools.ietf.org/html/rfc4648#section-4>`_ for details.
     This function adds padding and uses the alphabet [A-Za-z0-9+/=].
 
-    Examples
+    Examples:
     --------
     >>> bq = BigQueryBuilder()
     >>> from bigquery_frame import functions as f
@@ -1243,7 +1241,7 @@ def to_base64(col: ColumnOrName) -> Column:
 def transform(array: ColumnOrName, func: Callable[[Column], Column]) -> Column:
     """Return an array of elements after applying a transformation to each element in the input array.
 
-    Examples
+    Examples:
     --------
     >>> from bigquery_frame import functions as f
     >>> bq = BigQueryBuilder()
@@ -1333,7 +1331,7 @@ def when(condition: Column, value: Column) -> WhenColumn:
     """Evaluates a list of conditions and returns one of multiple possible result expressions.
     If :func:`Column.otherwise` is not invoked, None is returned for unmatched conditions.
 
-    Examples
+    Examples:
     --------
     >>> df = _get_test_df_1()
     >>> from bigquery_frame import functions as f

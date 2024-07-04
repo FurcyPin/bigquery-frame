@@ -33,7 +33,7 @@ def test_connected_components(bq: BigQueryBuilder):
             STRUCT(12 as L, 13 as R),
             STRUCT(14 as L, 16 as R)
         ])
-    """
+    """,
     )
     expected_df = bq.sql(
         """
@@ -58,7 +58,7 @@ def test_connected_components(bq: BigQueryBuilder):
             STRUCT(18 as node_id, 11 as connected_component_id),
             STRUCT(19 as node_id, 11 as connected_component_id)
         ])
-    """
+    """,
     )
     df = df.select(f.col("L").alias("l_node"), f.col("R").alias("r_node")).persist()
     actual_df = connected_components(df).sort("node_id", "connected_component_id")

@@ -80,14 +80,14 @@ def _star_loop(df: DataFrame):
             FROM new_df
             WHERE NOT EXISTS (
                 SELECT 1 FROM old_df WHERE new_df.l_node = old_df.l_node AND new_df.r_node = old_df.r_node
-            )"""
+            )""",
         ).count()
         working_df = new_df
     return working_df.select("l_node", "r_node")
 
 
 def connected_components(
-    df: DataFrame, node_name: str = "node_id", connected_component_col_name: str = "connected_component_id"
+    df: DataFrame, node_name: str = "node_id", connected_component_col_name: str = "connected_component_id",
 ):
     """Compute the connected components of a non-directed graph.
 
@@ -163,7 +163,7 @@ def connected_components(
     r_field: SchemaField
     [l_field, r_field] = df.schema
     assert_true(
-        l_field.field_type == r_field.field_type, "The two columns of the input DataFrame must have the same type"
+        l_field.field_type == r_field.field_type, "The two columns of the input DataFrame must have the same type",
     )
     assert_true(
         l_field.field_type in ["STRING", "INTEGER"],
@@ -191,6 +191,6 @@ def __get_test_df() -> DataFrame:
             STRUCT(2 as l_node, 3 as r_node),
             STRUCT(4 as l_node, 6 as r_node)
         ])
-    """
+    """,
     )
     return df

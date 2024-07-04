@@ -1,11 +1,11 @@
-from typing import Dict, List, Optional
+from typing import Optional
 
 from bigquery_frame import DataFrame, nested
 from bigquery_frame.field_utils import is_sub_field_or_equal_to_any
 from bigquery_frame.nested_impl.package import unnest_fields
 
 
-def unnest_all_fields(df: DataFrame, keep_columns: Optional[List[str]] = None) -> Dict[str, DataFrame]:
+def unnest_all_fields(df: DataFrame, keep_columns: Optional[list[str]] = None) -> dict[str, DataFrame]:
     """Given a DataFrame, return a dict of {granularity: DataFrame} where all arrays have been recursively
     unnested (a.k.a. exploded).
     This produce one DataFrame for each possible granularity.

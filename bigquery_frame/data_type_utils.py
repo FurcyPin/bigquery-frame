@@ -1,4 +1,5 @@
-from typing import Dict, Generator, List, Optional
+from collections.abc import Generator
+from typing import Optional
 
 from google.cloud.bigquery import SchemaField
 
@@ -85,7 +86,7 @@ def list_wider_types(tpe: str) -> Generator[str, None, None]:
         counter += 1
         yield current_type
         assert_true(
-            counter < max_loop, "This should not happen. Please check thatBIGQUERY_CONVERSIONS does not contain a loop."
+            counter < max_loop, "This should not happen. Please check thatBIGQUERY_CONVERSIONS does not contain a loop.",
         )
         if next_type is None:
             break
@@ -136,7 +137,7 @@ def find_common_type_for_fields(left_field: SchemaField, right_field: SchemaFiel
         return find_wider_type_for_string_types(left_field.field_type, right_field.field_type)
 
 
-def get_common_columns(left_schema: List[SchemaField], right_schema: List[SchemaField]) -> Dict[str, Optional[str]]:
+def get_common_columns(left_schema: list[SchemaField], right_schema: list[SchemaField]) -> dict[str, Optional[str]]:
     """Return a list of common Columns between two DataFrame schemas, along with the widest common type for the
     two columns.
 
@@ -170,12 +171,12 @@ def get_common_columns(left_schema: List[SchemaField], right_schema: List[Schema
 
 
 def flatten_schema(
-    schema: List[SchemaField],
+    schema: list[SchemaField],
     explode: bool,
     struct_separator: str = STRUCT_SEPARATOR,
     repetition_marker: str = REPETITION_MARKER,
     keep_non_leaf_fields: bool = False,
-) -> List[SchemaField]:
+) -> list[SchemaField]:
     """Transforms a BigQuery DataFrame schema into a new schema where all structs have been flattened.
     The field names are kept, with a '.' separator for struct fields.
 
@@ -226,7 +227,7 @@ def flatten_schema(
                             schema_field.fields,
                             new_nullable,
                             prefix + repetition_marker + struct_separator,
-                        )
+                        ),
                     )
             else:
                 res += list(
@@ -234,7 +235,7 @@ def flatten_schema(
                         schema_field.fields,
                         new_nullable,
                         prefix + struct_separator,
-                    )
+                    ),
                 )
         if is_repeated(schema_field) and explode:
             new_schema_field = SchemaField(
@@ -258,7 +259,7 @@ def flatten_schema(
         yield from res
 
     def flatten_struct_type(
-        schema: List[SchemaField], previous_nullable: bool = False, prefix: str = ""
+        schema: list[SchemaField], previous_nullable: bool = False, prefix: str = "",
     ) -> Generator[SchemaField, None, None]:
         for schema_field in schema:
             yield from flatten_schema_field(
